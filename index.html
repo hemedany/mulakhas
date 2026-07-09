@@ -341,15 +341,13 @@
 
   /* Progress */
   #status { display: none; text-align: center; padding: 16px 0 4px; }
-  #status .spin {
-    width: 22px; height: 22px;
-    border: 2.5px solid var(--line);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    margin: 0 auto 10px;
-    animation: rot .7s linear infinite;
-  }
-  @keyframes rot { to { transform: rotate(360deg); } }
+  /* Arab-style loader: khatam (eight-pointed star) */
+  .kstar { position: relative; width: 32px; height: 32px; margin: 0 auto 12px; animation: kspin 2.6s linear infinite; }
+  .kstar i { position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: 5px; }
+  .kstar i:nth-child(2) { transform: rotate(45deg); }
+  .kstar b { position: absolute; inset: 11px; background: var(--accent); border-radius: 50%; animation: kpulse 1.3s ease-in-out infinite; }
+  @keyframes kspin { to { transform: rotate(45deg); } }
+  @keyframes kpulse { 0%, 100% { transform: scale(.55); opacity: .65; } 50% { transform: scale(1); opacity: 1; } }
   #statustext { font-size: .85rem; color: var(--ink-soft); }
 
   /* Result */
@@ -382,11 +380,79 @@
   }
   #followrow button:hover { opacity: .85; }
 
+  /* ---- tutorial ---- */
+  #tutbtn { position: fixed; top: calc(64px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--accent); cursor: pointer; box-shadow: var(--shadow); font-family: var(--serif); font-size: 1.2rem; font-weight: 700; transition: transform .15s; }
+  #tutbtn:hover { transform: scale(1.1); }
+  #tutov { position: fixed; inset: 0; z-index: 50; background: rgba(20, 14, 8, .5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 18px; }
+  #tutov[hidden] { display: none; }
+  .tutbox { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); max-width: 380px; width: 100%; padding: 18px; position: relative; animation: rise .35s cubic-bezier(.2,.7,.3,1); }
+  .tutclose { position: absolute; top: 10px; right: 12px; background: none; border: none; color: var(--ink-soft); font-size: 1rem; cursor: pointer; padding: 4px; }
+  .tutstage { height: 158px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 14px; }
+  .tutbox h3 { font-family: var(--serif); font-size: 1.1rem; margin-bottom: 5px; }
+  .tutbox p { font-size: .84rem; color: var(--ink-soft); line-height: 1.55; min-height: 3.4em; margin: 0; }
+  .tutnav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .tutnav button { background: var(--paper); border: 1px solid var(--line-strong); border-radius: 999px; color: var(--ink); padding: 7px 16px; font-size: .85rem; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .tutnav button:disabled { opacity: .3; }
+  .tutnav #tutnext { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tutdots { display: flex; gap: 6px; }
+  .tutdots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); transition: background .2s, transform .2s; }
+  .tutdots span.on { background: var(--accent); transform: scale(1.25); }
+  /* tutorial scenes */
+  .sc { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+  .mockinput { width: 200px; height: 42px; background: var(--field); border: 1.5px solid var(--line-strong); border-radius: 10px; display: flex; align-items: center; padding: 0 12px; }
+  .mockkey { animation: keyfly 3.2s ease infinite; }
+  .mockcheck { margin-left: auto; color: var(--good); font-weight: 700; animation: checkpop 3.2s infinite; }
+  @keyframes keyfly { 0% { transform: translate(-70px, -34px) rotate(-40deg); opacity: 0; } 28% { transform: none; opacity: 1; } 100% { transform: none; opacity: 1; } }
+  @keyframes checkpop { 0%, 42% { transform: scale(0); } 54% { transform: scale(1.35); } 62%, 100% { transform: scale(1); } }
+  .mockhint { font-size: .72rem; color: var(--ink-faint); }
+  .mockdrop { width: 214px; height: 86px; border: 2px dashed var(--line-strong); border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .mockdrop span { font-size: 1.5rem; animation: fall 3.6s ease infinite; opacity: 0; }
+  .mockdrop span:nth-child(2) { animation-delay: .45s; }
+  .mockdrop span:nth-child(3) { animation-delay: .9s; }
+  @keyframes fall { 0% { transform: translateY(-70px); opacity: 0; } 12% { opacity: 1; } 22% { transform: none; } 88% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  .mockcard { width: 180px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: .68rem; display: flex; gap: 6px; align-items: center; }
+  .mockdiv { width: 180px; display: flex; align-items: center; gap: 6px; position: relative; margin: 5px 0; }
+  .mockdiv .l { flex: 1; border-top: 1.5px dashed var(--line-strong); }
+  .mockpill { font-size: .6rem; font-weight: 700; border: 1px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 1px 8px; }
+  .mockfinger { position: absolute; left: 54%; top: -6px; font-size: 1.15rem; animation: tap 3.4s infinite; }
+  @keyframes tap { 0% { transform: translateY(-16px); opacity: 0; } 18% { opacity: 1; } 30% { transform: translateY(0); } 38% { transform: translateY(-4px); } 55%, 100% { opacity: 0; } }
+  .mocktext { width: 180px; overflow: hidden; background: var(--accent-wash); border-radius: 8px; font-size: .66rem; display: flex; align-items: center; padding: 0 9px; height: 0; margin: 0; animation: bubblegrow 3.4s infinite; }
+  @keyframes bubblegrow { 0%, 38% { height: 0; margin: 0; opacity: 0; } 52%, 92% { height: 24px; margin: 5px 0; opacity: 1; } 100% { height: 0; margin: 0; opacity: 0; } }
+  .mockchips { display: flex; gap: 6px; }
+  .mockchip { font-size: .64rem; border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px 9px; color: var(--ink-soft); }
+  .mockchip.hot { animation: chipsel 3.2s infinite; }
+  @keyframes chipsel { 0%, 22% { background: transparent; color: var(--ink-soft); } 36%, 100% { background: var(--ink); color: var(--card); border-color: var(--ink); } }
+  .mockta { width: 195px; height: 34px; background: var(--field); border: 1px solid var(--line-strong); border-radius: 8px; display: flex; align-items: center; gap: 4px; padding: 0 10px; }
+  .mockta i { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); animation: dotty 1.1s infinite; }
+  .mockta i:nth-child(2) { animation-delay: .18s; }
+  .mockta i:nth-child(3) { animation-delay: .36s; }
+  @keyframes dotty { 0%, 100% { transform: none; opacity: .5; } 50% { transform: translateY(-4px); opacity: 1; } }
+  .mockbtn { background: var(--accent); color: #fff; border-radius: 9px; padding: 7px 20px; font-size: .72rem; font-weight: 700; animation: pressbtn 4.2s infinite; }
+  @keyframes pressbtn { 0%, 12% { transform: none; } 17% { transform: scale(.9); } 22%, 100% { transform: none; } }
+  .mockstar { animation: showmid 4.2s infinite; }
+  .mockstar .kstar { margin: 0; }
+  @keyframes showmid { 0%, 18% { opacity: 0; } 24%, 58% { opacity: 1; } 66%, 100% { opacity: 0; } }
+  .mockdoc { font-size: 1.6rem; animation: docpop 4.2s infinite; }
+  @keyframes docpop { 0%, 60% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.25); opacity: 1; } 76%, 94% { transform: scale(1); } 100% { opacity: 0; } }
   footer { text-align: center; color: var(--ink-faint); font-size: .75rem; padding: 20px 0 34px; line-height: 1.7; }
 </style>
 </head>
 <body>
 <button id="themebtn" title="toggle dark mode">🌙</button>
+<button id="tutbtn" title="how to use Mulakhas">?</button>
+<div id="tutov" hidden>
+  <div class="tutbox">
+    <button class="tutclose" id="tutclose">✕</button>
+    <div class="tutstage" id="tutstage"></div>
+    <h3 id="tuttitle"></h3>
+    <p id="tutcap"></p>
+    <div class="tutnav">
+      <button id="tutprev">←</button>
+      <div class="tutdots" id="tutdots"></div>
+      <button id="tutnext">→</button>
+    </div>
+  </div>
+</div>
 <div class="wrap">
   <header class="rise">
     <div class="overline">Free · Private · Any language</div>
@@ -453,7 +519,7 @@
   </div>
 
   <div id="status">
-    <div class="spin"></div>
+    <div class="kstar"><i></i><i></i><b></b></div>
     <div id="statustext"></div>
   </div>
 
@@ -919,6 +985,32 @@ $("sharebtn").addEventListener("click", () => {
   if (navigator.share) navigator.share({ text: lastRaw }).catch(()=>{});
   else alert("Sharing isn't supported in this browser — use Copy instead.");
 });
+
+// ---------- tutorial ----------
+const TUT = [
+  { t: "Get your free key", c: "One-time setup: grab a free Gemini API key at aistudio.google.com/apikey and paste it in. It never leaves your device.", s: `<div class="sc"><div class="mockinput"><span class="mockkey">🔑</span><span class="mockcheck">✓</span></div><div class="mockhint">aistudio.google.com/apikey — free, no card</div></div>` },
+  { t: "Drop your files", c: "Tap the box or drag in voice notes & videos — a whole pile at once is fine. They get auto-sorted by date.", s: `<div class="sc"><div class="mockdrop"><span>🎙️</span><span>🎬</span><span>💬</span></div></div>` },
+  { t: "Slot texts anywhere", c: "Tap the ＋ on any dashed line to drop a text message exactly where it was sent — even before the first file.", s: `<div class="sc"><div class="mockcard">🎙️ voice-note-1.opus</div><div class="mockdiv"><span class="l"></span><span class="mockpill">＋ text here</span><span class="l"></span><span class="mockfinger">👆</span></div><div class="mocktext">💬 use lamb, not beef!</div><div class="mockcard">🎬 kitchen-video.mp4</div></div>` },
+  { t: "Say what you want", c: "Pick a preset like 🍲 Full recipe, or type your own instructions — in any language.", s: `<div class="sc"><div class="mockchips"><span class="mockchip hot">🍲 Full recipe</span><span class="mockchip">Action items</span></div><div class="mockta"><i></i><i></i><i></i></div></div>` },
+  { t: "Mulakhas!", c: "Hit Summarize — the star spins while it listens to everything, then your summary appears with a reliability report.", s: `<div class="sc"><span class="mockbtn">Summarize it</span><span class="mockstar"><span class="kstar"><i></i><i></i><b></b></span></span><span class="mockdoc">📜✨</span></div>` }
+];
+let tuti = 0;
+function tutRender() {
+  $("tutstage").innerHTML = TUT[tuti].s;
+  $("tuttitle").textContent = TUT[tuti].t;
+  $("tutcap").textContent = TUT[tuti].c;
+  $("tutdots").innerHTML = TUT.map((_, i) => `<span class="${i === tuti ? "on" : ""}"></span>`).join("");
+  $("tutprev").disabled = tuti === 0;
+  $("tutnext").textContent = tuti === TUT.length - 1 ? "Done ✓" : "→";
+}
+function tutOpen() { tuti = 0; tutRender(); $("tutov").hidden = false; }
+function tutClose() { $("tutov").hidden = true; }
+$("tutbtn").addEventListener("click", tutOpen);
+$("tutclose").addEventListener("click", tutClose);
+$("tutov").addEventListener("click", e => { if (e.target === $("tutov")) tutClose(); });
+$("tutprev").addEventListener("click", () => { if (tuti > 0) { tuti--; tutRender(); } });
+$("tutnext").addEventListener("click", () => { if (tuti < TUT.length - 1) { tuti++; tutRender(); } else tutClose(); });
+if (!localStorage.getItem("tutSeen")) { localStorage.setItem("tutSeen", "1"); tutOpen(); }
 
 updateGo();
 </script>
