@@ -284,6 +284,13 @@
   }
   #addtext:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
 
+  /* mode slider */
+  .seg { position: relative; display: flex; background: var(--paper); border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px; margin-bottom: 12px; }
+  .seg .thumb { position: absolute; top: 3px; left: 3px; width: calc(50% - 3px); bottom: 3px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); transition: transform .25s cubic-bezier(.2,.7,.3,1); }
+  .seg.alt .thumb { transform: translateX(100%); }
+  .segopt { flex: 1; position: relative; z-index: 1; background: none; border: none; font-family: inherit; font-size: .85rem; font-weight: 600; color: var(--ink-soft); padding: 8px 0; cursor: pointer; border-radius: 999px; transition: color .2s; }
+  .segopt.sel { color: var(--ink); }
+
   .optrow {
     display: flex; align-items: flex-start; gap: 9px;
     margin-top: 14px;
@@ -499,7 +506,12 @@
 
   <!-- INSTRUCTIONS -->
   <div class="card rise">
-    <div class="step"><span class="n">3</span><h2>How should it be summarized?</h2></div>
+    <div class="step"><span class="n">3</span><h2 id="card3title">How should it be summarized?</h2></div>
+    <div class="seg" id="modeseg">
+      <div class="thumb"></div>
+      <button type="button" class="segopt sel" data-m="summary">✨ Summarize</button>
+      <button type="button" class="segopt" data-m="transcript">✍️ Exact words</button>
+    </div>
     <textarea id="instructions" placeholder="e.g. Combine everything into one complete recipe in English, with an ingredients list and numbered steps."></textarea>
     <div class="chips">
       <button class="chip" data-p="Combine everything into ONE complete recipe in English. Give me: a title, full ingredients list with quantities, then clear numbered step-by-step cooking instructions in the right order. Include any tips or warnings mentioned.">🍲 Full recipe</button>
@@ -727,6 +739,25 @@ function renderTimeline() {
   });
 }
 
+// ---------- mode slider (summarize vs exact words) ----------
+let mode = localStorage.getItem("mode") || "summary";
+function applyMode() {
+  $("modeseg").classList.toggle("alt", mode === "transcript");
+  document.querySelectorAll(".segopt").forEach(b => b.classList.toggle("sel", b.dataset.m === mode));
+  $("card3title").textContent = mode === "transcript" ? "Extract the exact words" : "How should it be summarized?";
+  $("instructions").placeholder = mode === "transcript"
+    ? "Optional — e.g. keep it in Arabic, or add an English translation under each message."
+    : "e.g. Combine everything into one complete recipe in English, with an ingredients list and numbered steps.";
+  document.querySelector(".chips").style.display = mode === "transcript" ? "none" : "flex";
+  $("go").textContent = mode === "transcript" ? "Extract the words" : "Summarize it";
+}
+document.querySelectorAll(".segopt").forEach(b => b.addEventListener("click", () => {
+  mode = b.dataset.m;
+  localStorage.setItem("mode", mode);
+  applyMode();
+}));
+applyMode();
+
 // ---------- preset chips ----------
 document.querySelectorAll(".chip").forEach(c => {
   c.addEventListener("click", () => {
@@ -838,8 +869,13 @@ function statusOff() { $("status").style.display = "none"; }
 $("go").addEventListener("click", async () => {
   const key = ($("apikey").value.trim() || localStorage.getItem("gemKey") || "").trim();
   const model = $("model").value || "gemini-flash-latest";
-  const instr = $("instructions").value.trim() ||
-    "Summarize all of this content clearly in English, keeping every important detail, in a logical order.";
+  const userInstr = $("instructions").value.trim();
+  const instr = mode === "transcript"
+    ? `Produce a cleaned-up, easy-to-read TRANSCRIPT of every message — do NOT summarize, shorten, or omit anything.
+- Keep the original language and dialect exactly as spoken, written clearly.
+- Remove filler words ("uhh…", repetitions, false starts) and add proper punctuation.
+- Label each part "### Message N — voice/video/text (filename)".${userInstr ? "\nAdditional wishes from the user: " + userInstr : ""}`
+    : (userInstr || "Summarize all of this content clearly in English, keeping every important detail, in a logical order.");
 
   $("go").disabled = true;
   $("resultcard").style.display = "none";
@@ -878,7 +914,7 @@ CRITICAL HONESTY RULE: never silently guess. If a word, quantity, or name is har
 WHAT THE USER WANTS:
 ${instr}${reportRules}
 
-Respond in clean Markdown. Unless the user asked otherwise, respond in English.` }];
+${mode === "transcript" ? "Respond in clean Markdown." : "Respond in clean Markdown. Unless the user asked otherwise, respond in English."}` }];
 
     items.forEach((it, i) => {
       if (it.kind === "text") {
