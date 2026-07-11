@@ -392,8 +392,8 @@
   /* ---- tutorial ---- */
   #tutbtn { position: fixed; top: calc(64px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--accent); cursor: pointer; box-shadow: var(--shadow); font-family: var(--serif); font-size: 1.2rem; font-weight: 700; transition: transform .15s; }
   #tutbtn:hover { transform: scale(1.1); }
-  #tutov { position: fixed; inset: 0; z-index: 50; background: rgba(20, 14, 8, .5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 18px; }
-  #tutov[hidden] { display: none; }
+  #tutov, #newov { position: fixed; inset: 0; z-index: 50; background: rgba(20, 14, 8, .5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 18px; }
+  #tutov[hidden], #newov[hidden] { display: none; }
   .tutbox { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); max-width: 380px; width: 100%; padding: 18px; position: relative; animation: rise .35s cubic-bezier(.2,.7,.3,1); }
   .tutclose { position: absolute; top: 10px; right: 12px; background: none; border: none; color: var(--ink-soft); font-size: 1rem; cursor: pointer; padding: 4px; }
   .tutstage { height: 158px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 14px; }
@@ -477,6 +477,18 @@
     .resultbtns, #followrow { display: none !important; }
   }
 
+  /* install & share scene / what's-new */
+  .mockshare { display: flex; align-items: center; gap: 34px; position: relative; }
+  .mockwa { width: 46px; height: 46px; background: rgba(37, 211, 102, .15); border: 1px solid rgba(37, 211, 102, .5); border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+  .mockapp { width: 46px; height: 46px; background: var(--card); border: 1px solid var(--line-strong); border-radius: 13px; display: flex; align-items: center; justify-content: center; animation: apppop 3.2s infinite; }
+  .mockfly { position: absolute; left: 36px; top: 8px; font-size: 1rem; animation: flyover 3.2s infinite; opacity: 0; }
+  @keyframes flyover { 0%, 12% { transform: none; opacity: 0; } 18% { opacity: 1; } 45% { transform: translate(46px, -18px); } 62% { transform: translate(78px, 0) scale(.4); opacity: 0; } 100% { opacity: 0; } }
+  @keyframes apppop { 0%, 55% { transform: none; } 66% { transform: scale(1.18); } 76%, 100% { transform: none; } }
+  .kstatic { width: 24px; height: 24px; margin: 0; animation: none; }
+  .kstatic i { border-width: 1.5px; border-radius: 3px; }
+  .kstatic b { inset: 8px; animation: none; }
+  .tutnav #newok { background: var(--accent); border-color: var(--accent); color: #fff; }
+
   footer { text-align: center; color: var(--ink-faint); font-size: .75rem; padding: 20px 0 34px; line-height: 1.7; }
 </style>
 </head>
@@ -490,6 +502,15 @@
     <h3>Your saved results</h3>
     <input type="text" id="histsearch" placeholder="Search…">
     <div id="histlist"></div>
+  </div>
+</div>
+<div id="newov" hidden>
+  <div class="tutbox">
+    <button class="tutclose" id="newclose">✕</button>
+    <div class="tutstage"><div class="sc"><div class="mockshare"><span class="mockwa">💬</span><span class="mockfly">🎙️</span><span class="mockapp"><span class="kstar kstatic"><i></i><i></i><b></b></span></span></div><div class="mockhint">browser menu ⋮ → Add to Home Screen</div></div></div>
+    <h3>✨ New: share straight from WhatsApp</h3>
+    <p>Install Mulakhas once — browser menu → <strong>Add to Home Screen</strong>. After that, select voice notes or videos in WhatsApp → Share → <strong>Mulakhas</strong>, and they land right in your timeline. No downloading, no file hunting. (Android + Chrome)</p>
+    <div class="tutnav"><span></span><button id="newok">Got it ✓</button></div>
   </div>
 </div>
 <div id="tutov" hidden>
@@ -1194,7 +1215,8 @@ const TUT = [
   { t: "Drop your files", c: "Tap the box or drag in voice notes & videos — a whole pile at once is fine. They get auto-sorted by date.", s: `<div class="sc"><div class="mockdrop"><span>🎙️</span><span>🎬</span><span>💬</span></div></div>` },
   { t: "Slot texts anywhere", c: "Tap the ＋ on any dashed line to drop a text message exactly where it was sent — even before the first file.", s: `<div class="sc"><div class="mockcard">🎙️ voice-note-1.opus</div><div class="mockdiv"><span class="l"></span><span class="mockpill">＋ text here</span><span class="l"></span><span class="mockfinger">👆</span></div><div class="mocktext">💬 use lamb, not beef!</div><div class="mockcard">🎬 kitchen-video.mp4</div></div>` },
   { t: "Say what you want", c: "Pick a preset like 🍲 Full recipe, or type your own instructions — in any language.", s: `<div class="sc"><div class="mockchips"><span class="mockchip hot">🍲 Full recipe</span><span class="mockchip">Action items</span></div><div class="mockta"><i></i><i></i><i></i></div></div>` },
-  { t: "Mulakhas!", c: "Hit Summarize — the star spins while it listens to everything, then your summary appears with a reliability report.", s: `<div class="sc"><span class="mockbtn">Summarize it</span><span class="mockstar"><span class="kstar"><i></i><i></i><b></b></span></span><span class="mockdoc">📜✨</span></div>` }
+  { t: "Mulakhas!", c: "Hit Summarize — the star spins while it listens to everything, then your summary appears with a reliability report.", s: `<div class="sc"><span class="mockbtn">Summarize it</span><span class="mockstar"><span class="kstar"><i></i><i></i><b></b></span></span><span class="mockdoc">📜✨</span></div>` },
+  { t: "Install & share straight in", c: "Add Mulakhas to your home screen, then share voice notes from WhatsApp directly into the app — no downloading files. (Android + Chrome)", s: `<div class="sc"><div class="mockshare"><span class="mockwa">💬</span><span class="mockfly">🎙️</span><span class="mockapp"><span class="kstar kstatic"><i></i><i></i><b></b></span></span></div><div class="mockhint">browser menu ⋮ → Add to Home Screen</div></div>` }
 ];
 let tuti = 0;
 function tutRender() {
@@ -1212,7 +1234,16 @@ $("tutclose").addEventListener("click", tutClose);
 $("tutov").addEventListener("click", e => { if (e.target === $("tutov")) tutClose(); });
 $("tutprev").addEventListener("click", () => { if (tuti > 0) { tuti--; tutRender(); } });
 $("tutnext").addEventListener("click", () => { if (tuti < TUT.length - 1) { tuti++; tutRender(); } else tutClose(); });
-if (!localStorage.getItem("tutSeen")) { localStorage.setItem("tutSeen", "1"); tutOpen(); }
+if (!localStorage.getItem("tutSeen")) {
+  localStorage.setItem("tutSeen", "1"); localStorage.setItem("wn1", "1");
+  tutOpen();
+} else if (!localStorage.getItem("wn1")) {
+  localStorage.setItem("wn1", "1");
+  $("newov").hidden = false;
+}
+$("newok").addEventListener("click", () => $("newov").hidden = true);
+$("newclose").addEventListener("click", () => $("newov").hidden = true);
+$("newov").addEventListener("click", e => { if (e.target === $("newov")) $("newov").hidden = true; });
 
 updateGo();
 </script>
