@@ -443,12 +443,6 @@
   @keyframes showmid { 0%, 18% { opacity: 0; } 24%, 58% { opacity: 1; } 66%, 100% { opacity: 0; } }
   .mockdoc { font-size: 1.6rem; animation: docpop 4.2s infinite; }
   @keyframes docpop { 0%, 60% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.25); opacity: 1; } 76%, 94% { transform: scale(1); } 100% { opacity: 0; } }
-  /* record button */
-  #recbtn { margin-top: 8px; width: 100%; background: none; border: 1.5px dashed var(--line-strong); border-radius: var(--r-md); color: var(--ink-soft); padding: 11px; font-size: .88rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s; }
-  #recbtn:hover { border-color: var(--accent); color: var(--accent); }
-  #recbtn.recon { border-color: var(--bad); color: var(--bad); border-style: solid; animation: recpulse 1.2s infinite; }
-  @keyframes recpulse { 50% { background: rgba(179, 64, 47, .07); } }
-  #langrow { margin-bottom: 12px; }
   /* history */
   #histbtn { position: fixed; top: calc(114px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); cursor: pointer; box-shadow: var(--shadow); font-size: 1.05rem; transition: transform .15s; }
   #histbtn:hover { transform: scale(1.1); }
@@ -466,17 +460,6 @@
   .histrow .hdel { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: .9rem; padding: 2px 4px; }
   .histrow .hdel:hover { color: var(--bad); }
   .histempty { text-align: center; color: var(--ink-faint); font-size: .85rem; padding: 24px 0; }
-  .resultbtns { flex-wrap: wrap; }
-  .resultbtns .btn { flex: 1; min-width: 90px; }
-  /* print = save as PDF */
-  @media print {
-    body { background: none; padding: 0; }
-    #themebtn, #tutbtn, #histbtn, #tutov, #histov { display: none !important; }
-    body > .wrap > :not(#resultcard) { display: none !important; }
-    #resultcard { display: block !important; border: none; box-shadow: none; }
-    .resultbtns, #followrow { display: none !important; }
-  }
-
   /* install & share scene / what's-new */
   .mockshare { display: flex; align-items: center; gap: 34px; position: relative; }
   .mockwa { width: 46px; height: 46px; background: rgba(37, 211, 102, .15); border: 1px solid rgba(37, 211, 102, .5); border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
@@ -565,7 +548,6 @@
     <input type="file" id="fileinput" multiple accept="audio/*,video/*,.ogg,.opus,.oga,.m4a,.aac,.mp3,.wav,.mp4,.mov,.webm,.3gp" hidden>
     <div id="timeline"></div>
     <button id="addtext">＋ Add a text message</button>
-    <button id="recbtn" type="button">🎤 Record a voice note</button>
     <div class="cardnote">
       Order matters — everything is read top to bottom, like the original conversation. Files added together are auto-sorted by date; use ↑ ↓ to fix the order, and tap the ＋ on any dashed line to slot a text message right there — even before the first file.
     </div>
@@ -578,18 +560,6 @@
       <div class="thumb"></div>
       <button type="button" class="segopt sel" data-m="summary">✨ Summarize</button>
       <button type="button" class="segopt" data-m="transcript">✍️ Exact words</button>
-    </div>
-    <div class="modelrow" id="langrow">
-      <label for="outlang">Output language</label>
-      <select id="outlang">
-        <option value="English">English</option>
-        <option value="Arabic">العربية — Arabic</option>
-        <option value="Original language">Same as the messages</option>
-        <option value="French">Français</option>
-        <option value="German">Deutsch</option>
-        <option value="Turkish">Türkçe</option>
-        <option value="Spanish">Español</option>
-      </select>
     </div>
     <textarea id="instructions" placeholder="e.g. Combine everything into one complete recipe in English, with an ingredients list and numbered steps."></textarea>
     <div class="chips">
@@ -621,8 +591,6 @@
     <div class="resultbtns">
       <button class="btn btn-ghost" id="copybtn">Copy</button>
       <button class="btn btn-ghost" id="sharebtn">Share</button>
-      <button class="btn btn-ghost" id="pdfbtn">PDF</button>
-      <button class="btn btn-ghost" id="dlbtn">⬇ .md</button>
     </div>
     <div id="followrow">
       <input type="text" id="followq" placeholder="Ask a follow-up question…">
@@ -830,7 +798,6 @@ function applyMode() {
     ? "Optional — e.g. keep it in Arabic, or add an English translation under each message."
     : "e.g. Combine everything into one complete recipe in English, with an ingredients list and numbered steps.";
   document.querySelector(".chips").style.display = mode === "transcript" ? "none" : "flex";
-  $("langrow").style.display = mode === "transcript" ? "none" : "flex";
   $("go").textContent = mode === "transcript" ? "Extract the words" : "Summarize it";
 }
 document.querySelectorAll(".segopt").forEach(b => b.addEventListener("click", () => {
@@ -957,14 +924,7 @@ $("go").addEventListener("click", async () => {
 - Keep the original language and dialect exactly as spoken, written clearly.
 - Remove filler words ("uhh…", repetitions, false starts) and add proper punctuation.
 - Label each part "### Message N — voice/video/text (filename)".${userInstr ? "\nAdditional wishes from the user: " + userInstr : ""}`
-    : (userInstr || "Summarize all of this content clearly, keeping every important detail, in a logical order.");
-  const langChoice = localStorage.getItem("outlang") || "English";
-  const langLine = mode === "transcript"
-    ? "Respond in clean Markdown."
-    : (langChoice === "Original language"
-        ? "Respond in clean Markdown, in the same language as the original messages, unless the user's instructions say otherwise."
-        : `Respond in clean Markdown, in ${langChoice}, unless the user's instructions say otherwise.`);
-
+    : (userInstr || "Summarize all of this content clearly in English, keeping every important detail, in a logical order.");
   $("go").disabled = true;
   $("resultcard").style.display = "none";
   history = [];
@@ -1004,7 +964,7 @@ If multiple speakers are clearly distinguishable, label who is speaking (use the
 WHAT THE USER WANTS:
 ${instr}${reportRules}
 
-${langLine}` }];
+${mode === "transcript" ? "Respond in clean Markdown." : "Respond in clean Markdown. Unless the user asked otherwise, respond in English."}` }];
 
     items.forEach((it, i) => {
       if (it.kind === "text") {
@@ -1138,55 +1098,6 @@ $("histbtn").addEventListener("click", () => { histRender(); $("histov").hidden 
 $("histclose").addEventListener("click", () => $("histov").hidden = true);
 $("histov").addEventListener("click", e => { if (e.target === $("histov")) $("histov").hidden = true; });
 $("histsearch").addEventListener("input", histRender);
-
-// ---------- output language ----------
-const ol = $("outlang");
-ol.value = localStorage.getItem("outlang") || "English";
-ol.addEventListener("change", () => localStorage.setItem("outlang", ol.value));
-
-// ---------- voice recording ----------
-let rec = null, recChunks = [], recTimer = null, recStart = 0;
-$("recbtn").addEventListener("click", async () => {
-  if (rec) { rec.stop(); return; }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mt = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
-             : (MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "");
-    rec = new MediaRecorder(stream, mt ? { mimeType: mt } : undefined);
-    recChunks = [];
-    rec.ondataavailable = e => recChunks.push(e.data);
-    rec.onstop = () => {
-      const type = (rec.mimeType || "audio/webm").split(";")[0];
-      const ext = type.includes("mp4") ? "m4a" : "webm";
-      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
-      const f = new File(recChunks, `recording-${stamp}.${ext}`, { type });
-      stream.getTracks().forEach(t => t.stop());
-      rec = null; clearInterval(recTimer);
-      $("recbtn").textContent = "🎤 Record a voice note";
-      $("recbtn").classList.remove("recon");
-      items.push({ kind: "file", file: f, mime: type, uri: null, state: "" });
-      renderTimeline(); updateGo();
-    };
-    rec.start();
-    recStart = Date.now();
-    $("recbtn").classList.add("recon");
-    $("recbtn").textContent = "⏹ Stop recording (0:00)";
-    recTimer = setInterval(() => {
-      const s = Math.floor((Date.now() - recStart) / 1000);
-      $("recbtn").textContent = `⏹ Stop recording (${Math.floor(s/60)}:${String(s%60).padStart(2,"0")})`;
-    }, 500);
-  } catch (e) { alert("Microphone access failed: " + e.message); }
-});
-
-// ---------- PDF & download ----------
-$("pdfbtn").addEventListener("click", () => window.print());
-$("dlbtn").addEventListener("click", () => {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([lastRaw], { type: "text/markdown" }));
-  a.download = "mulakhas-result.md";
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-});
 
 // ---------- PWA: service worker + files shared from other apps ----------
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
