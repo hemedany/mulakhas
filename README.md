@@ -22,6 +22,11 @@ Everything runs in your browser. Files are sent directly to Google's Gemini API 
 - Reliability report: per-file clarity %, noise notes, uncertain words flagged as [unclear]
 - Auto-retry when Google's servers are busy (503)
 - Dark mode, RTL Arabic output, installable on your phone (Add to Home Screen)
+- Summarize ↔ Exact-words (cleaned transcript) mode slider
+- On-device, searchable history of past results
+- Record voice notes directly in the app
+- Output-language picker · PDF & Markdown export
+- Android: share voice notes & videos from WhatsApp straight into Mulakhas (installed PWA)
 
 ## Deploy your own
 
