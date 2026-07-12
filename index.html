@@ -63,7 +63,7 @@
     --pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23dca86b' stroke-opacity='.07'%3E%3Crect x='30' y='30' width='36' height='36'/%3E%3Crect x='30' y='30' width='36' height='36' transform='rotate(45 48 48)'/%3E%3Cpath d='M48 0v18M48 78v18M0 48h18M78 48h18'/%3E%3Cpath d='M0 -8L8 0L0 8L-8 0Z'/%3E%3Ccircle cx='48' cy='48' r='2.5'/%3E%3C/g%3E%3C/svg%3E");
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
     font-family: var(--sans);
     background-color: var(--paper);
@@ -472,10 +472,17 @@
   .kstatic b { inset: 8px; animation: none; }
   .tutnav #newok { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+  /* scroll gears: faint khatams that turn with the page */
+  #gears { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .gear { position: absolute; color: var(--accent); opacity: .07; will-change: transform; }
+  [data-theme="dark"] .gear { opacity: .09; }
+  @media (prefers-reduced-motion: reduce) { #gears { display: none; } }
+
   footer { text-align: center; color: var(--ink-faint); font-size: .75rem; padding: 20px 0 34px; line-height: 1.7; }
 </style>
 </head>
 <body>
+<div id="gears" aria-hidden="true"></div>
 <button id="themebtn" title="toggle dark mode">🌙</button>
 <button id="tutbtn" title="how to use Mulakhas">?</button>
 <button id="histbtn" title="past summaries">📖</button>
@@ -1118,6 +1125,49 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
     if (files.length) addFiles(files);
     window.history.replaceState(null, "", location.pathname);
   } catch (e) {}
+})();
+
+// ---------- scroll gears ----------
+(function () {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const N = 12, ACTIVE = 5;
+  const box = $("gears");
+  const gears = [];
+  const KHATAM = `<svg viewBox="0 0 40 40" width="100%" height="100%"><g fill="none" stroke="currentColor" stroke-width="1.5"><rect x="8" y="8" width="24" height="24"/><rect x="8" y="8" width="24" height="24" transform="rotate(45 20 20)"/><circle cx="20" cy="20" r="2" fill="currentColor" stroke="none"/></g></svg>`;
+  for (let i = 0; i < N; i++) {
+    const el = document.createElement("div");
+    el.className = "gear";
+    const size = 44 + Math.random() * 72;
+    el.style.width = el.style.height = size + "px";
+    el.style.left = Math.random() * 92 + "%";
+    el.style.top = Math.random() * 92 + "%";
+    el.innerHTML = KHATAM;
+    box.appendChild(el);
+    gears.push({ el, angle: Math.random() * 90, speed: (0.05 + Math.random() * 0.1) * (i % 2 ? -1 : 1) });
+    el.style.transform = `rotate(${gears[i].angle}deg)`;
+  }
+  let active = [], lastY = window.scrollY, ticking = false, idleT = null;
+  function reshuffle() {
+    const idx = gears.map((_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    active = idx.slice(0, ACTIVE);
+  }
+  reshuffle();
+  window.addEventListener("scroll", () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY, d = y - lastY;
+      lastY = y;
+      for (const i of active) {
+        gears[i].angle += d * gears[i].speed;
+        gears[i].el.style.transform = `rotate(${gears[i].angle}deg)`;
+      }
+      ticking = false;
+    });
+    clearTimeout(idleT);
+    idleT = setTimeout(reshuffle, 500); // a different set of gears engages next time
+  }, { passive: true });
 })();
 
 // ---------- tutorial ----------
