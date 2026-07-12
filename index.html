@@ -39,8 +39,6 @@
     --glass2: rgba(148, 55, 10, .9);
     --spot: rgba(188, 75, 18, .07);
     --glow: radial-gradient(1200px 520px at 50% -220px, #fdf9f1 0%, rgba(253,249,241,0) 70%);
-    /* Levantine khatam (eight-pointed star) tile */
-    --pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='68' height='68'%3E%3Cg fill='none' stroke='%23a37b4a' stroke-opacity='.13'%3E%3Cpolygon points='60,34 47,56.5 21,56.5 8,34 21,11.5 47,11.5'/%3E%3Cpolygon points='34,12 15,45 53,45'/%3E%3Cpolygon points='34,56 15,23 53,23'/%3E%3Ccircle cx='34' cy='34' r='3'/%3E%3C/g%3E%3C/svg%3E");
     --serif: "Fraunces", Georgia, serif;
     --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Arabic", sans-serif;
     --arabic: "Noto Naskh Arabic", var(--sans);
@@ -66,14 +64,13 @@
     --glass2: rgba(186, 82, 34, .88);
     --spot: rgba(224, 112, 58, .09);
     --glow: radial-gradient(1200px 520px at 50% -220px, #221b14 0%, rgba(34,27,20,0) 70%);
-    --pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='68' height='68'%3E%3Cg fill='none' stroke='%23dca86b' stroke-opacity='.07'%3E%3Cpolygon points='60,34 47,56.5 21,56.5 8,34 21,11.5 47,11.5'/%3E%3Cpolygon points='34,12 15,45 53,45'/%3E%3Cpolygon points='34,56 15,23 53,23'/%3E%3Ccircle cx='34' cy='34' r='3'/%3E%3C/g%3E%3C/svg%3E");
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
     font-family: var(--sans);
     background-color: var(--paper);
-    background-image: var(--glow), var(--pattern);
+    background-image: var(--glow);
     background-attachment: fixed;
     color: var(--ink);
     min-height: 100vh;
@@ -487,8 +484,12 @@
 
   /* scroll gears: faint khatams that turn with the page */
   #gears { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-  .gear { position: absolute; color: #a37b4a; opacity: .22; will-change: transform; pointer-events: auto; cursor: pointer; transition: opacity .25s, filter .25s; }
-  [data-theme="dark"] .gear { color: #dca86b; opacity: .13; }
+  .gear { position: absolute; color: #a37b4a; opacity: var(--go, .2); will-change: transform; pointer-events: auto; cursor: pointer; transition: opacity .25s, filter .25s; }
+  [data-theme="dark"] .gear { opacity: var(--gd, .12); color: #dca86b; }
+  .ginner { width: 100%; height: 100%; }
+  .ginner.idle { animation: idlespin linear infinite; }
+  @keyframes idlespin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ginner.idle { animation: none; } }
   .gear:hover { opacity: .5; filter: drop-shadow(0 0 7px var(--accent)); }
   [data-theme="dark"] .gear:hover { opacity: .4; }
   .gear.spin { transition: transform .7s cubic-bezier(.3, .7, .2, 1), opacity .25s, filter .25s; }
@@ -1185,53 +1186,59 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
   window.addEventListener("scroll", () => { if (!raf) { target = current = window.scrollY; } }, { passive: true });
 })();
 
-// ---------- scroll gears (aligned to the background grid) ----------
+// ---------- khatam scatter: uniform-but-random, sized, tilted, never overlapping ----------
 (function () {
-  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const box = $("gears");
-  const TILE = 68, COUNT = 10, ACTIVE = 7;
-  // same geometry as the background tile — swap this SVG to change the khatam look
   const KHATAM = `<svg viewBox="0 0 68 68" width="100%" height="100%"><g fill="none" stroke="currentColor" stroke-width="1"><polygon points="60,34 47,56.5 21,56.5 8,34 21,11.5 47,11.5"/><polygon points="34,12 15,45 53,45"/><polygon points="34,56 15,23 53,23"/><circle cx="34" cy="34" r="3" fill="currentColor" stroke="none"/></g></svg>`;
   let gears = [], active = [];
   function reshuffle() {
     const idx = gears.map((_, i) => i);
     for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
-    active = idx.slice(0, ACTIVE);
+    active = idx.slice(0, Math.ceil(gears.length / 2));
   }
   function build() {
     box.innerHTML = ""; gears = [];
-    const cols = Math.ceil(innerWidth / TILE), rows = Math.ceil(innerHeight / TILE);
-    const cells = [];
-    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) cells.push([c, r]);
-    for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
-    const picked = [];
-    for (const [c, r] of cells) {
-      if (picked.length >= COUNT) break;
-      if (picked.every(([pc, pr]) => Math.max(Math.abs(pc - c), Math.abs(pr - r)) >= 2)) picked.push([c, r]);
-    }
-    picked.forEach(([c, r], i) => {
+    const W = innerWidth, H = innerHeight;
+    const target = Math.max(8, Math.min(24, Math.round(W * H / 60000)));
+    const placed = []; // {x, y, r}
+    for (let n = 0; n < target; n++) {
+      const size = Math.random() < .3 ? 90 + Math.random() * 55 : 36 + Math.random() * 46;
+      const r = size / 2;
+      let x, y, ok = false;
+      for (let t = 0; t < 40 && !ok; t++) {
+        x = r + Math.random() * (W - 2 * r);
+        y = r + Math.random() * (H - 2 * r);
+        ok = placed.every(p => Math.hypot(p.x - x, p.y - y) > p.r + r + 14);
+      }
+      if (!ok) continue; // no room without overlap — skip this one
+      placed.push({ x, y, r });
       const el = document.createElement("div");
       el.className = "gear";
-      el.style.width = el.style.height = TILE + "px";
-      el.style.left = (c * TILE + TILE / 2) + "px";
-      el.style.top = (r * TILE + TILE / 2) + "px";
-      el.style.transform = "translate(-50%, -50%)"; // at rest it exactly covers the pattern star beneath
-      el.innerHTML = KHATAM;
-      box.appendChild(el);
-      const g = { el, angle: 0, speed: (0.05 + Math.random() * 0.1) * (i % 2 ? -1 : 1) };
+      el.style.width = el.style.height = size + "px";
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      el.style.setProperty("--go", (0.14 + Math.random() * 0.12).toFixed(2));
+      el.style.setProperty("--gd", (0.08 + Math.random() * 0.08).toFixed(2));
+      const idle = !reduced && Math.random() < .4; // a random minority turns slowly on its own
+      el.innerHTML = `<div class="ginner${idle ? " idle" : ""}"${idle ? ` style="animation-duration:${Math.round(45 + Math.random() * 50)}s;animation-direction:${Math.random() < .5 ? "reverse" : "normal"}"` : ""}>${KHATAM}</div>`;
+      const g = { el, angle: Math.random() * 360, speed: (0.05 + Math.random() * 0.1) * (Math.random() < .5 ? -1 : 1) };
+      el.style.transform = `translate(-50%, -50%) rotate(${g.angle}deg)`;
       el.addEventListener("click", () => {
         g.angle += 360 * (g.speed > 0 ? 1 : -1);
         el.classList.add("spin");
         el.style.transform = `translate(-50%, -50%) rotate(${g.angle}deg)`;
       });
       el.addEventListener("transitionend", e => { if (e.propertyName === "transform") el.classList.remove("spin"); });
+      box.appendChild(el);
       gears.push(g);
-    });
+    }
     reshuffle();
   }
   build();
   let rsT = null;
   window.addEventListener("resize", () => { clearTimeout(rsT); rsT = setTimeout(build, 300); });
+  if (reduced) return;
   let lastY = window.scrollY, ticking = false, idleT = null;
   window.addEventListener("scroll", () => {
     if (ticking) return;
