@@ -565,9 +565,9 @@
 <div id="newov" hidden>
   <div class="tutbox">
     <button class="tutclose" id="newclose">✕</button>
-    <div class="tutstage"><div class="sc"><div class="mockshare"><span class="mockwa">💬</span><span class="mockfly">🎙️</span><span class="mockapp"><span class="kstar kstatic"><i></i><i></i><b></b></span></span></div><div class="mockhint">browser menu ⋮ → Add to Home Screen</div></div></div>
-    <h3>✨ New: talk to it — in your language</h3>
-    <p>Tap the <strong>🎙 mic</strong> on the request box and just say what you want — no typing, any language. And the whole app now speaks your language: hit the <strong>🌐 button</strong> for العربية, Français, Deutsch, Türkçe or Español. Plus a deeper, layered star field behind everything.</p>
+    <div class="tutstage"><div class="sc"><div class="mockshare"><span class="mockwa">💬</span><span class="mockfly">🎙️</span><span class="mockapp"><span class="kstar kstatic"><i></i><i></i><b></b></span></span></div><div class="mockhint" id="wnhint"></div></div></div>
+    <h3 id="wntitle"></h3>
+    <p id="wnbody"></p>
     <div class="tutnav"><span></span><button id="newok">Got it ✓</button></div>
   </div>
 </div>
@@ -698,7 +698,7 @@ footer:"Runs entirely in your browser — files go only to Google's Gemini API, 
 histTitle:"Your saved results", histSearch:"Search…", histEmpty:"Nothing saved yet — results appear here automatically.", histSum:"summary", histTr:"exact words",
 heroPre:"Turn a pile of voice notes into",
 words:["recipes","clear instructions","one clean summary","action items","a shopping list","meeting notes","a step-by-step guide","English","a to-do list","study notes","key points","a translation","directions","a plan","an itinerary","decisions","highlights","answers","reminders","a checklist","exact words","short bullets","grandma's recipe","doctor's advice","wedding plans","something you can skim","a story you can tell","one message"],
-stUpload:"Uploading", stThink:"Listening, watching & summarizing…" },
+stUpload:"Uploading", stThink:"Listening, watching & summarizing…", tutDone:"Done ✓", tutFree:"free, no card", tutBubble:"use lamb, not beef!", tutA2HS:"browser menu ⋮ → Add to Home Screen", wnTitle:"✨ New: talk to it — in your language", wnOk:"Got it ✓", wnBody:"Tap the <strong>🎙 mic</strong> on the request box and just say what you want — no typing, any language. And the whole app now speaks your language: hit the <strong>🌐 button</strong> for العربية, Français, Deutsch, Türkçe or Español.", tut:[{t:"Get your free key",c:"One-time setup: grab a free Gemini API key at aistudio.google.com/apikey and paste it in. It never leaves your device."},{t:"Drop your files",c:"Tap the box or drag in voice notes & videos — a whole pile at once is fine. They get auto-sorted by date."},{t:"Slot texts anywhere",c:"Tap the ＋ on any dashed line to drop a text message exactly where it was sent — even before the first file."},{t:"Say what you want",c:"Pick a preset like 🍲 Full recipe, or type your own instructions — in any language."},{t:"Mulakhas!",c:"Hit Summarize — the star spins while it listens to everything, then your summary appears with a reliability report."},{t:"Install & share straight in",c:"Add Mulakhas to your home screen, then share voice notes from WhatsApp directly into the app — no downloading files. (Android + Chrome)"}] },
 ar: { brand:"ملخّص", kTitle:"مفتاح Gemini المجاني", kSaved:"✓ المفتاح محفوظ على هذا الجهاز", kChange:"تغيير المفتاح", kPlace:"الصق مفتاح API هنا", kModel:"النموذج", kSave:"احفظ واختبر المفتاح",
 kHint:'احصل على مفتاح مجاني من <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — يلزم حساب Google فقط، بدون بطاقة. المفتاح لا يغادر جهازك.',
 kTesting:"جارٍ اختبار المفتاح…", kOk:"✓ المفتاح يعمل وتم حفظه.", kBad:"✗ المفتاح لا يعمل — تحقّق منه وحاول مجدداً.",
@@ -716,7 +716,7 @@ footer:"يعمل كلياً في متصفحك — الملفات تذهب فقط
 histTitle:"نتائجك المحفوظة", histSearch:"ابحث…", histEmpty:"لا شيء محفوظ بعد — النتائج تظهر هنا تلقائياً.", histSum:"ملخص", histTr:"كلمات حرفية",
 heroPre:"حوّل كومة رسائل صوتية إلى",
 words:["وصفة","تعليمات واضحة","ملخص واحد نظيف","قائمة تسوّق","ملاحظات اجتماع","دليل خطوات","قائمة مهام","نقاط أساسية","ترجمة","خطة","إجابات","كلمات حرفية"],
-stUpload:"جارٍ الرفع", stThink:"يستمع ويشاهد ويلخّص…" },
+stUpload:"جارٍ الرفع", stThink:"يستمع ويشاهد ويلخّص…", tutDone:"تم ✓", tutFree:"مجاني، بدون بطاقة", tutBubble:"استعملي لحم غنم، مو بقر!", tutA2HS:"قائمة المتصفح ⋮ ← أضِف إلى الشاشة الرئيسية", wnTitle:"✨ جديد: كلّمه — وبلغتك", wnOk:"فهمت ✓", wnBody:"اضغط <strong>🎙 المايك</strong> في صندوق الطلب وقل ما تريد — بدون كتابة وبأي لغة. والتطبيق كله صار يحكي لغتك: اضغط <strong>زر 🌐</strong> لتغيير اللغة.", tut:[{t:"احصل على مفتاحك المجاني",c:"خطوة لمرة واحدة: خذ مفتاح Gemini مجانياً من aistudio.google.com/apikey والصقه هنا. لا يغادر جهازك أبداً."},{t:"أسقط ملفاتك",c:"اضغط على الصندوق أو اسحب الرسائل الصوتية والفيديوهات — كومة كاملة دفعة واحدة. تُرتَّب تلقائياً حسب التاريخ."},{t:"أدرج النصوص في مكانها",c:"اضغط ＋ على أي خط متقطّع لإدراج رسالة نصية في موضعها الصحيح — حتى قبل أول ملف."},{t:"قل ماذا تريد",c:"اختر قالباً مثل 🍲 وصفة كاملة، أو اكتب تعليماتك — بأي لغة."},{t:"ملخّص!",c:"اضغط لخّص — تدور النجمة بينما يستمع لكل شيء، ثم يظهر ملخصك مع تقرير الدقة."},{t:"ثبّته وشارك مباشرة",c:"أضف ملخّص إلى شاشتك الرئيسية، ثم شارك الرسائل الصوتية من واتساب مباشرة إلى التطبيق — بدون تنزيل ملفات. (أندرويد + كروم)"}] },
 fr: { brand:"Mulakhas", kTitle:"Votre clé Gemini gratuite", kSaved:"✓ Clé API enregistrée sur cet appareil", kChange:"changer de clé", kPlace:"Collez votre clé API", kModel:"Modèle", kSave:"Enregistrer & tester",
 kHint:'Obtenez une clé gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — compte Google requis, sans carte bancaire. La clé ne quitte jamais cet appareil.',
 kTesting:"Test de la clé…", kOk:"✓ La clé fonctionne et est enregistrée.", kBad:"✗ La clé ne fonctionne pas — vérifiez-la et réessayez.",
@@ -734,7 +734,7 @@ footer:"Fonctionne entièrement dans votre navigateur — les fichiers ne vont q
 histTitle:"Vos résultats enregistrés", histSearch:"Rechercher…", histEmpty:"Rien d'enregistré — les résultats apparaissent ici automatiquement.", histSum:"résumé", histTr:"mots exacts",
 heroPre:"Transformez une pile de notes vocales en",
 words:["recettes","instructions claires","un résumé propre","une liste de courses","notes de réunion","un guide pas à pas","une liste de tâches","points clés","une traduction","un plan","réponses","mots exacts"],
-stUpload:"Envoi", stThink:"Écoute, analyse et résumé…" },
+stUpload:"Envoi", stThink:"Écoute, analyse et résumé…", tutDone:"Terminé ✓", tutFree:"gratuit, sans carte", tutBubble:"de l'agneau, pas du bœuf !", tutA2HS:"menu du navigateur ⋮ → Ajouter à l'écran d'accueil", wnTitle:"✨ Nouveau : parlez-lui — dans votre langue", wnOk:"Compris ✓", wnBody:"Touchez le <strong>🎙 micro</strong> de la zone de demande et dites ce que vous voulez — sans taper. Et toute l'app parle votre langue : bouton <strong>🌐</strong> pour changer.", tut:[{t:"Obtenez votre clé gratuite",c:"Une seule fois : prenez une clé Gemini gratuite sur aistudio.google.com/apikey et collez-la. Elle ne quitte jamais votre appareil."},{t:"Déposez vos fichiers",c:"Touchez la zone ou glissez notes vocales et vidéos — toute une pile à la fois. Tri automatique par date."},{t:"Insérez les textes où il faut",c:"Touchez le ＋ d'une ligne pointillée pour placer un texte exactement où il a été envoyé — même avant le premier fichier."},{t:"Dites ce que vous voulez",c:"Choisissez un préréglage comme 🍲 Recette complète, ou écrivez vos instructions — dans n'importe quelle langue."},{t:"Mulakhas !",c:"Appuyez sur Résumer — l'étoile tourne pendant l'écoute, puis votre résumé apparaît avec un rapport de fiabilité."},{t:"Installez et partagez direct",c:"Ajoutez Mulakhas à votre écran d'accueil, puis partagez les notes vocales de WhatsApp directement dans l'app. (Android + Chrome)"}] },
 de: { brand:"Mulakhas", kTitle:"Dein kostenloser Gemini-Schlüssel", kSaved:"✓ API-Schlüssel auf diesem Gerät gespeichert", kChange:"Schlüssel ändern", kPlace:"API-Schlüssel einfügen", kModel:"Modell", kSave:"Speichern & testen",
 kHint:'Kostenlos erhältlich auf <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — Google-Konto nötig, keine Kreditkarte. Der Schlüssel verlässt dieses Gerät nie.',
 kTesting:"Schlüssel wird getestet…", kOk:"✓ Schlüssel funktioniert und ist gespeichert.", kBad:"✗ Schlüssel ungültig — bitte prüfen und erneut versuchen.",
@@ -752,7 +752,7 @@ footer:"Läuft komplett im Browser — Dateien gehen nur an Googles Gemini-API, 
 histTitle:"Gespeicherte Ergebnisse", histSearch:"Suchen…", histEmpty:"Noch nichts gespeichert — Ergebnisse erscheinen hier automatisch.", histSum:"Zusammenfassung", histTr:"exakte Worte",
 heroPre:"Verwandle einen Stapel Sprachnachrichten in",
 words:["Rezepte","klare Anweisungen","eine saubere Zusammenfassung","eine Einkaufsliste","Meeting-Notizen","eine Anleitung","eine To-do-Liste","Kernpunkte","eine Übersetzung","einen Plan","Antworten","exakte Worte"],
-stUpload:"Lade hoch", stThink:"Hört zu, schaut & fasst zusammen…" },
+stUpload:"Lade hoch", stThink:"Hört zu, schaut & fasst zusammen…", tutDone:"Fertig ✓", tutFree:"kostenlos, ohne Karte", tutBubble:"Lamm, nicht Rind!", tutA2HS:"Browser-Menü ⋮ → Zum Startbildschirm hinzufügen", wnTitle:"✨ Neu: sprich mit ihm — in deiner Sprache", wnOk:"Alles klar ✓", wnBody:"Tippe das <strong>🎙 Mikro</strong> am Anweisungsfeld und sag einfach, was du willst — ohne Tippen. Und die ganze App spricht jetzt deine Sprache: <strong>🌐-Knopf</strong> drücken.", tut:[{t:"Hol deinen kostenlosen Schlüssel",c:"Einmalig: kostenlosen Gemini-Schlüssel auf aistudio.google.com/apikey holen und einfügen. Er verlässt dein Gerät nie."},{t:"Wirf deine Dateien rein",c:"Tippe aufs Feld oder ziehe Sprachnachrichten & Videos hinein — gern ein ganzer Stapel. Automatisch nach Datum sortiert."},{t:"Texte an die richtige Stelle",c:"Tippe das ＋ auf einer gestrichelten Linie, um eine Textnachricht genau dort einzufügen — auch vor der ersten Datei."},{t:"Sag, was du willst",c:"Wähle eine Vorlage wie 🍲 Komplettes Rezept oder schreib eigene Anweisungen — in jeder Sprache."},{t:"Mulakhas!",c:"Drück Zusammenfassen — der Stern dreht sich beim Zuhören, dann erscheint deine Zusammenfassung mit Zuverlässigkeitsbericht."},{t:"Installieren & direkt teilen",c:"Füge Mulakhas dem Startbildschirm hinzu und teile Sprachnachrichten aus WhatsApp direkt in die App. (Android + Chrome)"}] },
 tr: { brand:"Mulakhas", kTitle:"Ücretsiz Gemini anahtarın", kSaved:"✓ API anahtarı bu cihazda kayıtlı", kChange:"anahtarı değiştir", kPlace:"API anahtarını yapıştır", kModel:"Model", kSave:"Kaydet ve test et",
 kHint:'<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> adresinden ücretsiz al — Google hesabı yeterli, kart gerekmez. Anahtar bu cihazdan asla çıkmaz.',
 kTesting:"Anahtar test ediliyor…", kOk:"✓ Anahtar çalışıyor ve kaydedildi.", kBad:"✗ Anahtar çalışmadı — kontrol edip tekrar dene.",
@@ -770,7 +770,7 @@ footer:"Tamamen tarayıcında çalışır — dosyalar yalnızca kendi anahtarı
 histTitle:"Kayıtlı sonuçların", histSearch:"Ara…", histEmpty:"Henüz bir şey yok — sonuçlar burada otomatik görünür.", histSum:"özet", histTr:"aynen yazıya dökme",
 heroPre:"Bir yığın sesli mesajı şuna dönüştür:",
 words:["tarif","net talimatlar","tek temiz özet","alışveriş listesi","toplantı notları","adım adım rehber","yapılacaklar listesi","önemli noktalar","çeviri","plan","yanıtlar","aynen sözcükler"],
-stUpload:"Yükleniyor", stThink:"Dinliyor, izliyor ve özetliyor…" },
+stUpload:"Yükleniyor", stThink:"Dinliyor, izliyor ve özetliyor…", tutDone:"Bitti ✓", tutFree:"ücretsiz, kartsız", tutBubble:"kuzu eti, dana değil!", tutA2HS:"tarayıcı menüsü ⋮ → Ana ekrana ekle", wnTitle:"✨ Yeni: onunla konuş — kendi dilinde", wnOk:"Anladım ✓", wnBody:"İstek kutusundaki <strong>🎙 mikrofona</strong> dokun ve ne istediğini söyle — yazmadan, istediğin dilde. Ayrıca uygulama artık senin dilini konuşuyor: <strong>🌐 düğmesine</strong> bas.", tut:[{t:"Ücretsiz anahtarını al",c:"Tek seferlik: aistudio.google.com/apikey adresinden ücretsiz Gemini anahtarı al ve yapıştır. Cihazından asla çıkmaz."},{t:"Dosyalarını bırak",c:"Kutuya dokun ya da sesli mesajları ve videoları sürükle — hepsi birden olabilir. Tarihe göre otomatik sıralanır."},{t:"Metinleri yerine yerleştir",c:"Kesikli çizgideki ＋ ile metni tam gönderildiği yere ekle — ilk dosyadan önce bile."},{t:"Ne istediğini söyle",c:"🍲 Tam tarif gibi bir hazır seçenek seç ya da kendi talimatını yaz — istediğin dilde."},{t:"Mulakhas!",c:"Özetle'ye bas — yıldız dinlerken döner, sonra güvenilirlik raporuyla özetin görünür."},{t:"Kur ve doğrudan paylaş",c:"Mulakhas'ı ana ekranına ekle, sonra WhatsApp'tan sesli mesajları doğrudan uygulamaya paylaş. (Android + Chrome)"}] },
 es: { brand:"Mulakhas", kTitle:"Tu clave gratuita de Gemini", kSaved:"✓ Clave API guardada en este dispositivo", kChange:"cambiar clave", kPlace:"Pega tu clave API", kModel:"Modelo", kSave:"Guardar y probar",
 kHint:'Consigue una gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — solo cuenta de Google, sin tarjeta. La clave nunca sale de este dispositivo.',
 kTesting:"Probando la clave…", kOk:"✓ La clave funciona y quedó guardada.", kBad:"✗ La clave no funcionó — revísala e inténtalo de nuevo.",
@@ -788,7 +788,7 @@ footer:"Funciona por completo en tu navegador — los archivos solo van a la API
 histTitle:"Tus resultados guardados", histSearch:"Buscar…", histEmpty:"Nada guardado aún — los resultados aparecen aquí automáticamente.", histSum:"resumen", histTr:"palabras exactas",
 heroPre:"Convierte un montón de notas de voz en",
 words:["recetas","instrucciones claras","un resumen limpio","una lista de compras","notas de reunión","una guía paso a paso","una lista de tareas","puntos clave","una traducción","un plan","respuestas","palabras exactas"],
-stUpload:"Subiendo", stThink:"Escuchando, viendo y resumiendo…" }
+stUpload:"Subiendo", stThink:"Escuchando, viendo y resumiendo…", tutDone:"Listo ✓", tutFree:"gratis, sin tarjeta", tutBubble:"¡cordero, no res!", tutA2HS:"menú del navegador ⋮ → Añadir a pantalla de inicio", wnTitle:"✨ Nuevo: háblale — en tu idioma", wnOk:"Entendido ✓", wnBody:"Toca el <strong>🎙 micrófono</strong> del cuadro de solicitud y di lo que quieres — sin escribir. Y la app ya habla tu idioma: pulsa el <strong>botón 🌐</strong>.", tut:[{t:"Consigue tu clave gratis",c:"Solo una vez: toma una clave Gemini gratis en aistudio.google.com/apikey y pégala. Nunca sale de tu dispositivo."},{t:"Suelta tus archivos",c:"Toca la caja o arrastra notas de voz y videos — un montón a la vez está bien. Se ordenan por fecha."},{t:"Coloca los textos en su lugar",c:"Toca el ＋ de una línea punteada para insertar un texto justo donde se envió — incluso antes del primer archivo."},{t:"Di lo que quieres",c:"Elige un preajuste como 🍲 Receta completa o escribe tus instrucciones — en cualquier idioma."},{t:"¡Mulakhas!",c:"Pulsa Resumir — la estrella gira mientras escucha todo, y luego aparece tu resumen con informe de fiabilidad."},{t:"Instala y comparte directo",c:"Añade Mulakhas a tu pantalla de inicio y comparte notas de voz de WhatsApp directamente a la app. (Android + Chrome)"}] }
 };
 let uiLang = localStorage.getItem("uiLang") || "en";
 if (!STR[uiLang]) uiLang = "en";
@@ -1345,7 +1345,7 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
   function build() {
     box.innerHTML = ""; gears = [];
     const W = innerWidth, H = innerHeight;
-    const target = Math.max(16, Math.min(48, Math.round(W * H / 26000)));
+    const target = Math.max(20, Math.min(64, Math.round(W * H / 18000)));
     const placed = []; // {x, y, r}
     for (let n = 0; n < target; n++) {
       const far = Math.random() < .45; // depth: far stars are smaller, fainter, softly blurred
@@ -1497,6 +1497,11 @@ function applyLang(l) {
   $("histtitle").textContent = T("histTitle");
   $("histsearch").placeholder = T("histSearch");
   $("heropre").textContent = T("heroPre");
+  $("wntitle").textContent = T("wnTitle");
+  $("wnbody").innerHTML = T("wnBody");
+  $("newok").textContent = T("wnOk");
+  $("wnhint").textContent = T("tutA2HS");
+  if (!$("tutov").hidden) tutRender();
   document.querySelectorAll(".segopt").forEach(b => b.textContent = b.dataset.m === "summary" ? T("segSum") : T("segTr"));
   document.querySelectorAll(".chip").forEach((c, i) => { if (T("chips")[i]) c.textContent = T("chips")[i]; });
   document.querySelectorAll("#langmenu button").forEach(b => b.classList.toggle("on", b.dataset.l === uiLang));
@@ -1509,22 +1514,22 @@ document.addEventListener("click", e => { if (!$("langmenu").hidden && !$("langm
 applyLang(uiLang);
 
 // ---------- tutorial ----------
-const TUT = [
-  { t: "Get your free key", c: "One-time setup: grab a free Gemini API key at aistudio.google.com/apikey and paste it in. It never leaves your device.", s: `<div class="sc"><div class="mockinput"><span class="mockkey">🔑</span><span class="mockcheck">✓</span></div><div class="mockhint">aistudio.google.com/apikey — free, no card</div></div>` },
-  { t: "Drop your files", c: "Tap the box or drag in voice notes & videos — a whole pile at once is fine. They get auto-sorted by date.", s: `<div class="sc"><div class="mockdrop"><span>🎙️</span><span>🎬</span><span>💬</span></div></div>` },
-  { t: "Slot texts anywhere", c: "Tap the ＋ on any dashed line to drop a text message exactly where it was sent — even before the first file.", s: `<div class="sc"><div class="mockcard">🎙️ voice-note-1.opus</div><div class="mockdiv"><span class="l"></span><span class="mockpill">＋ text here</span><span class="l"></span><span class="mockfinger">👆</span></div><div class="mocktext">💬 use lamb, not beef!</div><div class="mockcard">🎬 kitchen-video.mp4</div></div>` },
-  { t: "Say what you want", c: "Pick a preset like 🍲 Full recipe, or type your own instructions — in any language.", s: `<div class="sc"><div class="mockchips"><span class="mockchip hot">🍲 Full recipe</span><span class="mockchip">Action items</span></div><div class="mockta"><i></i><i></i><i></i></div></div>` },
-  { t: "Mulakhas!", c: "Hit Summarize — the star spins while it listens to everything, then your summary appears with a reliability report.", s: `<div class="sc"><span class="mockbtn">Summarize it</span><span class="mockstar"><span class="kstar"><i></i><i></i><b></b></span></span><span class="mockdoc">📜✨</span></div>` },
-  { t: "Install & share straight in", c: "Add Mulakhas to your home screen, then share voice notes from WhatsApp directly into the app — no downloading files. (Android + Chrome)", s: `<div class="sc"><div class="mockshare"><span class="mockwa">💬</span><span class="mockfly">🎙️</span><span class="mockapp"><span class="kstar kstatic"><i></i><i></i><b></b></span></span></div><div class="mockhint">browser menu ⋮ → Add to Home Screen</div></div>` }
+const SCENES = [
+  () => `<div class="sc"><div class="mockinput"><span class="mockkey">🔑</span><span class="mockcheck">✓</span></div><div class="mockhint">aistudio.google.com/apikey — ${T("tutFree")}</div></div>`,
+  () => `<div class="sc"><div class="mockdrop"><span>🎙️</span><span>🎬</span><span>💬</span></div></div>`,
+  () => `<div class="sc"><div class="mockcard">🎙️ voice-note-1.opus</div><div class="mockdiv"><span class="l"></span><span class="mockpill">＋ ${T("textHere")}</span><span class="l"></span><span class="mockfinger">👆</span></div><div class="mocktext">💬 ${T("tutBubble")}</div><div class="mockcard">🎬 kitchen-video.mp4</div></div>`,
+  () => `<div class="sc"><div class="mockchips"><span class="mockchip hot">${T("chips")[0]}</span><span class="mockchip">${T("chips")[3]}</span></div><div class="mockta"><i></i><i></i><i></i></div></div>`,
+  () => `<div class="sc"><span class="mockbtn">${T("goSum")}</span><span class="mockstar"><span class="kstar"><i></i><i></i><b></b></span></span><span class="mockdoc">📜✨</span></div>`,
+  () => `<div class="sc"><div class="mockshare"><span class="mockwa">💬</span><span class="mockfly">🎙️</span><span class="mockapp"><span class="kstar kstatic"><i></i><i></i><b></b></span></span></div><div class="mockhint">${T("tutA2HS")}</div></div>`
 ];
 let tuti = 0;
 function tutRender() {
-  $("tutstage").innerHTML = TUT[tuti].s;
-  $("tuttitle").textContent = TUT[tuti].t;
-  $("tutcap").textContent = TUT[tuti].c;
-  $("tutdots").innerHTML = TUT.map((_, i) => `<span class="${i === tuti ? "on" : ""}"></span>`).join("");
+  $("tutstage").innerHTML = SCENES[tuti]();
+  $("tuttitle").textContent = T("tut")[tuti].t;
+  $("tutcap").textContent = T("tut")[tuti].c;
+  $("tutdots").innerHTML = SCENES.map((_, i) => `<span class="${i === tuti ? "on" : ""}"></span>`).join("");
   $("tutprev").disabled = tuti === 0;
-  $("tutnext").textContent = tuti === TUT.length - 1 ? "Done ✓" : "→";
+  $("tutnext").textContent = tuti === SCENES.length - 1 ? T("tutDone") : "→";
 }
 function tutOpen() { tuti = 0; tutRender(); $("tutov").hidden = false; }
 function tutClose() { $("tutov").hidden = true; }
@@ -1532,7 +1537,7 @@ $("tutbtn").addEventListener("click", tutOpen);
 $("tutclose").addEventListener("click", tutClose);
 $("tutov").addEventListener("click", e => { if (e.target === $("tutov")) tutClose(); });
 $("tutprev").addEventListener("click", () => { if (tuti > 0) { tuti--; tutRender(); } });
-$("tutnext").addEventListener("click", () => { if (tuti < TUT.length - 1) { tuti++; tutRender(); } else tutClose(); });
+$("tutnext").addEventListener("click", () => { if (tuti < SCENES.length - 1) { tuti++; tutRender(); } else tutClose(); });
 if (!localStorage.getItem("tutSeen")) {
   localStorage.setItem("tutSeen", "1"); localStorage.setItem("wn2", "1");
   tutOpen();
