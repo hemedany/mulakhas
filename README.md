@@ -26,7 +26,9 @@ Everything runs in your browser. Files are sent directly to Google's Gemini API 
 - On-device, searchable history of past results
 - Android: share voice notes & videos from WhatsApp straight into Mulakhas (installed PWA)
 - Speak your request instead of typing (multi-language)
-- Interface in English, العربية, Français, Deutsch, Türkçe, Español
+- Interface in English, العربية, Français, Deutsch, Türkçe, Español — everything translated, tutorial included, with RTL Arabic layout
+- Living background: a non-overlapping field of layered khatam seals with depth, idle rotation, scroll-driven gearwork, and click-to-spin
+- Buttery inertia scrolling on desktop
 
 ## Deploy your own
 
