@@ -400,7 +400,7 @@
   #followrow button:hover { opacity: .85; }
 
   /* ---- tutorial ---- */
-  #tutbtn { position: fixed; top: calc(64px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--accent); cursor: pointer; box-shadow: var(--shadow); font-family: var(--serif); font-size: 1.2rem; font-weight: 700; transition: transform .15s; }
+  #tutbtn { position: fixed; top: calc(114px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--accent); cursor: pointer; box-shadow: var(--shadow); font-family: var(--serif); font-size: 1.2rem; font-weight: 700; transition: transform .15s; }
   #tutbtn:hover { transform: scale(1.1); }
   #tutov, #newov { position: fixed; inset: 0; z-index: 50; background: rgba(20, 14, 8, .5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 18px; }
   #tutov[hidden], #newov[hidden] { display: none; }
@@ -454,7 +454,7 @@
   .mockdoc { font-size: 1.6rem; animation: docpop 4.2s infinite; }
   @keyframes docpop { 0%, 60% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.25); opacity: 1; } 76%, 94% { transform: scale(1); } 100% { opacity: 0; } }
   /* history */
-  #histbtn { position: fixed; top: calc(114px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); cursor: pointer; box-shadow: var(--shadow); font-size: 1.05rem; transition: transform .15s; }
+  #histbtn { position: fixed; top: calc(164px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); cursor: pointer; box-shadow: var(--shadow); font-size: 1.05rem; transition: transform .15s; }
   #histbtn:hover { transform: scale(1.1); }
   #histov { position: fixed; inset: 0; z-index: 50; background: rgba(20, 14, 8, .5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 18px; }
   #histov[hidden] { display: none; }
@@ -492,7 +492,7 @@
   @media (prefers-reduced-motion: reduce) { .ginner.idle { animation: none; } }
   .gear:hover { opacity: .5; filter: drop-shadow(0 0 7px var(--accent)); }
   [data-theme="dark"] .gear:hover { opacity: .4; }
-  .gear.spin { transition: transform .7s cubic-bezier(.3, .7, .2, 1), opacity .25s, filter .25s; }
+  .gear.spin { transition: transform 1.5s cubic-bezier(.3, .6, .15, 1), opacity .25s, filter .25s; }
   @media (prefers-reduced-motion: reduce) { #gears { display: none; } }
 
   /* hero cycling word */
@@ -512,18 +512,47 @@
   #mooncut { transition: transform .45s cubic-bezier(.3, .7, .2, 1), opacity .3s; opacity: 0; transform: translate(6px, -6px); }
   [data-theme="dark"] #mooncut { opacity: 1; transform: translate(0, 0); }
 
+  /* language menu */
+  #langbtn { position: fixed; top: calc(64px + env(safe-area-inset-top)); right: 14px; z-index: 20; width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: var(--shadow); font-size: 1.05rem; transition: transform .15s; }
+  #langbtn:hover { transform: scale(1.1); }
+  #langmenu { position: fixed; top: calc(64px + env(safe-area-inset-top)); right: 62px; z-index: 30; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 6px; display: flex; flex-direction: column; min-width: 130px; }
+  #langmenu[hidden] { display: none; }
+  #langmenu button { background: none; border: none; font-family: inherit; color: var(--ink); padding: 8px 14px; text-align: start; border-radius: 8px; cursor: pointer; font-size: .85rem; }
+  #langmenu button:hover { background: var(--paper); }
+  #langmenu button.on { color: var(--accent); font-weight: 600; }
+  /* mic on the request box */
+  .tawrap { position: relative; }
+  .tawrap textarea { padding-right: 46px; }
+  #micbtn { position: absolute; right: 9px; bottom: 9px; width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); color: var(--ink-soft); cursor: pointer; font-size: .95rem; transition: color .15s, border-color .15s; }
+  #micbtn:hover { color: var(--accent); border-color: var(--accent); }
+  #micbtn.on { color: var(--bad); border-color: var(--bad); animation: micpulse 1.2s infinite; }
+  @keyframes micpulse { 50% { background: rgba(179, 64, 47, .12); } }
+  [dir="rtl"] .tawrap textarea { padding-right: 13px; padding-left: 46px; }
+  [dir="rtl"] #micbtn { right: auto; left: 9px; }
+  /* step numbers vanish once the key is in */
+  body.haskey .step .n:not(.keep) { display: none; }
+
   footer { text-align: center; color: var(--ink-faint); font-size: .75rem; padding: 20px 0 34px; line-height: 1.7; }
 </style>
 </head>
 <body>
 <div id="gears" aria-hidden="true"></div>
 <button id="themebtn" title="toggle dark mode"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g id="rays" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"><line x1="12" y1="1.8" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22.2"/><line x1="1.8" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22.2" y2="12"/><line x1="4.8" y1="4.8" x2="6.5" y2="6.5"/><line x1="17.5" y1="17.5" x2="19.2" y2="19.2"/><line x1="4.8" y1="19.2" x2="6.5" y2="17.5"/><line x1="17.5" y1="6.5" x2="19.2" y2="4.8"/></g><circle id="suncore" cx="12" cy="12" r="4.4" fill="currentColor"/><circle id="mooncut" cx="15" cy="9" r="5.4" fill="var(--card)"/></svg></button>
+<button id="langbtn" title="language">🌐</button>
+<div id="langmenu" hidden>
+  <button data-l="en">English</button>
+  <button data-l="ar">العربية</button>
+  <button data-l="fr">Français</button>
+  <button data-l="de">Deutsch</button>
+  <button data-l="tr">Türkçe</button>
+  <button data-l="es">Español</button>
+</div>
 <button id="tutbtn" title="how to use Mulakhas">?</button>
 <button id="histbtn" title="past summaries">📖</button>
 <div id="histov" hidden>
   <div class="histbox">
     <button class="tutclose" id="histclose">✕</button>
-    <h3>Your saved results</h3>
+    <h3 id="histtitle">Your saved results</h3>
     <input type="text" id="histsearch" placeholder="Search…">
     <div id="histlist"></div>
   </div>
@@ -532,8 +561,8 @@
   <div class="tutbox">
     <button class="tutclose" id="newclose">✕</button>
     <div class="tutstage"><div class="sc"><div class="mockshare"><span class="mockwa">💬</span><span class="mockfly">🎙️</span><span class="mockapp"><span class="kstar kstatic"><i></i><i></i><b></b></span></span></div><div class="mockhint">browser menu ⋮ → Add to Home Screen</div></div></div>
-    <h3>✨ New: share straight from WhatsApp</h3>
-    <p>Install Mulakhas once — browser menu → <strong>Add to Home Screen</strong>. After that, select voice notes or videos in WhatsApp → Share → <strong>Mulakhas</strong>, and they land right in your timeline. No downloading, no file hunting. (Android + Chrome)</p>
+    <h3>✨ New: talk to it — in your language</h3>
+    <p>Tap the <strong>🎙 mic</strong> on the request box and just say what you want — no typing, any language. And the whole app now speaks your language: hit the <strong>🌐 button</strong> for العربية, Français, Deutsch, Türkçe or Español. Plus a deeper, layered star field behind everything.</p>
     <div class="tutnav"><span></span><button id="newok">Got it ✓</button></div>
   </div>
 </div>
@@ -553,44 +582,40 @@
 <div class="wrap">
   <header class="rise">
     <h1>Mulakhas<span style="color:var(--accent)">.</span></h1>
-    <p class="herosub">Turn a pile of voice notes into <span id="cycleword">recipes</span>.</p>
+    <p class="herosub"><span id="heropre">Turn a pile of voice notes into</span> <span id="cycleword">recipes</span>.</p>
   </header>
 
   <!-- API KEY -->
   <div class="card rise" id="keycard">
     <div id="keydone">
-      <span class="kmsg">✓ API key saved on this device</span>
+      <span class="kmsg" id="kmsg">✓ API key saved on this device</span>
       <button id="changekey">change key</button>
     </div>
     <div class="keybody">
-      <div class="step"><span class="n">1</span><h2>Your free Gemini key</h2></div>
+      <div class="step"><span class="n">1</span><h2 id="t_key">Your free Gemini key</h2></div>
       <input type="password" id="apikey" placeholder="Paste your API key" autocomplete="off">
       <div class="modelrow">
-        <label for="model">Model</label>
+        <label for="model" id="mlabel">Model</label>
         <select id="model"><option value="">— save key first —</option></select>
       </div>
       <button class="btn btn-ghost" id="savekey">Save &amp; test key</button>
       <div class="keystatus" id="keystatus"></div>
-      <div class="keyhint">
-        Get one free at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — Google account needed, no credit card. The key never leaves this device.
-      </div>
+      <div class="keyhint" id="keyhint"></div>
     </div>
   </div>
 
   <!-- TIMELINE -->
   <div class="card rise">
-    <div class="step"><span class="n">2</span><h2>Build the message timeline</h2></div>
+    <div class="step"><span class="n">2</span><h2 id="t_tl">Build the message timeline</h2></div>
     <div id="dropzone">
       <span class="big">🎙️ 🎬 💬</span>
-      Tap to choose files, or drag &amp; drop<br>
-      <small>voice notes &amp; videos — several at once is fine</small>
+      <span id="dz1">Tap to choose files, or drag &amp; drop</span><br>
+      <small id="dz2">voice notes &amp; videos — several at once is fine</small>
     </div>
     <input type="file" id="fileinput" multiple accept="audio/*,video/*,.ogg,.opus,.oga,.m4a,.aac,.mp3,.wav,.mp4,.mov,.webm,.3gp" hidden>
     <div id="timeline"></div>
     <button id="addtext">＋ Add a text message</button>
-    <div class="cardnote">
-      Order matters — everything is read top to bottom, like the original conversation. Files added together are auto-sorted by date; use ↑ ↓ to fix the order, and tap the ＋ on any dashed line to slot a text message right there — even before the first file.
-    </div>
+    <div class="cardnote" id="note2"></div>
   </div>
 
   <!-- INSTRUCTIONS -->
@@ -601,7 +626,10 @@
       <button type="button" class="segopt sel" data-m="summary">✨ Summarize</button>
       <button type="button" class="segopt" data-m="transcript">✍️ Exact words</button>
     </div>
-    <textarea id="instructions" placeholder="e.g. Combine everything into one complete recipe in English, with an ingredients list and numbered steps."></textarea>
+    <div class="tawrap">
+      <textarea id="instructions"></textarea>
+      <button id="micbtn" type="button" title="speak your request">🎙</button>
+    </div>
     <div class="chips">
       <button class="chip" data-p="Combine everything into ONE complete recipe in English. Give me: a title, full ingredients list with quantities, then clear numbered step-by-step cooking instructions in the right order. Include any tips or warnings mentioned.">🍲 Full recipe</button>
       <button class="chip" data-p="Summarize everything in English as short clear bullet points, in the order things were said.">Bullet summary</button>
@@ -611,7 +639,7 @@
     </div>
     <label class="optrow">
       <input type="checkbox" id="qcheck" checked>
-      <span>Include a per-message <strong>accuracy &amp; noise report</strong> (how clearly each file was heard, and which words were uncertain)</span>
+      <span id="qlabel"></span>
     </label>
   </div>
 
@@ -626,7 +654,7 @@
 
   <!-- RESULT -->
   <div class="card" id="resultcard">
-    <div class="step"><span class="n">✦</span><h2>Your summary</h2></div>
+    <div class="step"><span class="n keep">✦</span><h2 id="t_res">Your summary</h2></div>
     <div id="result"></div>
     <div class="resultbtns">
       <button class="btn btn-ghost" id="copybtn">Copy</button>
@@ -638,16 +666,129 @@
     </div>
   </div>
 
-  <footer>
-    Runs entirely in your browser — files go only to Google's Gemini API, with your own key.<br>
-    مصمَّم ليفهم اللهجة السورية والعربية والإنجليزية وأكثر من ١٠٠ لغة
-  </footer>
+  <footer id="footer"></footer>
 </div>
 
 <script>
 "use strict";
 const API_BASE = "https://generativelanguage.googleapis.com";
 const $ = id => document.getElementById(id);
+
+// ---------- interface languages ----------
+const STR = {
+en: { kTitle:"Your free Gemini key", kSaved:"✓ API key saved on this device", kChange:"change key", kPlace:"Paste your API key", kModel:"Model", kSave:"Save & test key",
+kHint:'Get one free at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — Google account needed, no credit card. The key never leaves this device.',
+kTesting:"Testing key…", kOk:"✓ Key works and is saved on this device.", kBad:"✗ Key didn't work — check it and try again.",
+tTitle:"Build the message timeline", dz1:"Tap to choose files, or drag & drop", dz2:"voice notes & videos — several at once is fine",
+addText:"＋ Add a text message", textHere:"text here", textMsg:"Text message", textPh:"Type or paste the text message…",
+note2:"Order matters — everything is read top to bottom, like the original conversation. Files added together are auto-sorted by date; use ↑ ↓ to fix the order, and tap the ＋ on any dashed line to slot a text message right there — even before the first file.",
+sumTitle:"How should it be summarized?", trTitle:"Extract the exact words", segSum:"✨ Summarize", segTr:"✍️ Exact words",
+phSum:"e.g. Combine everything into one complete recipe in English, with an ingredients list and numbered steps.",
+phTr:"Optional — e.g. keep it in Arabic, or add an English translation under each message.",
+chips:["🍲 Full recipe","Bullet summary","Step-by-step guide","Action items","Full translation"],
+qLabel:'Include a per-message <strong>accuracy &amp; noise report</strong> (how clearly each file was heard, and which words were uncertain)',
+goSum:"Summarize it", goTr:"Extract the words",
+resTitle:"Your summary", copy:"Copy", copied:"✓ Copied", share:"Share", followPh:"Ask a follow-up question…", ask:"Ask",
+footer:"Runs entirely in your browser — files go only to Google's Gemini API, with your own key.<br>مصمَّم ليفهم اللهجة السورية والعربية والإنجليزية وأكثر من ١٠٠ لغة",
+histTitle:"Your saved results", histSearch:"Search…", histEmpty:"Nothing saved yet — results appear here automatically.", histSum:"summary", histTr:"exact words",
+heroPre:"Turn a pile of voice notes into",
+words:["recipes","clear instructions","one clean summary","action items","a shopping list","meeting notes","a step-by-step guide","English","a to-do list","study notes","key points","a translation","directions","a plan","an itinerary","decisions","highlights","answers","reminders","a checklist","exact words","short bullets","grandma's recipe","doctor's advice","wedding plans","something you can skim","a story you can tell","one message"],
+stUpload:"Uploading", stThink:"Listening, watching & summarizing…" },
+ar: { kTitle:"مفتاح Gemini المجاني", kSaved:"✓ المفتاح محفوظ على هذا الجهاز", kChange:"تغيير المفتاح", kPlace:"الصق مفتاح API هنا", kModel:"النموذج", kSave:"احفظ واختبر المفتاح",
+kHint:'احصل على مفتاح مجاني من <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — يلزم حساب Google فقط، بدون بطاقة. المفتاح لا يغادر جهازك.',
+kTesting:"جارٍ اختبار المفتاح…", kOk:"✓ المفتاح يعمل وتم حفظه.", kBad:"✗ المفتاح لا يعمل — تحقّق منه وحاول مجدداً.",
+tTitle:"رتّب الرسائل بالتسلسل", dz1:"اضغط لاختيار الملفات أو اسحبها إلى هنا", dz2:"رسائل صوتية وفيديو — عدة ملفات دفعة واحدة",
+addText:"＋ أضف رسالة نصية", textHere:"نص هنا", textMsg:"رسالة نصية", textPh:"اكتب أو الصق الرسالة النصية…",
+note2:"الترتيب مهم — يُقرأ كل شيء من الأعلى إلى الأسفل مثل المحادثة الأصلية. تُرتَّب الملفات تلقائياً حسب التاريخ؛ استخدم ↑ ↓ للتعديل، واضغط ＋ على أي خط متقطّع لإدراج رسالة نصية في مكانها.",
+sumTitle:"كيف تريد التلخيص؟", trTitle:"استخراج الكلمات كما قيلت", segSum:"✨ لخّص", segTr:"✍️ الكلمات الحرفية",
+phSum:"مثال: اجمع كل شيء في وصفة واحدة كاملة بالعربية، مع المقادير وخطوات مرقّمة.",
+phTr:"اختياري — مثال: أبقِه بالعربية، أو أضف ترجمة إنجليزية تحت كل رسالة.",
+chips:["🍲 وصفة كاملة","ملخص نقاط","دليل خطوة بخطوة","المهام المطلوبة","ترجمة كاملة"],
+qLabel:'أضِف <strong>تقرير الدقة والضوضاء</strong> لكل رسالة (مدى وضوح كل ملف والكلمات غير المؤكدة)',
+goSum:"لخّص", goTr:"استخرج الكلمات",
+resTitle:"النتيجة", copy:"نسخ", copied:"✓ تم النسخ", share:"مشاركة", followPh:"اسأل سؤال متابعة…", ask:"اسأل",
+footer:"يعمل كلياً في متصفحك — الملفات تذهب فقط إلى Gemini من Google بمفتاحك الخاص.<br>مصمَّم ليفهم اللهجة السورية والعربية والإنجليزية وأكثر من ١٠٠ لغة",
+histTitle:"نتائجك المحفوظة", histSearch:"ابحث…", histEmpty:"لا شيء محفوظ بعد — النتائج تظهر هنا تلقائياً.", histSum:"ملخص", histTr:"كلمات حرفية",
+heroPre:"حوّل كومة رسائل صوتية إلى",
+words:["وصفة","تعليمات واضحة","ملخص واحد نظيف","قائمة تسوّق","ملاحظات اجتماع","دليل خطوات","قائمة مهام","نقاط أساسية","ترجمة","خطة","إجابات","كلمات حرفية"],
+stUpload:"جارٍ الرفع", stThink:"يستمع ويشاهد ويلخّص…" },
+fr: { kTitle:"Votre clé Gemini gratuite", kSaved:"✓ Clé API enregistrée sur cet appareil", kChange:"changer de clé", kPlace:"Collez votre clé API", kModel:"Modèle", kSave:"Enregistrer & tester",
+kHint:'Obtenez une clé gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — compte Google requis, sans carte bancaire. La clé ne quitte jamais cet appareil.',
+kTesting:"Test de la clé…", kOk:"✓ La clé fonctionne et est enregistrée.", kBad:"✗ La clé ne fonctionne pas — vérifiez-la et réessayez.",
+tTitle:"Construisez la chronologie des messages", dz1:"Touchez pour choisir des fichiers, ou glissez-déposez", dz2:"notes vocales et vidéos — plusieurs à la fois",
+addText:"＋ Ajouter un message texte", textHere:"texte ici", textMsg:"Message texte", textPh:"Tapez ou collez le message texte…",
+note2:"L'ordre compte — tout est lu de haut en bas, comme la conversation d'origine. Les fichiers sont triés par date ; utilisez ↑ ↓ pour corriger, et touchez le ＋ d'une ligne pointillée pour insérer un texte.",
+sumTitle:"Comment résumer ?", trTitle:"Extraire les mots exacts", segSum:"✨ Résumer", segTr:"✍️ Mots exacts",
+phSum:"ex. Combinez tout en une seule recette complète en français, avec ingrédients et étapes numérotées.",
+phTr:"Facultatif — ex. garder en arabe, ou ajouter une traduction française sous chaque message.",
+chips:["🍲 Recette complète","Résumé en points","Guide étape par étape","Actions à faire","Traduction complète"],
+qLabel:'Inclure un <strong>rapport de fiabilité</strong> par message (clarté de chaque fichier et mots incertains)',
+goSum:"Résumer", goTr:"Extraire les mots",
+resTitle:"Votre résumé", copy:"Copier", copied:"✓ Copié", share:"Partager", followPh:"Posez une question de suivi…", ask:"Envoyer",
+footer:"Fonctionne entièrement dans votre navigateur — les fichiers ne vont qu'à l'API Gemini de Google, avec votre propre clé.",
+histTitle:"Vos résultats enregistrés", histSearch:"Rechercher…", histEmpty:"Rien d'enregistré — les résultats apparaissent ici automatiquement.", histSum:"résumé", histTr:"mots exacts",
+heroPre:"Transformez une pile de notes vocales en",
+words:["recettes","instructions claires","un résumé propre","une liste de courses","notes de réunion","un guide pas à pas","une liste de tâches","points clés","une traduction","un plan","réponses","mots exacts"],
+stUpload:"Envoi", stThink:"Écoute, analyse et résumé…" },
+de: { kTitle:"Dein kostenloser Gemini-Schlüssel", kSaved:"✓ API-Schlüssel auf diesem Gerät gespeichert", kChange:"Schlüssel ändern", kPlace:"API-Schlüssel einfügen", kModel:"Modell", kSave:"Speichern & testen",
+kHint:'Kostenlos erhältlich auf <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — Google-Konto nötig, keine Kreditkarte. Der Schlüssel verlässt dieses Gerät nie.',
+kTesting:"Schlüssel wird getestet…", kOk:"✓ Schlüssel funktioniert und ist gespeichert.", kBad:"✗ Schlüssel ungültig — bitte prüfen und erneut versuchen.",
+tTitle:"Baue die Nachrichten-Chronik", dz1:"Tippen zum Auswählen oder Dateien hierher ziehen", dz2:"Sprachnachrichten & Videos — gern mehrere auf einmal",
+addText:"＋ Textnachricht hinzufügen", textHere:"Text hier", textMsg:"Textnachricht", textPh:"Textnachricht eingeben oder einfügen…",
+note2:"Die Reihenfolge zählt — alles wird von oben nach unten gelesen wie im Original-Chat. Dateien werden nach Datum sortiert; mit ↑ ↓ korrigieren und mit dem ＋ auf einer gestrichelten Linie Text einfügen.",
+sumTitle:"Wie soll zusammengefasst werden?", trTitle:"Die exakten Worte extrahieren", segSum:"✨ Zusammenfassen", segTr:"✍️ Exakte Worte",
+phSum:"z. B. Fasse alles zu einem vollständigen Rezept auf Deutsch zusammen, mit Zutaten und nummerierten Schritten.",
+phTr:"Optional — z. B. auf Arabisch lassen oder eine deutsche Übersetzung ergänzen.",
+chips:["🍲 Komplettes Rezept","Stichpunkte","Schritt-für-Schritt","Aufgabenliste","Komplette Übersetzung"],
+qLabel:'<strong>Genauigkeits- &amp; Rauschbericht</strong> pro Nachricht anhängen (wie klar jede Datei war, unsichere Wörter)',
+goSum:"Zusammenfassen", goTr:"Worte extrahieren",
+resTitle:"Deine Zusammenfassung", copy:"Kopieren", copied:"✓ Kopiert", share:"Teilen", followPh:"Rückfrage stellen…", ask:"Fragen",
+footer:"Läuft komplett im Browser — Dateien gehen nur an Googles Gemini-API, mit deinem eigenen Schlüssel.",
+histTitle:"Gespeicherte Ergebnisse", histSearch:"Suchen…", histEmpty:"Noch nichts gespeichert — Ergebnisse erscheinen hier automatisch.", histSum:"Zusammenfassung", histTr:"exakte Worte",
+heroPre:"Verwandle einen Stapel Sprachnachrichten in",
+words:["Rezepte","klare Anweisungen","eine saubere Zusammenfassung","eine Einkaufsliste","Meeting-Notizen","eine Anleitung","eine To-do-Liste","Kernpunkte","eine Übersetzung","einen Plan","Antworten","exakte Worte"],
+stUpload:"Lade hoch", stThink:"Hört zu, schaut & fasst zusammen…" },
+tr: { kTitle:"Ücretsiz Gemini anahtarın", kSaved:"✓ API anahtarı bu cihazda kayıtlı", kChange:"anahtarı değiştir", kPlace:"API anahtarını yapıştır", kModel:"Model", kSave:"Kaydet ve test et",
+kHint:'<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> adresinden ücretsiz al — Google hesabı yeterli, kart gerekmez. Anahtar bu cihazdan asla çıkmaz.',
+kTesting:"Anahtar test ediliyor…", kOk:"✓ Anahtar çalışıyor ve kaydedildi.", kBad:"✗ Anahtar çalışmadı — kontrol edip tekrar dene.",
+tTitle:"Mesaj zaman çizelgesini oluştur", dz1:"Dosya seçmek için dokun veya sürükleyip bırak", dz2:"sesli mesajlar ve videolar — birkaç tane birden olabilir",
+addText:"＋ Metin mesajı ekle", textHere:"buraya metin", textMsg:"Metin mesajı", textPh:"Metni yaz veya yapıştır…",
+note2:"Sıra önemli — her şey orijinal sohbet gibi yukarıdan aşağıya okunur. Dosyalar tarihe göre sıralanır; ↑ ↓ ile düzelt, kesikli çizgideki ＋ ile araya metin ekle.",
+sumTitle:"Nasıl özetlensin?", trTitle:"Sözcükleri aynen çıkar", segSum:"✨ Özetle", segTr:"✍️ Aynen yazıya dök",
+phSum:"örn. Her şeyi Türkçe tek ve eksiksiz bir tarife dönüştür; malzemeler ve numaralı adımlarla.",
+phTr:"İsteğe bağlı — örn. Arapça kalsın ya da her mesajın altına Türkçe çeviri eklensin.",
+chips:["🍲 Tam tarif","Madde madde özet","Adım adım rehber","Yapılacaklar","Tam çeviri"],
+qLabel:'Her mesaj için <strong>doğruluk ve gürültü raporu</strong> ekle (dosyaların netliği ve emin olunamayan kelimeler)',
+goSum:"Özetle", goTr:"Sözcükleri çıkar",
+resTitle:"Özetin", copy:"Kopyala", copied:"✓ Kopyalandı", share:"Paylaş", followPh:"Devam sorusu sor…", ask:"Sor",
+footer:"Tamamen tarayıcında çalışır — dosyalar yalnızca kendi anahtarınla Google Gemini API'sine gider.",
+histTitle:"Kayıtlı sonuçların", histSearch:"Ara…", histEmpty:"Henüz bir şey yok — sonuçlar burada otomatik görünür.", histSum:"özet", histTr:"aynen yazıya dökme",
+heroPre:"Bir yığın sesli mesajı şuna dönüştür:",
+words:["tarif","net talimatlar","tek temiz özet","alışveriş listesi","toplantı notları","adım adım rehber","yapılacaklar listesi","önemli noktalar","çeviri","plan","yanıtlar","aynen sözcükler"],
+stUpload:"Yükleniyor", stThink:"Dinliyor, izliyor ve özetliyor…" },
+es: { kTitle:"Tu clave gratuita de Gemini", kSaved:"✓ Clave API guardada en este dispositivo", kChange:"cambiar clave", kPlace:"Pega tu clave API", kModel:"Modelo", kSave:"Guardar y probar",
+kHint:'Consigue una gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — solo cuenta de Google, sin tarjeta. La clave nunca sale de este dispositivo.',
+kTesting:"Probando la clave…", kOk:"✓ La clave funciona y quedó guardada.", kBad:"✗ La clave no funcionó — revísala e inténtalo de nuevo.",
+tTitle:"Arma la línea de tiempo de mensajes", dz1:"Toca para elegir archivos o arrástralos aquí", dz2:"notas de voz y videos — varios a la vez está bien",
+addText:"＋ Añadir un mensaje de texto", textHere:"texto aquí", textMsg:"Mensaje de texto", textPh:"Escribe o pega el mensaje…",
+note2:"El orden importa — todo se lee de arriba abajo, como la conversación original. Los archivos se ordenan por fecha; usa ↑ ↓ para corregir y toca el ＋ de una línea punteada para insertar texto.",
+sumTitle:"¿Cómo lo resumimos?", trTitle:"Extraer las palabras exactas", segSum:"✨ Resumir", segTr:"✍️ Palabras exactas",
+phSum:"p. ej. Combina todo en una sola receta completa en español, con ingredientes y pasos numerados.",
+phTr:"Opcional — p. ej. déjalo en árabe o añade traducción al español bajo cada mensaje.",
+chips:["🍲 Receta completa","Resumen en puntos","Guía paso a paso","Tareas pendientes","Traducción completa"],
+qLabel:'Incluir un <strong>informe de precisión y ruido</strong> por mensaje (qué tan claro se oyó cada archivo y palabras dudosas)',
+goSum:"Resumir", goTr:"Extraer palabras",
+resTitle:"Tu resumen", copy:"Copiar", copied:"✓ Copiado", share:"Compartir", followPh:"Haz una pregunta de seguimiento…", ask:"Preguntar",
+footer:"Funciona por completo en tu navegador — los archivos solo van a la API Gemini de Google, con tu propia clave.",
+histTitle:"Tus resultados guardados", histSearch:"Buscar…", histEmpty:"Nada guardado aún — los resultados aparecen aquí automáticamente.", histSum:"resumen", histTr:"palabras exactas",
+heroPre:"Convierte un montón de notas de voz en",
+words:["recetas","instrucciones claras","un resumen limpio","una lista de compras","notas de reunión","una guía paso a paso","una lista de tareas","puntos clave","una traducción","un plan","respuestas","palabras exactas"],
+stUpload:"Subiendo", stThink:"Escuchando, viendo y resumiendo…" }
+};
+let uiLang = localStorage.getItem("uiLang") || "en";
+if (!STR[uiLang]) uiLang = "en";
+function T(k) { const d = STR[uiLang] || STR.en; return d[k] !== undefined ? d[k] : STR.en[k]; }
+function syncStepNums() { document.body.classList.toggle("haskey", $("keycard").classList.contains("collapsed")); }
 
 // ---------- theme ----------
 const THEME_COLORS = { light: "#faf6ee", dark: "#171310" };
@@ -673,21 +814,22 @@ const savedKey = localStorage.getItem("gemKey") || "";
 if (savedKey) {
   $("apikey").value = savedKey;
   $("keycard").classList.add("collapsed");
+  syncStepNums();
   loadModels(savedKey);
 }
-$("changekey").addEventListener("click", () => $("keycard").classList.remove("collapsed"));
+$("changekey").addEventListener("click", () => { $("keycard").classList.remove("collapsed"); syncStepNums(); });
 
 $("savekey").addEventListener("click", async () => {
   const key = $("apikey").value.trim();
   if (!key) return setKeyStatus("Enter a key first.", false);
-  setKeyStatus("Testing key…", true);
+  setKeyStatus(T("kTesting"), true);
   const ok = await loadModels(key);
   if (ok) {
     localStorage.setItem("gemKey", key);
-    setKeyStatus("✓ Key works and is saved on this device.", true);
-    setTimeout(() => $("keycard").classList.add("collapsed"), 900);
+    setKeyStatus(T("kOk"), true);
+    setTimeout(() => { $("keycard").classList.add("collapsed"); syncStepNums(); }, 900);
   } else {
-    setKeyStatus("✗ Key didn't work — check it and try again.", false);
+    setKeyStatus(T("kBad"), false);
   }
   updateGo();
 });
@@ -785,7 +927,7 @@ function move(i, dir) {
 function makeDivider(pos) {
   const d = document.createElement("div");
   d.className = "tdiv";
-  d.innerHTML = `<span class="tline"></span><button type="button" title="insert a text message here">＋<span class="lbl">&nbsp;text here</span></button><span class="tline"></span>`;
+  d.innerHTML = `<span class="tline"></span><button type="button" title="insert a text message here">＋<span class="lbl">&nbsp;${T("textHere")}</span></button><span class="tline"></span>`;
   d.querySelector("button").addEventListener("click", () => insertTextAt(pos));
   return d;
 }
@@ -809,7 +951,7 @@ function renderTimeline() {
       row.innerHTML = `<div class="trow"><span class="tnum">${i+1}</span><span class="ficon">${icon}</span><span class="fname"></span><span class="fsize">${size}</span><span class="fstate">${it.state}</span>${ctl}</div>`;
       row.querySelector(".fname").textContent = it.file.name;
     } else {
-      row.innerHTML = `<div class="trow"><span class="tnum">${i+1}</span><span class="ficon">💬</span><span class="fname">Text message</span>${ctl}</div><textarea placeholder="Type or paste the text message…"></textarea>`;
+      row.innerHTML = `<div class="trow"><span class="tnum">${i+1}</span><span class="ficon">💬</span><span class="fname">${T("textMsg")}</span>${ctl}</div><textarea placeholder="${T('textPh')}"></textarea>`;
       const ta = row.querySelector("textarea");
       ta.value = it.text;
       ta.addEventListener("input", () => { it.text = ta.value; updateGo(); });
@@ -832,12 +974,10 @@ let mode = localStorage.getItem("mode") || "summary";
 function applyMode() {
   $("modeseg").classList.toggle("alt", mode === "transcript");
   document.querySelectorAll(".segopt").forEach(b => b.classList.toggle("sel", b.dataset.m === mode));
-  $("card3title").textContent = mode === "transcript" ? "Extract the exact words" : "How should it be summarized?";
-  $("instructions").placeholder = mode === "transcript"
-    ? "Optional — e.g. keep it in Arabic, or add an English translation under each message."
-    : "e.g. Combine everything into one complete recipe in English, with an ingredients list and numbered steps.";
+  $("card3title").textContent = mode === "transcript" ? T("trTitle") : T("sumTitle");
+  $("instructions").placeholder = mode === "transcript" ? T("phTr") : T("phSum");
   document.querySelector(".chips").style.display = mode === "transcript" ? "none" : "flex";
-  $("go").textContent = mode === "transcript" ? "Extract the words" : "Summarize it";
+  $("go").textContent = mode === "transcript" ? T("goTr") : T("goSum");
 }
 document.querySelectorAll(".segopt").forEach(b => b.addEventListener("click", () => {
   mode = b.dataset.m;
@@ -974,13 +1114,13 @@ $("go").addEventListener("click", async () => {
     for (let i = 0; i < fileItems.length; i++) {
       const it = fileItems[i];
       if (it.uri) continue; // already uploaded this session
-      status(`Uploading ${i+1}/${fileItems.length}: ${it.file.name}`);
+      status(`${T("stUpload")} ${i+1}/${fileItems.length}: ${it.file.name}`);
       it.state = "uploading…"; renderTimeline();
       await uploadFile(key, it);
       it.state = "✓"; renderTimeline();
     }
 
-    status("Listening, watching & summarizing…");
+    status(T("stThink"));
 
     // Build parts: intro, then each message labeled with its position, in order.
     const total = items.length;
@@ -1105,9 +1245,9 @@ function renderMarkdown(src) {
 }
 
 $("copybtn").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(lastRaw); $("copybtn").textContent = "✓ Copied"; }
+  try { await navigator.clipboard.writeText(lastRaw); $("copybtn").textContent = T("copied"); }
   catch (e) { alert("Copy failed — select the text manually."); }
-  setTimeout(() => $("copybtn").textContent = "Copy", 1500);
+  setTimeout(() => $("copybtn").textContent = T("copy"), 1500);
 });
 $("sharebtn").addEventListener("click", () => {
   if (navigator.share) navigator.share({ text: lastRaw }).catch(()=>{});
@@ -1121,13 +1261,13 @@ function histSave(entry) { const h = histAll(); h.unshift(entry); while (h.lengt
 function histRender() {
   const q = $("histsearch").value.trim().toLowerCase();
   const h = histAll().filter(e => !q || (e.title + " " + e.out).toLowerCase().includes(q));
-  $("histlist").innerHTML = h.length ? "" : `<div class="histempty">Nothing saved yet — results appear here automatically.</div>`;
+  $("histlist").innerHTML = h.length ? "" : `<div class="histempty">${T("histEmpty")}</div>`;
   h.forEach(e => {
     const row = document.createElement("div");
     row.className = "histrow";
     row.innerHTML = `<div class="hmain"><div class="htitle"></div><div class="hmeta"></div></div><button class="hdel" title="delete">✕</button>`;
     row.querySelector(".htitle").textContent = e.title || "Untitled";
-    row.querySelector(".hmeta").textContent = new Date(e.d).toLocaleString() + " · " + (e.m === "transcript" ? "exact words" : "summary") + (e.files && e.files.length ? " · " + e.files.length + " file(s)" : "");
+    row.querySelector(".hmeta").textContent = new Date(e.d).toLocaleString() + " · " + (e.m === "transcript" ? T("histTr") : T("histSum")) + (e.files && e.files.length ? " · " + e.files.length + " file(s)" : "");
     row.addEventListener("click", () => { $("histov").hidden = true; showResult(e.out); });
     row.querySelector(".hdel").addEventListener("click", ev => { ev.stopPropagation(); histStore(histAll().filter(x => x.d !== e.d)); histRender(); });
     $("histlist").appendChild(row);
@@ -1203,7 +1343,8 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
     const target = Math.max(12, Math.min(36, Math.round(W * H / 38000)));
     const placed = []; // {x, y, r}
     for (let n = 0; n < target; n++) {
-      const size = Math.random() < .3 ? 90 + Math.random() * 55 : 36 + Math.random() * 46;
+      const far = Math.random() < .45; // depth: far stars are smaller, fainter, softly blurred
+      const size = far ? 30 + Math.random() * 42 : (Math.random() < .35 ? 90 + Math.random() * 55 : 44 + Math.random() * 44);
       const r = size / 2;
       let x, y, ok = false;
       for (let t = 0; t < 40 && !ok; t++) {
@@ -1218,10 +1359,13 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
       el.style.width = el.style.height = size + "px";
       el.style.left = x + "px";
       el.style.top = y + "px";
-      el.style.setProperty("--go", (0.14 + Math.random() * 0.12).toFixed(2));
-      el.style.setProperty("--gd", (0.08 + Math.random() * 0.08).toFixed(2));
+      el.style.setProperty("--go", (far ? 0.06 + Math.random() * 0.05 : 0.16 + Math.random() * 0.10).toFixed(2));
+      el.style.setProperty("--gd", (far ? 0.035 + Math.random() * 0.03 : 0.10 + Math.random() * 0.06).toFixed(2));
       const idle = !reduced && Math.random() < .4; // a random minority turns slowly on its own
-      el.innerHTML = `<div class="ginner${idle ? " idle" : ""}"${idle ? ` style="animation-duration:${Math.round(45 + Math.random() * 50)}s;animation-direction:${Math.random() < .5 ? "reverse" : "normal"}"` : ""}>${KHATAM}</div>`;
+      const st = [];
+      if (idle) st.push(`animation-duration:${Math.round(45 + Math.random() * 50)}s`, `animation-direction:${Math.random() < .5 ? "reverse" : "normal"}`);
+      if (far) st.push("filter:blur(0.6px)");
+      el.innerHTML = `<div class="ginner${idle ? " idle" : ""}"${st.length ? ` style="${st.join(";")}"` : ""}>${KHATAM}</div>`;
       const g = { el, angle: Math.random() * 360, speed: (0.05 + Math.random() * 0.1) * (Math.random() < .5 ? -1 : 1) };
       el.style.transform = `translate(-50%, -50%) rotate(${g.angle}deg)`;
       el.addEventListener("click", () => {
@@ -1259,18 +1403,19 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
 
 // ---------- hero cycling word ----------
 (function () {
-  const WORDS = ["recipes", "clear instructions", "one clean summary", "action items", "a shopping list", "meeting notes", "a step-by-step guide", "English", "a to-do list", "study notes", "key points", "a translation", "directions", "a plan", "an itinerary", "decisions", "highlights", "answers", "reminders", "a checklist", "exact words", "short bullets", "grandma's recipe", "doctor's advice", "wedding plans", "something you can skim", "a story you can tell", "one message"];
   const el = $("cycleword");
   let wi = 0;
   const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   setInterval(() => {
+    const WORDS = T("words");
     wi = (wi + 1) % WORDS.length;
     if (reduced) { el.textContent = WORDS[wi]; return; }
     el.style.transition = "transform .28s ease, opacity .28s ease";
     el.style.transform = "translateY(-9px)";
     el.style.opacity = "0";
     setTimeout(() => {
-      el.textContent = WORDS[wi];
+      const W2 = T("words");
+      el.textContent = W2[wi % W2.length];
       el.style.transition = "none";
       el.style.transform = "translateY(9px)";
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -1290,6 +1435,71 @@ document.querySelectorAll(".card").forEach(card => {
     card.style.setProperty("--my", (e.clientY - r.top) + "px");
   });
 });
+
+// ---------- speak your request ----------
+(function () {
+  const SRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = $("micbtn");
+  if (!SRec) { btn.style.display = "none"; return; }
+  const MICLANG = { en: "en-US", ar: "ar-SY", fr: "fr-FR", de: "de-DE", tr: "tr-TR", es: "es-ES" };
+  let rec = null, base = "";
+  btn.addEventListener("click", () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SRec();
+    rec.lang = MICLANG[uiLang] || "en-US";
+    rec.interimResults = true;
+    rec.continuous = true;
+    base = $("instructions").value.trim();
+    rec.onresult = ev => {
+      let txt = "";
+      for (const r of ev.results) txt += r[0].transcript;
+      $("instructions").value = (base ? base + " " : "") + txt.trim();
+      updateGo();
+    };
+    rec.onend = () => { rec = null; btn.classList.remove("on"); updateGo(); };
+    rec.onerror = () => { try { rec.stop(); } catch (e) {} };
+    try { rec.start(); btn.classList.add("on"); } catch (e) { rec = null; }
+  });
+})();
+
+// ---------- apply interface language ----------
+function applyLang(l) {
+  uiLang = STR[l] ? l : "en";
+  localStorage.setItem("uiLang", uiLang);
+  document.documentElement.lang = uiLang;
+  document.documentElement.dir = uiLang === "ar" ? "rtl" : "ltr";
+  $("t_key").textContent = T("kTitle");
+  $("kmsg").textContent = T("kSaved");
+  $("changekey").textContent = T("kChange");
+  $("apikey").placeholder = T("kPlace");
+  $("mlabel").textContent = T("kModel");
+  $("savekey").textContent = T("kSave");
+  $("keyhint").innerHTML = T("kHint");
+  $("t_tl").textContent = T("tTitle");
+  $("dz1").textContent = T("dz1");
+  $("dz2").textContent = T("dz2");
+  $("addtext").textContent = T("addText");
+  $("note2").textContent = T("note2");
+  $("qlabel").innerHTML = T("qLabel");
+  $("t_res").textContent = T("resTitle");
+  $("copybtn").textContent = T("copy");
+  $("sharebtn").textContent = T("share");
+  $("followq").placeholder = T("followPh");
+  $("followbtn").textContent = T("ask");
+  $("footer").innerHTML = T("footer");
+  $("histtitle").textContent = T("histTitle");
+  $("histsearch").placeholder = T("histSearch");
+  $("heropre").textContent = T("heroPre");
+  document.querySelectorAll(".segopt").forEach(b => b.textContent = b.dataset.m === "summary" ? T("segSum") : T("segTr"));
+  document.querySelectorAll(".chip").forEach((c, i) => { if (T("chips")[i]) c.textContent = T("chips")[i]; });
+  document.querySelectorAll("#langmenu button").forEach(b => b.classList.toggle("on", b.dataset.l === uiLang));
+  applyMode();
+  renderTimeline();
+}
+$("langbtn").addEventListener("click", () => { $("langmenu").hidden = !$("langmenu").hidden; });
+document.querySelectorAll("#langmenu button").forEach(b => b.addEventListener("click", () => { $("langmenu").hidden = true; applyLang(b.dataset.l); }));
+document.addEventListener("click", e => { if (!$("langmenu").hidden && !$("langmenu").contains(e.target) && e.target !== $("langbtn")) $("langmenu").hidden = true; });
+applyLang(uiLang);
 
 // ---------- tutorial ----------
 const TUT = [
@@ -1317,10 +1527,10 @@ $("tutov").addEventListener("click", e => { if (e.target === $("tutov")) tutClos
 $("tutprev").addEventListener("click", () => { if (tuti > 0) { tuti--; tutRender(); } });
 $("tutnext").addEventListener("click", () => { if (tuti < TUT.length - 1) { tuti++; tutRender(); } else tutClose(); });
 if (!localStorage.getItem("tutSeen")) {
-  localStorage.setItem("tutSeen", "1"); localStorage.setItem("wn1", "1");
+  localStorage.setItem("tutSeen", "1"); localStorage.setItem("wn2", "1");
   tutOpen();
-} else if (!localStorage.getItem("wn1")) {
-  localStorage.setItem("wn1", "1");
+} else if (!localStorage.getItem("wn2")) {
+  localStorage.setItem("wn2", "1");
   $("newov").hidden = false;
 }
 $("newok").addEventListener("click", () => $("newov").hidden = true);

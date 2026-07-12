@@ -25,6 +25,8 @@ Everything runs in your browser. Files are sent directly to Google's Gemini API 
 - Summarize ↔ Exact-words (cleaned transcript) mode slider
 - On-device, searchable history of past results
 - Android: share voice notes & videos from WhatsApp straight into Mulakhas (installed PWA)
+- Speak your request instead of typing (multi-language)
+- Interface in English, العربية, Français, Deutsch, Türkçe, Español
 
 ## Deploy your own
 
