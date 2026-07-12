@@ -305,7 +305,8 @@
   .optrow strong { color: var(--ink); font-weight: 600; }
 
   /* Preset chips */
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; max-height: 150px; overflow: hidden; opacity: 1; transition: max-height .45s cubic-bezier(.2, .7, .3, 1), opacity .3s ease, margin-top .45s cubic-bezier(.2, .7, .3, 1); }
+  .chips.chipsoff { max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; }
   .chip {
     background: var(--paper);
     border: 1px solid var(--line-strong);
@@ -585,7 +586,7 @@
 </div>
 <div class="wrap">
   <header class="rise">
-    <h1>Mulakhas<span style="color:var(--accent)">.</span></h1>
+    <h1><span id="brand">Mulakhas</span><span style="color:var(--accent)">.</span></h1>
     <p class="herosub"><span id="heropre">Turn a pile of voice notes into</span> <span id="cycleword">recipes</span>.</p>
   </header>
 
@@ -680,7 +681,7 @@ const $ = id => document.getElementById(id);
 
 // ---------- interface languages ----------
 const STR = {
-en: { kTitle:"Your free Gemini key", kSaved:"✓ API key saved on this device", kChange:"change key", kPlace:"Paste your API key", kModel:"Model", kSave:"Save & test key",
+en: { brand:"Mulakhas", kTitle:"Your free Gemini key", kSaved:"✓ API key saved on this device", kChange:"change key", kPlace:"Paste your API key", kModel:"Model", kSave:"Save & test key",
 kHint:'Get one free at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — Google account needed, no credit card. The key never leaves this device.',
 kTesting:"Testing key…", kOk:"✓ Key works and is saved on this device.", kBad:"✗ Key didn't work — check it and try again.",
 tTitle:"Build the message timeline", dz1:"Tap to choose files, or drag & drop", dz2:"voice notes & videos — several at once is fine",
@@ -698,7 +699,7 @@ histTitle:"Your saved results", histSearch:"Search…", histEmpty:"Nothing saved
 heroPre:"Turn a pile of voice notes into",
 words:["recipes","clear instructions","one clean summary","action items","a shopping list","meeting notes","a step-by-step guide","English","a to-do list","study notes","key points","a translation","directions","a plan","an itinerary","decisions","highlights","answers","reminders","a checklist","exact words","short bullets","grandma's recipe","doctor's advice","wedding plans","something you can skim","a story you can tell","one message"],
 stUpload:"Uploading", stThink:"Listening, watching & summarizing…" },
-ar: { kTitle:"مفتاح Gemini المجاني", kSaved:"✓ المفتاح محفوظ على هذا الجهاز", kChange:"تغيير المفتاح", kPlace:"الصق مفتاح API هنا", kModel:"النموذج", kSave:"احفظ واختبر المفتاح",
+ar: { brand:"ملخّص", kTitle:"مفتاح Gemini المجاني", kSaved:"✓ المفتاح محفوظ على هذا الجهاز", kChange:"تغيير المفتاح", kPlace:"الصق مفتاح API هنا", kModel:"النموذج", kSave:"احفظ واختبر المفتاح",
 kHint:'احصل على مفتاح مجاني من <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — يلزم حساب Google فقط، بدون بطاقة. المفتاح لا يغادر جهازك.',
 kTesting:"جارٍ اختبار المفتاح…", kOk:"✓ المفتاح يعمل وتم حفظه.", kBad:"✗ المفتاح لا يعمل — تحقّق منه وحاول مجدداً.",
 tTitle:"رتّب الرسائل بالتسلسل", dz1:"اضغط لاختيار الملفات أو اسحبها إلى هنا", dz2:"رسائل صوتية وفيديو — عدة ملفات دفعة واحدة",
@@ -716,7 +717,7 @@ histTitle:"نتائجك المحفوظة", histSearch:"ابحث…", histEmpty:"
 heroPre:"حوّل كومة رسائل صوتية إلى",
 words:["وصفة","تعليمات واضحة","ملخص واحد نظيف","قائمة تسوّق","ملاحظات اجتماع","دليل خطوات","قائمة مهام","نقاط أساسية","ترجمة","خطة","إجابات","كلمات حرفية"],
 stUpload:"جارٍ الرفع", stThink:"يستمع ويشاهد ويلخّص…" },
-fr: { kTitle:"Votre clé Gemini gratuite", kSaved:"✓ Clé API enregistrée sur cet appareil", kChange:"changer de clé", kPlace:"Collez votre clé API", kModel:"Modèle", kSave:"Enregistrer & tester",
+fr: { brand:"Mulakhas", kTitle:"Votre clé Gemini gratuite", kSaved:"✓ Clé API enregistrée sur cet appareil", kChange:"changer de clé", kPlace:"Collez votre clé API", kModel:"Modèle", kSave:"Enregistrer & tester",
 kHint:'Obtenez une clé gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — compte Google requis, sans carte bancaire. La clé ne quitte jamais cet appareil.',
 kTesting:"Test de la clé…", kOk:"✓ La clé fonctionne et est enregistrée.", kBad:"✗ La clé ne fonctionne pas — vérifiez-la et réessayez.",
 tTitle:"Construisez la chronologie des messages", dz1:"Touchez pour choisir des fichiers, ou glissez-déposez", dz2:"notes vocales et vidéos — plusieurs à la fois",
@@ -734,7 +735,7 @@ histTitle:"Vos résultats enregistrés", histSearch:"Rechercher…", histEmpty:"
 heroPre:"Transformez une pile de notes vocales en",
 words:["recettes","instructions claires","un résumé propre","une liste de courses","notes de réunion","un guide pas à pas","une liste de tâches","points clés","une traduction","un plan","réponses","mots exacts"],
 stUpload:"Envoi", stThink:"Écoute, analyse et résumé…" },
-de: { kTitle:"Dein kostenloser Gemini-Schlüssel", kSaved:"✓ API-Schlüssel auf diesem Gerät gespeichert", kChange:"Schlüssel ändern", kPlace:"API-Schlüssel einfügen", kModel:"Modell", kSave:"Speichern & testen",
+de: { brand:"Mulakhas", kTitle:"Dein kostenloser Gemini-Schlüssel", kSaved:"✓ API-Schlüssel auf diesem Gerät gespeichert", kChange:"Schlüssel ändern", kPlace:"API-Schlüssel einfügen", kModel:"Modell", kSave:"Speichern & testen",
 kHint:'Kostenlos erhältlich auf <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — Google-Konto nötig, keine Kreditkarte. Der Schlüssel verlässt dieses Gerät nie.',
 kTesting:"Schlüssel wird getestet…", kOk:"✓ Schlüssel funktioniert und ist gespeichert.", kBad:"✗ Schlüssel ungültig — bitte prüfen und erneut versuchen.",
 tTitle:"Baue die Nachrichten-Chronik", dz1:"Tippen zum Auswählen oder Dateien hierher ziehen", dz2:"Sprachnachrichten & Videos — gern mehrere auf einmal",
@@ -752,7 +753,7 @@ histTitle:"Gespeicherte Ergebnisse", histSearch:"Suchen…", histEmpty:"Noch nic
 heroPre:"Verwandle einen Stapel Sprachnachrichten in",
 words:["Rezepte","klare Anweisungen","eine saubere Zusammenfassung","eine Einkaufsliste","Meeting-Notizen","eine Anleitung","eine To-do-Liste","Kernpunkte","eine Übersetzung","einen Plan","Antworten","exakte Worte"],
 stUpload:"Lade hoch", stThink:"Hört zu, schaut & fasst zusammen…" },
-tr: { kTitle:"Ücretsiz Gemini anahtarın", kSaved:"✓ API anahtarı bu cihazda kayıtlı", kChange:"anahtarı değiştir", kPlace:"API anahtarını yapıştır", kModel:"Model", kSave:"Kaydet ve test et",
+tr: { brand:"Mulakhas", kTitle:"Ücretsiz Gemini anahtarın", kSaved:"✓ API anahtarı bu cihazda kayıtlı", kChange:"anahtarı değiştir", kPlace:"API anahtarını yapıştır", kModel:"Model", kSave:"Kaydet ve test et",
 kHint:'<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> adresinden ücretsiz al — Google hesabı yeterli, kart gerekmez. Anahtar bu cihazdan asla çıkmaz.',
 kTesting:"Anahtar test ediliyor…", kOk:"✓ Anahtar çalışıyor ve kaydedildi.", kBad:"✗ Anahtar çalışmadı — kontrol edip tekrar dene.",
 tTitle:"Mesaj zaman çizelgesini oluştur", dz1:"Dosya seçmek için dokun veya sürükleyip bırak", dz2:"sesli mesajlar ve videolar — birkaç tane birden olabilir",
@@ -770,7 +771,7 @@ histTitle:"Kayıtlı sonuçların", histSearch:"Ara…", histEmpty:"Henüz bir �
 heroPre:"Bir yığın sesli mesajı şuna dönüştür:",
 words:["tarif","net talimatlar","tek temiz özet","alışveriş listesi","toplantı notları","adım adım rehber","yapılacaklar listesi","önemli noktalar","çeviri","plan","yanıtlar","aynen sözcükler"],
 stUpload:"Yükleniyor", stThink:"Dinliyor, izliyor ve özetliyor…" },
-es: { kTitle:"Tu clave gratuita de Gemini", kSaved:"✓ Clave API guardada en este dispositivo", kChange:"cambiar clave", kPlace:"Pega tu clave API", kModel:"Modelo", kSave:"Guardar y probar",
+es: { brand:"Mulakhas", kTitle:"Tu clave gratuita de Gemini", kSaved:"✓ Clave API guardada en este dispositivo", kChange:"cambiar clave", kPlace:"Pega tu clave API", kModel:"Modelo", kSave:"Guardar y probar",
 kHint:'Consigue una gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — solo cuenta de Google, sin tarjeta. La clave nunca sale de este dispositivo.',
 kTesting:"Probando la clave…", kOk:"✓ La clave funciona y quedó guardada.", kBad:"✗ La clave no funcionó — revísala e inténtalo de nuevo.",
 tTitle:"Arma la línea de tiempo de mensajes", dz1:"Toca para elegir archivos o arrástralos aquí", dz2:"notas de voz y videos — varios a la vez está bien",
@@ -980,7 +981,7 @@ function applyMode() {
   document.querySelectorAll(".segopt").forEach(b => b.classList.toggle("sel", b.dataset.m === mode));
   $("card3title").textContent = mode === "transcript" ? T("trTitle") : T("sumTitle");
   $("instructions").placeholder = mode === "transcript" ? T("phTr") : T("phSum");
-  document.querySelector(".chips").style.display = mode === "transcript" ? "none" : "flex";
+  document.querySelector(".chips").classList.toggle("chipsoff", mode === "transcript");
   $("go").textContent = mode === "transcript" ? T("goTr") : T("goSum");
 }
 document.querySelectorAll(".segopt").forEach(b => b.addEventListener("click", () => {
@@ -1344,7 +1345,7 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
   function build() {
     box.innerHTML = ""; gears = [];
     const W = innerWidth, H = innerHeight;
-    const target = Math.max(12, Math.min(36, Math.round(W * H / 38000)));
+    const target = Math.max(16, Math.min(48, Math.round(W * H / 26000)));
     const placed = []; // {x, y, r}
     for (let n = 0; n < target; n++) {
       const far = Math.random() < .45; // depth: far stars are smaller, fainter, softly blurred
@@ -1472,6 +1473,8 @@ function applyLang(l) {
   localStorage.setItem("uiLang", uiLang);
   document.documentElement.lang = uiLang;
   document.documentElement.dir = uiLang === "ar" ? "rtl" : "ltr";
+  $("brand").textContent = T("brand");
+  document.title = T("brand") + " — Voice & Video Summarizer";
   $("t_key").textContent = T("kTitle");
   $("kmsg").textContent = T("kSaved");
   $("changekey").textContent = T("kChange");
