@@ -172,9 +172,10 @@
   .modelrow label { font-size: .8rem; color: var(--ink-soft); flex-shrink: 0; font-weight: 500; }
 
   /* collapsed key card */
-  #keycard.collapsed .keybody { display: none; }
+  .keybody { overflow: hidden; max-height: 520px; opacity: 1; transition: max-height .55s cubic-bezier(.2, .7, .3, 1), opacity .35s ease; }
+  #keycard.collapsed .keybody { max-height: 0; opacity: 0; }
   #keydone { display: none; align-items: center; justify-content: space-between; gap: 10px; }
-  #keycard.collapsed #keydone { display: flex; }
+  #keycard.collapsed #keydone { display: flex; animation: rise .45s cubic-bezier(.2, .7, .3, 1) both; }
   #keydone .kmsg { font-size: .9rem; color: var(--good); font-weight: 500; }
   #keydone button {
     background: none; border: none; color: var(--ink-soft); font-size: .82rem;
@@ -289,6 +290,8 @@
   .seg { position: relative; display: flex; background: var(--paper); border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px; margin-bottom: 12px; }
   .seg .thumb { position: absolute; top: 3px; left: 3px; width: calc(50% - 3px); bottom: 3px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); transition: transform .25s cubic-bezier(.2,.7,.3,1); }
   .seg.alt .thumb { transform: translateX(100%); }
+  [dir="rtl"] .seg .thumb { left: auto; right: 3px; }
+  [dir="rtl"] .seg.alt .thumb { transform: translateX(-100%); }
   .segopt { flex: 1; position: relative; z-index: 1; background: none; border: none; font-family: inherit; font-size: .85rem; font-weight: 600; color: var(--ink-soft); padding: 8px 0; cursor: pointer; border-radius: 999px; transition: color .2s; }
   .segopt.sel { color: var(--ink); }
 
@@ -530,7 +533,8 @@
   [dir="rtl"] .tawrap textarea { padding-right: 13px; padding-left: 46px; }
   [dir="rtl"] #micbtn { right: auto; left: 9px; }
   /* step numbers vanish once the key is in */
-  body.haskey .step .n:not(.keep) { display: none; }
+  .step .n:not(.keep) { max-width: 2em; overflow: hidden; transition: opacity .5s ease, max-width .6s ease .1s; }
+  body.haskey .step .n:not(.keep) { opacity: 0; max-width: 0; }
 
   footer { text-align: center; color: var(--ink-faint); font-size: .75rem; padding: 20px 0 34px; line-height: 1.7; }
 </style>
