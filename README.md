@@ -1,6 +1,6 @@
 # Mulakhas ملخص
 
-Drop a pile of voice notes, videos & texts — Arabic (incl. Syrian dialect), English, or any language — and get exactly the summary you asked for. Turn 15 rambling voice messages into one clean recipe.
+Drop a pile of voice notes, videos & texts — Arabic, English, or any language — and get exactly the summary you asked for. Turn 15 rambling voice messages into one clean recipe/directions/summary.
 
 **Live app:** https://hemedany.github.io/mulakhas/
 
