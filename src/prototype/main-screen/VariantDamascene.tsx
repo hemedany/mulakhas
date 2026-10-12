@@ -53,7 +53,7 @@ function Header({ copy }: { copy: SampleCopy }) {
   return (
     <header className="relative shrink-0 overflow-hidden bg-brand pt-[env(safe-area-inset-top)] text-on-brand">
       <Pattern onBrand className="opacity-[0.16]" />
-      <div className="relative flex h-14 items-center justify-between px-3">
+      <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between px-3 lg:px-6">
         <div className="flex items-center gap-2 ps-1">
           <span className="text-on-brand"><KhatamMark size={28} /></span>
           <span className="font-display text-[1.35rem] leading-none font-semibold">{copy.appName}</span>
@@ -72,8 +72,8 @@ function Header({ copy }: { copy: SampleCopy }) {
 function Empty({ copy }: { copy: SampleCopy }) {
   const [picked, setPicked] = useState<string | null>(null)
   return (
-    <div className="mx-auto max-w-xl px-4 pt-5 pb-8">
-      <ArchFrame className="flex min-h-64 flex-col items-center justify-end px-6 pt-20 pb-6 text-center">
+    <div className="mx-auto max-w-xl px-4 pt-5 pb-8 lg:grid lg:max-w-6xl lg:grid-cols-[5fr_6fr] lg:items-center lg:gap-16 lg:px-8 lg:py-14">
+      <ArchFrame className="flex min-h-64 flex-col items-center justify-end px-6 pt-20 pb-6 text-center lg:min-h-[30rem] lg:pb-10">
         <span className="text-ornament"><KhatamMark size={44} /></span>
         <h1 className="mt-3 font-display text-xl font-semibold text-balance">{copy.emptyTitle}</h1>
         <p className="mt-1 max-w-[32ch] text-sm text-fg-muted text-pretty">{copy.emptyBody}</p>
@@ -84,10 +84,12 @@ function Empty({ copy }: { copy: SampleCopy }) {
         <button type="button" className="mt-1.5 h-10 px-3 text-sm font-medium text-fg-muted">{copy.addText}</button>
       </ArchFrame>
 
-      <OrnamentRule className="my-7" />
+      <OrnamentRule className="my-7 lg:hidden" />
 
-      <h2 className="font-display text-2xl font-semibold text-balance">{copy.whatDoYouWant}</h2>
-      <div className="mt-4 grid grid-cols-2 gap-2.5">
+      <div>
+      <h2 className="font-display text-2xl font-semibold text-balance lg:text-[2.25rem] lg:leading-tight">{copy.whatDoYouWant}</h2>
+      <OrnamentRule className="my-5 hidden max-w-48 lg:flex" />
+      <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-3 lg:gap-3">
         {copy.presets.map(p => {
           const Icon = PRESET_ICON[p.id]
           const on = picked === p.id
@@ -103,6 +105,7 @@ function Empty({ copy }: { copy: SampleCopy }) {
           )
         })}
       </div>
+      </div>
     </div>
   )
 }
@@ -111,7 +114,7 @@ function Bubble({ m, n, copy, lang }: { m: SampleMessage; n: number; copy: Sampl
   return (
     <li className="flex items-start gap-2.5">
       <StarBadge n={n} lang={lang} className="mt-1.5" />
-      <div className="min-w-0 max-w-[24rem] flex-1">
+      <div className="min-w-0 max-w-[24rem] flex-1 lg:max-w-[30rem]">
         {m.kind === 'text' ? (
           <div className="rounded-card rounded-ss-md border border-brand/15 bg-brand-soft px-3.5 py-2.5">
             <p className="text-[0.95rem]">{m.text}</p>
@@ -157,7 +160,7 @@ function Composer({ copy, onSummarize, disabled }: { copy: SampleCopy; onSummari
   const [preset, setPreset] = useState<string | null>('recipe')
   return (
     <footer className="relative shrink-0 border-t border-ornament/40 bg-surface pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto max-w-2xl px-3 pt-2.5 pb-3">
+      <div className="mx-auto max-w-3xl px-3 pt-2.5 pb-3 lg:px-8">
         <div className="-mx-3 mb-2.5 flex items-center gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
           <div role="radiogroup" aria-label="Mode" className="flex shrink-0 rounded-full bg-sunken p-0.5">
             {(['summary', 'exact'] as const).map(m => (
@@ -199,20 +202,20 @@ function Composer({ copy, onSummarize, disabled }: { copy: SampleCopy; onSummari
 
 function ResultSheet({ copy, onClose }: { copy: SampleCopy; onClose: () => void }) {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col justify-end">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-brand-deep/45" />
+    <div className="absolute inset-0 z-10 flex flex-col justify-end lg:static lg:z-auto lg:w-[min(40rem,46vw)] lg:shrink-0 lg:border-s lg:border-ornament/40">
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-brand-deep/45 lg:hidden" />
       <section role="dialog" aria-label={copy.result}
-        className="relative mx-auto flex max-h-[90%] w-full max-w-2xl flex-col overflow-hidden rounded-t-sheet bg-surface shadow-floating">
-        <div className="relative h-14 shrink-0 overflow-hidden bg-brand text-on-brand">
+        className="relative mx-auto flex max-h-[90%] w-full max-w-2xl flex-col overflow-hidden rounded-t-sheet bg-surface shadow-floating lg:mx-0 lg:h-full lg:max-h-none lg:max-w-none lg:rounded-none lg:shadow-none">
+        <div className="relative h-14 shrink-0 overflow-hidden bg-brand text-on-brand lg:h-12">
           <Pattern onBrand className="opacity-[0.22]" />
-          <div className="relative mx-auto mt-2 h-1.5 w-10 rounded-full bg-on-brand/40" aria-hidden="true" />
-          <div className="relative flex items-center justify-between px-4">
+          <div className="relative mx-auto mt-2 h-1.5 w-10 rounded-full bg-on-brand/40 lg:hidden" aria-hidden="true" />
+          <div className="relative flex items-center justify-between px-4 lg:h-full lg:px-6">
             <span className="flex items-center gap-2 text-sm font-medium"><KhatamMark size={18} />{copy.result}</span>
             <button type="button" aria-label="Close" onClick={onClose} className="-mt-1 grid size-10 place-items-center rounded-full hover:bg-white/10"><XIcon size={20} /></button>
           </div>
         </div>
         <div className="h-px bg-ornament/70" />
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-4 lg:px-10 lg:pt-8">
           <Markdown source={copy.resultMd} titleClass="font-display text-[1.75rem] leading-tight font-semibold" />
           <OrnamentRule className="my-6" />
           <h3 className="text-sm font-semibold">{copy.reliability}</h3>
@@ -222,7 +225,7 @@ function ResultSheet({ copy, onClose }: { copy: SampleCopy; onClose: () => void 
             ))}
           </ul>
         </div>
-        <div className="border-t border-line px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <div className="border-t border-line px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:px-10 lg:pb-5">
           <div className="flex gap-2">
             <button type="button" className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-control bg-accent font-medium text-on-accent transition-transform active:scale-[0.98]"><CopyIcon size={18} />{copy.copy}</button>
             <button type="button" className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-control border border-line font-medium transition-transform active:scale-[0.98]"><ShareNetworkIcon size={18} />{copy.share}</button>
@@ -242,22 +245,27 @@ export default function VariantDamascene({ copy, thread, state, onSummarize, onR
   const lang = copy.appName === 'ملخّص' ? 'ar' : 'en'
   const empty = state === 'empty'
   return (
-    <div className="relative flex h-full flex-col bg-bg">
+    <div className="flex h-full flex-col bg-bg">
       <Header copy={copy} />
-      <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <Pattern className="ornament-page opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
-        <div className="relative">
-          {empty ? (
-            <Empty copy={copy} />
-          ) : (
-            <ol className="mx-auto max-w-2xl space-y-3 px-3 py-5">
-              {thread.map((m, i) => <Bubble key={i} m={m} n={i + 1} copy={copy} lang={lang} />)}
-            </ol>
-          )}
+      <div className="relative flex min-h-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {/* Phones: pattern fades down the page. Desktop: it fills the margins around a manuscript column. */}
+            <Pattern className="ornament-page opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />
+            <div className="relative flex min-h-full flex-col">
+              {empty ? (
+                <Empty copy={copy} />
+              ) : (
+                <ol className="mx-auto w-full max-w-3xl flex-1 space-y-3 px-3 py-5 lg:border-x lg:border-ornament/30 lg:bg-bg lg:px-8 lg:py-8">
+                  {thread.map((m, i) => <Bubble key={i} m={m} n={i + 1} copy={copy} lang={lang} />)}
+                </ol>
+              )}
+            </div>
+          </main>
+          {!empty && <Composer copy={copy} onSummarize={onSummarize} disabled={false} />}
         </div>
-      </main>
-      {!empty && <Composer copy={copy} onSummarize={onSummarize} disabled={false} />}
-      {state === 'result' && <ResultSheet copy={copy} onClose={onReset} />}
+        {state === 'result' && <ResultSheet copy={copy} onClose={onReset} />}
+      </div>
     </div>
   )
 }

@@ -35,7 +35,7 @@ export function MainScreenPrototype() {
   const { prefs } = useEngine()
   const { uiLang, theme } = usePrefs()
   const [variant, setVariant] = useParam<string>('variant', 'D')
-  const [accent, setAccent] = useParam<'teal' | 'gold'>('accent', 'teal')
+  const [accent, setAccent] = useParam<'teal' | 'gold'>('accent', 'gold')
   const [ornament, setOrnament] = useParam<'rich' | 'subtle'>('ornament', 'rich')
   const [state, setState] = useParam<ScreenState>('state', 'ready')
   const lang = uiLang === 'ar' ? 'ar' : 'en'
@@ -65,7 +65,7 @@ export function MainScreenPrototype() {
         toggles={[
           { label: 'State', value: state, onChange: setState, options: [{ value: 'empty', label: 'Empty' }, { value: 'ready', label: 'Ready' }, { value: 'result', label: 'Result' }] },
           { label: 'Ornament', value: ornament, onChange: setOrnament, options: [{ value: 'rich', label: 'Rich' }, { value: 'subtle', label: 'Subtle' }] },
-          { label: 'Accent', value: accent, onChange: setAccent, options: [{ value: 'teal', label: 'Teal' }, { value: 'gold', label: 'Gold' }] },
+          { label: 'Accent', value: accent, onChange: setAccent, options: [{ value: 'gold', label: 'Gold' }, { value: 'teal', label: 'Teal' }] },
           { label: 'Language', value: lang, onChange: (l: 'en' | 'ar') => prefs.set({ uiLang: l }), options: [{ value: 'en', label: 'EN' }, { value: 'ar', label: 'عربي' }] },
           { label: 'Theme', value: resolvedTheme, onChange: (t: Theme) => prefs.set({ theme: t }), options: [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }] },
         ]}

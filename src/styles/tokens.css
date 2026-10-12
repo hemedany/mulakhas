@@ -5,8 +5,8 @@
  *   3. Tailwind    the semantic layer exposed as utilities via @theme inline (see index.css)
  *
  * Palette: Damascene. Neutrals are tinted with wine, after the painted 'Ajami rooms of
- * Damascus (deep reds, thin gold work, turquoise). Burgundy carries the brand, gold is
- * ornament only (never small text), teal is the one action colour.
+ * Damascus (deep reds, thin gold work, turquoise). Burgundy carries the brand; light gold is
+ * ornament only (never small text); a darker gold is the one action colour.
  *
  * Shape rule: interactive pills (chips, segmented controls) are fully round; controls and
  * inputs use --radius-control; message bubbles and cards --radius-card; sheets --radius-sheet.
@@ -79,16 +79,18 @@
   --pattern: var(--p-pattern-gold-deep);
   --pattern-on-brand: var(--p-pattern-gold);
 
+  /* Dark gold (bronze) actions: 5.9:1 against their cream label, 6:1 as text on surface. */
+  --accent: oklch(0.5 0.095 68);
+  --accent-strong: oklch(0.44 0.085 66);
+  --accent-soft: oklch(0.94 0.03 78);
+  --on-accent: oklch(0.985 0.012 80);
+}
+
+:root[data-accent="teal"] {
   --accent: var(--p-teal-600);
   --accent-strong: var(--p-teal-700);
   --accent-soft: var(--p-teal-wash);
   --on-accent: var(--p-w-0);
-}
-
-:root[data-accent="gold"] {
-  --accent: oklch(0.55 0.11 70);
-  --accent-strong: oklch(0.49 0.1 68);
-  --accent-soft: oklch(0.95 0.03 80);
 }
 
 /* ---- semantic: dark ("Ajami night") ---- */
@@ -114,14 +116,16 @@
   --pattern: var(--p-pattern-gold);
   --pattern-on-brand: var(--p-pattern-gold);
 
+  /* Antique gold actions: 7.3:1 against their wine label. */
+  --accent: oklch(0.72 0.115 76);
+  --accent-strong: oklch(0.78 0.11 80);
+  --accent-soft: oklch(0.3 0.06 60);
+  --on-accent: oklch(0.2 0.05 14);
+}
+
+:root[data-theme="dark"][data-accent="teal"] {
   --accent: var(--p-teal-300);
   --accent-strong: oklch(0.82 0.09 185);
   --accent-soft: var(--p-teal-night);
   --on-accent: oklch(0.18 0.03 12);
-}
-
-:root[data-theme="dark"][data-accent="gold"] {
-  --accent: var(--p-gold-400);
-  --accent-strong: oklch(0.86 0.1 85);
-  --accent-soft: oklch(0.3 0.05 75);
 }
