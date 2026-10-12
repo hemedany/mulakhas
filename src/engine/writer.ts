@@ -56,17 +56,27 @@ If several speakers can clearly be told apart, label who is speaking (their name
 
 Respond in clean Markdown only: headings, bold, bullet and numbered lists. Start with a "# " title.`
 
-/** One Message as the writer reads it: a labelled block, its Transcript or text below the label. */
-export function messageBlock(message: Message, n: number, total: number) {
-  const head = `===== Message ${n} of ${total}`
-  if (message.kind === 'text') return `${head}: TEXT MESSAGE =====\n${message.text.trim() || '(empty)'}`
+/** One Message as the writer reads it: a label with its number and kind, then its Transcript or text. */
+export interface Block {
+  label: string
+  body: string
+}
+
+const asText = (block: Block) => `${block.label}\n${block.body}`
+
+export function messageBlock(message: Message, n: number, total: number): Block {
+  const label = (kind: string) => `===== Message ${n} of ${total}: ${kind} =====`
+  if (message.kind === 'text') return { label: label('TEXT MESSAGE'), body: message.text.trim() || '(empty)' }
   const what = message.kind === 'video' ? 'VIDEO' : 'VOICE NOTE'
-  if (message.state !== 'heard' || !message.transcript) return `${head}: ${what} =====\n(this ${what.toLowerCase()} could not be heard)`
+  if (message.state !== 'heard' || !message.transcript) return { label: label(what), body: `(this ${what.toLowerCase()} could not be heard)` }
   const { segments, text, heardBy, shown } = message.transcript
   const said = (segments.length ? segments.map(s => (s.unclear ? `⟦unclear: ${s.text}⟧` : s.text)).join(' ') : text) || '(no speech)'
-  if (heardBy !== 'gemini') return `${head}: ${what} (transcript) =====\n${said}`
-  return `${head}: ${what} (what is said, then what it shows) =====\n${said}\n[What the video shows]: ${shown || '(nothing described)'}`
+  if (heardBy !== 'gemini') return { label: label(`${what} (transcript)`), body: said }
+  return { label: label(`${what} (what is said, then what it shows)`), body: `${said}\n[What the video shows]: ${shown || '(nothing described)'}` }
 }
+
+/** The Message number in a Block's label. */
+export const numberOf = (block: Block) => Number(/Message (\d+) of/.exec(block.label)?.[1] ?? Number.NaN)
 
 export const isExact = (options: WriteOptions) => options.mode === 'exact' || options.preset === 'exact'
 
@@ -86,7 +96,7 @@ export interface PromptShape {
 }
 
 /** The writer's whole prompt: the Request, which language to write in, then the Messages' blocks in order. */
-export function promptFrom(blocks: string[], options: WriteOptions, lang: Lang, { condensed = false, continuing = false }: PromptShape = {}) {
+export function promptFrom(blocks: Block[], options: WriteOptions, lang: Lang, { condensed = false, continuing = false }: PromptShape = {}) {
   // Exact words keeps every message in the language it was spoken in; only the labels follow the interface.
   const language = isExact(options)
     ? `Write the title and the message labels in ${LANGUAGE_NAME[lang]}; keep the messages themselves in their own language unless the Request asks for a translation.`
@@ -95,19 +105,16 @@ export function promptFrom(blocks: string[], options: WriteOptions, lang: Lang, 
     ? '\n\nThis part carries on from an earlier part of the same Result: do NOT add a title, start directly with the first message below.'
     : ''
   const heading = condensed ? 'THE CONVERSATION (condensed notes on every message, in order):' : 'THE CONVERSATION:'
-  return `WHAT THE USER WANTS (the Request):\n${requestOf(options)}\n\n${language}${carryOn}\n\n${heading}\n\n${blocks.join('\n\n')}`
-}
-
-/** The writer's whole prompt for a Thread: the Request, which language to write in, then every Message in order. */
-export function buildPrompt(messages: Message[], options: WriteOptions, lang: Lang) {
-  return promptFrom(messages.map((m, i) => messageBlock(m, i + 1, messages.length)), options, lang)
+  return `WHAT THE USER WANTS (the Request):\n${requestOf(options)}\n\n${language}${carryOn}\n\n${heading}\n\n${blocks.map(asText).join('\n\n')}`
 }
 
 /** Condensing part of a big Thread into notes for the final write (see writing.ts). */
-export const CONDENSE_PROMPT = `You prepare notes for a writer who will turn a long conversation into one Result. You receive some of its messages, in order. For each message, write compact notes that keep EVERY detail that could matter for the Request: facts, names, quantities, times, steps and decisions, and above all corrections ("not X, Y"). Keep the language each message was in. Copy ⟦unclear: …⟧ markers as they are. Start each message's notes with its label exactly as given (for example "===== Message 7 of 40: VOICE NOTE ====="). No introduction and no conclusion.`
+export const CONDENSE_PROMPT = `You prepare notes for a writer who will turn a long thread of messages into one Result. You receive some of its messages, in order, each under a label with its number. For each message, write compact notes that keep EVERY detail that could matter for the Request: facts, names, quantities, times, steps and decisions, and above all corrections ("not X, Y"). Keep the language each message was in. Copy ⟦unclear: …⟧ markers as they are.
 
-export function condensePrompt(blocks: string[], options: WriteOptions) {
-  return `THE REQUEST THE NOTES ARE FOR:\n${requestOf(options)}\n\nTHE MESSAGES:\n\n${blocks.join('\n\n')}`
+Answer with JSON only, one entry for every message you receive: {"notes": [{"message": <its number>, "notes": "<the notes>"}]}`
+
+export function condensePrompt(blocks: Block[], options: WriteOptions) {
+  return `THE REQUEST THE NOTES ARE FOR:\n${requestOf(options)}\n\nTHE MESSAGES:\n\n${blocks.map(asText).join('\n\n')}`
 }
 
 /** Worth pressing Summarize: some Text, or a Voice note or Video that is heard or may still be. */
@@ -150,13 +157,18 @@ export const WRITE_MAX_TOKENS = 4096
 // "Request too large for model `openai/gpt-oss-120b` … on tokens per minute (TPM): Limit 8000, Requested 9412, …"
 const TOO_LARGE = /Limit (\d+), Requested (\d+)/
 
-export async function write(
-  fetch: Fetch,
-  key: string,
-  model: string,
-  prompt: string,
-  { system = SYSTEM_PROMPT, maxTokens = WRITE_MAX_TOKENS }: { system?: string; maxTokens?: number } = {},
-): Promise<Written> {
+/** How one request to the writer is made. */
+export interface WriteSettings {
+  system: string
+  /** The most it may write back, thinking included. */
+  maxTokens: number
+  /** How hard gpt-oss thinks first: less leaves more room for the text when room is tight. */
+  thinking: 'low' | 'medium'
+}
+
+export const WRITE_RESULT: WriteSettings = { system: SYSTEM_PROMPT, maxTokens: WRITE_MAX_TOKENS, thinking: 'medium' }
+
+export async function write(fetch: Fetch, key: string, model: string, prompt: string, settings: WriteSettings = WRITE_RESULT): Promise<Written> {
   let res: Response
   try {
     res = await fetch(`${GROQ_API}/chat/completions`, {
@@ -164,10 +176,10 @@ export async function write(
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+        messages: [{ role: 'system', content: settings.system }, { role: 'user', content: prompt }],
         temperature: 0.3,
-        max_completion_tokens: maxTokens,
-        ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'medium' } : {}),
+        max_completion_tokens: settings.maxTokens,
+        ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: settings.thinking } : {}),
       }),
     })
   } catch {

@@ -11,16 +11,39 @@ const chatBodies = (net: ReturnType<typeof fakeNetwork>): Body[] =>
 
 const isCondensing = (body: Body) => body.messages[0].content === CONDENSE_PROMPT
 const prompt = (body: Body) => body.messages.at(-1)!.content
+/** What Groq's free tier counts for a request: its messages (about a token per 2.5 characters here) plus the room asked for. */
+const tokensOf = (body: Body) => Math.ceil(JSON.stringify(body.messages).length / 2.5) + body.max_completion_tokens
 
-/** Answers condensing with notes naming the first Message in the batch, and writing with `result`. */
-function writerInParts(result: string) {
+/** Groq's free tier: refuses a request over `limit()` tokens a minute as too large, in its own words. */
+function freeTier(limit: () => number, refused: Body[] = []) {
   return (url: URL, init: RequestInit | undefined) => {
     if (!url.pathname.endsWith('/chat/completions')) return undefined
     const body: Body = JSON.parse(String(init?.body))
-    const first = /Message (\d+) of/.exec(prompt(body))?.[1]
-    return json(chatAnswer(isCondensing(body) ? `Notes from message ${first}` : result, body.model))
+    if (tokensOf(body) <= limit()) return undefined
+    refused.push(body)
+    return json({
+      error: {
+        message: `Request too large for model \`${body.model}\` in organization \`org_01fake\` service tier \`on_demand\` on tokens per minute (TPM): Limit ${limit()}, Requested ${tokensOf(body)}, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing`,
+        type: 'tokens',
+        code: 'rate_limit_exceeded',
+      },
+    }, 413)
   }
 }
+
+/** The writer: condensing answers with JSON notes for each Message it was given (bar `leaveOut`), writing with `result`. */
+function writer(result: string, { leaveOut = [] as number[] } = {}) {
+  return (url: URL, init: RequestInit | undefined) => {
+    if (!url.pathname.endsWith('/chat/completions')) return undefined
+    const body: Body = JSON.parse(String(init?.body))
+    if (!isCondensing(body)) return json(chatAnswer(result, body.model))
+    const numbers = [...new Set([...prompt(body).matchAll(/===== Message (\d+) of/g)].map(m => Number(m[1])))]
+    const notes = numbers.filter(n => !leaveOut.includes(n)).map(n => ({ message: n, notes: `notes on message ${n}` }))
+    return json(chatAnswer(JSON.stringify({ notes }), body.model))
+  }
+}
+
+const sent = (net: ReturnType<typeof fakeNetwork>, refused: Body[]) => chatBodies(net).filter(b => !refused.some(r => JSON.stringify(r) === JSON.stringify(b)))
 
 /** A Thread of long Text messages: `count` of them, each about `chars` characters of Levantine Arabic. */
 async function longThread(device: EngineDeps, count: number, chars = 6000) {
@@ -29,103 +52,156 @@ async function longThread(device: EngineDeps, count: number, chars = 6000) {
   return engine
 }
 
+const summary = { mode: 'summary', preset: null, request: '' } as const
+
 describe('big Threads written in parts', () => {
-  it('condenses a Thread over the budget in batches, in order, then writes the Result from the notes', async () => {
+  it('sends the whole Thread in one go when the key takes it', async () => {
     const net = fakeNetwork()
-    net.on(groqChatModels) // gpt-oss-120b: 8,000 tokens a minute on the free tier
-    net.on(writerInParts('# Rice'))
+    net.on(groqChatModels)
+    net.on(writer('# Rice'))
     const engine = await longThread(deviceWithKey(net), 6)
 
-    const result = await engine.thread.summarize({ mode: 'summary', preset: null, request: '' })
+    const result = await engine.thread.summarize(summary)
 
-    const bodies = chatBodies(net)
-    expect(bodies.map(isCondensing)).toEqual([true, true, true, false])
-    expect(bodies.slice(0, 3).map(b => [...prompt(b).matchAll(/Message (\d+) of 6/g)].map(m => Number(m[1])))).toEqual([[1, 2], [3, 4], [5, 6]])
-    const final = prompt(bodies[3])
-    expect(final.indexOf('Notes from message 1')).toBeLessThan(final.indexOf('Notes from message 3'))
-    expect(final.indexOf('Notes from message 3')).toBeLessThan(final.indexOf('Notes from message 5'))
+    expect(chatBodies(net)).toHaveLength(1)
+    expect(result.text).toBe('# Rice')
+  })
+
+  it('condenses a Thread too big for the key in groups, in order, and writes the Result from notes under each Message’s own label', async () => {
+    const net = fakeNetwork()
+    net.on(groqChatModels)
+    const refused: Body[] = []
+    net.on(freeTier(() => 8000, refused))
+    net.on(writer('# Rice'))
+    const engine = await longThread(deviceWithKey(net), 6)
+
+    const result = await engine.thread.summarize(summary)
+
+    const parts = sent(net, refused)
+    expect(refused.map(isCondensing)).toEqual([false]) // the whole Thread, once
+    expect(parts.map(isCondensing)).toEqual([...parts.slice(0, -1).map(() => true), false])
+    const condensed = parts.slice(0, -1).flatMap(b => [...new Set([...prompt(b).matchAll(/Message (\d+) of 6/g)].map(m => Number(m[1])))])
+    expect([...new Set(condensed)]).toEqual([1, 2, 3, 4, 5, 6])
+    const final = prompt(parts.at(-1)!)
+    for (let n = 1; n <= 6; n++) expect(final).toContain(`===== Message ${n} of 6: TEXT MESSAGE (condensed notes) =====\nnotes on message ${n}`)
     expect(final).not.toContain('بدك تحط الرز')
     expect(result.text).toBe('# Rice')
   })
 
-  it('shows which part is being written', async () => {
+  it('keeps a Message’s own text when the notes leave it out, so nothing is lost', async () => {
     const net = fakeNetwork()
     net.on(groqChatModels)
-    net.on(writerInParts('# Rice'))
-    const engine = await longThread(deviceWithKey(net), 6)
-    const seen: string[] = []
-    engine.thread.subscribe(({ writing }) => { if (writing.state === 'writing' && writing.part) seen.push(`${writing.part.n} of ${writing.part.of}`) })
+    const refused: Body[] = []
+    net.on(freeTier(() => 8000, refused))
+    net.on(writer('# Rice', { leaveOut: [4] }))
+    const engine = await longThread(deviceWithKey(net), 6, 2500)
 
-    await engine.thread.summarize({ mode: 'summary', preset: null, request: '' })
+    await engine.thread.summarize(summary)
 
-    expect([...new Set(seen)]).toEqual(['1 of 4', '2 of 4', '3 of 4', '4 of 4'])
+    const final = prompt(sent(net, refused).at(-1)!)
+    expect(final).toContain('===== Message 4 of 6: TEXT MESSAGE =====\n4: بدك تحط الرز')
+    expect(final).toContain('notes on message 5')
   })
 
-  it('writes Exact words in parts word for word, never condensed, and joins them in order', async () => {
+  it('shows which part is being written, counting up to the last', async () => {
     const net = fakeNetwork()
     net.on(groqChatModels)
+    net.on(freeTier(() => 8000))
+    net.on(writer('# Rice'))
+    const engine = await longThread(deviceWithKey(net), 6)
+    const seen: [number, number][] = []
+    engine.thread.subscribe(({ writing }) => { if (writing.state === 'writing' && writing.part) seen.push([writing.part.n, writing.part.of]) })
+
+    await engine.thread.summarize(summary)
+
+    const parts = [...new Map(seen.map(([n, of]) => [n, of])).entries()]
+    expect(parts.map(([n]) => n)).toEqual(parts.map((_, i) => i + 1))
+    expect(parts.at(-1)![0]).toBe(parts.at(-1)![1])
+    expect(parts.length).toBeGreaterThan(2)
+  })
+
+  it('writes Exact words in parts word for word, never condensed, joined in order without extra titles or repeated headings', async () => {
+    const net = fakeNetwork()
+    net.on(groqChatModels)
+    const refused: Body[] = []
+    net.on(freeTier(() => 8000, refused))
     let part = 0
     net.on((url, init) => {
       if (!url.pathname.endsWith('/chat/completions')) return undefined
+      const body: Body = JSON.parse(String(init?.body))
       part++
-      return json(chatAnswer(part === 1 ? '# Rice\n\n### Message 1' : `### Message ${part}`, JSON.parse(String(init?.body)).model))
+      // Each part titles itself and opens with the heading of the Message it starts in, as models do.
+      const first = /Message (\d+) of/.exec(prompt(body))![1]
+      return json(chatAnswer(`# Rice\n\n### Message ${first}\npart ${part}`, body.model))
     })
-    const engine = await longThread(deviceWithKey(net), 4)
+    const engine = await longThread(deviceWithKey(net), 1, 15_000) // one Message, cut across parts
 
     const result = await engine.thread.summarize({ mode: 'exact', preset: null, request: '' })
 
-    const bodies = chatBodies(net)
-    expect(bodies.some(isCondensing)).toBe(false)
-    expect(bodies.length).toBeGreaterThan(1)
-    expect(bodies.map(b => prompt(b).includes('do NOT add a title'))).toEqual([false, ...bodies.slice(1).map(() => true)])
-    expect(result.text).toBe(['# Rice\n\n### Message 1', ...bodies.slice(1).map((_, i) => `### Message ${i + 2}`)].join('\n\n'))
+    const parts = sent(net, refused)
+    expect(parts.some(isCondensing)).toBe(false)
+    expect(parts.length).toBeGreaterThan(1)
+    expect(parts.map(b => prompt(b).includes('do NOT add a title'))).toEqual([false, ...parts.slice(1).map(() => true)])
+    expect(result.text).toBe(`# Rice\n\n### Message 1\npart 1${parts.slice(1).map((_, i) => `\n\npart ${i + 2}`).join('')}`)
   })
 
-  it('learns the real limit when Groq says a request is too large, and sends parts that fit it', async () => {
+  it('plans the parts again when Groq refuses one as too large, and every part it then takes fits', async () => {
     const net = fakeNetwork()
     net.on(groqChatModels)
-    let first = true
-    net.on((url, init) => {
-      if (!url.pathname.endsWith('/chat/completions') || !first) return undefined
-      first = false
-      const body = String(init?.body)
-      return json({
-        error: {
-          message: `Request too large for model \`openai/gpt-oss-120b\` in organization \`org_01fake\` service tier \`on_demand\` on tokens per minute (TPM): Limit 5000, Requested ${Math.round(body.length / 2.2) + 4096}, please reduce your message size and try again.`,
-          type: 'tokens',
-          code: 'rate_limit_exceeded',
-        },
-      }, 413)
-    })
-    net.on(writerInParts('# Rice'))
-    const engine = await longThread(deviceWithKey(net), 2, 2500)
+    let requests = 0
+    net.on(url => { if (url.pathname.endsWith('/chat/completions')) requests++; return undefined })
+    const refused: Body[] = []
+    // The whole Thread is measured against 8,000; after that the key turns out tighter.
+    net.on(freeTier(() => (requests <= 1 ? 8000 : 5000), refused))
+    net.on(writer('# Rice'))
+    const engine = await longThread(deviceWithKey(net), 6)
 
-    await engine.thread.summarize({ mode: 'summary', preset: null, request: '' })
+    const result = await engine.thread.summarize(summary)
 
-    const [tooLarge, ...parts] = chatBodies(net)
-    expect(isCondensing(tooLarge)).toBe(false)
-    expect(parts.map(isCondensing)).toEqual([...parts.slice(0, -1).map(() => true), false])
-    // Each part, priced the way Groq priced the first request, fits its 5,000 tokens a minute.
-    for (const body of parts) expect(JSON.stringify(body).length / 2.2 + body.max_completion_tokens).toBeLessThanOrEqual(5000)
+    expect(result.text).toBe('# Rice')
+    expect(refused.length).toBeGreaterThan(1)
+    for (const body of sent(net, refused)) expect(tokensOf(body)).toBeLessThanOrEqual(5000)
   })
 
   it('waits as long as Groq asks when it rate-limits a part, then sends that part again', async () => {
     const net = fakeNetwork()
     net.on(groqChatModels)
-    let calls = 0
+    const refused: Body[] = []
+    net.on(freeTier(() => 8000, refused))
+    let condensing = 0
     net.on((url, init) => {
-      if (!url.pathname.endsWith('/chat/completions')) return undefined
-      if (++calls === 2) return new Response('{"error":{"message":"Rate limit reached on tokens per minute (TPM). Please try again in 12.5s.","code":"rate_limit_exceeded"}}', { status: 429, headers: { 'retry-after': '13' } })
-      return writerInParts('# Rice')(url, init)
+      if (!url.pathname.endsWith('/chat/completions') || !isCondensing(JSON.parse(String(init?.body)))) return undefined
+      return ++condensing === 2 ? new Response('{"error":{"message":"Rate limit reached on tokens per minute (TPM). Please try again in 12.5s.","code":"rate_limit_exceeded"}}', { status: 429, headers: { 'retry-after': '13' } }) : undefined
     })
+    net.on(writer('# Rice'))
     const waits: number[] = []
     const engine = await longThread({ ...deviceWithKey(net), sleep: async ms => { waits.push(ms) } }, 6)
 
-    const result = await engine.thread.summarize({ mode: 'summary', preset: null, request: '' })
+    const result = await engine.thread.summarize(summary)
 
     expect(waits).toEqual([13_000])
-    expect(chatBodies(net).map(isCondensing)).toEqual([true, true, true, true, false]) // the second part twice
     expect(result.text).toBe('# Rice')
+  })
+
+  it('carries on from the parts already written when trying again', async () => {
+    const net = fakeNetwork()
+    net.on(groqChatModels)
+    const refused: Body[] = []
+    net.on(freeTier(() => 8000, refused))
+    let failFinal = true
+    net.on((url, init) => {
+      if (!url.pathname.endsWith('/chat/completions')) return undefined
+      return failFinal && !isCondensing(JSON.parse(String(init?.body))) ? json({ error: { message: 'Service Unavailable' } }, 503) : undefined
+    })
+    net.on(writer('# Rice'))
+    const engine = await longThread(deviceWithKey(net), 6)
+    await expect(engine.thread.summarize(summary)).rejects.toMatchObject({ failure: 'busy' })
+    const condensedBefore = sent(net, refused).filter(isCondensing).length
+
+    failFinal = false
+    await engine.thread.summarize(summary)
+
+    expect(sent(net, refused).filter(isCondensing)).toHaveLength(condensedBefore)
   })
 
   it('backs off when Groq’s servers fail without saying how long to wait', async () => {
@@ -139,7 +215,7 @@ describe('big Threads written in parts', () => {
     const waits: number[] = []
     const engine = await longThread({ ...deviceWithKey(net), sleep: async ms => { waits.push(ms) } }, 1, 200)
 
-    await engine.thread.summarize({ mode: 'summary', preset: null, request: '' })
+    await engine.thread.summarize(summary)
 
     expect(waits).toEqual([2000, 4000])
   })

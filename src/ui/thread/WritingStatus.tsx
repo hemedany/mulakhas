@@ -41,10 +41,7 @@ export function WritingStatus({ onRetry, onConnectKey }: { onRetry: () => void; 
   // The star fills one tip per eighth of the Messages heard: honest progress, not a loop.
   const media = messages.filter(m => m.kind !== 'text')
   const done = media.filter(m => m.state === 'heard' || m.state === 'failed').length
-  // Writing in parts, it fills again part by part.
-  const progress = writing.state === 'writing'
-    ? (writing.part ? (writing.part.n - 1) / writing.part.of : 1)
-    : media.length ? done / media.length : 1
+  const progress = writing.state === 'writing' ? 1 : media.length ? done / media.length : 1
   const label = writing.state === 'listening'
     ? t.writingListening
     : writing.part

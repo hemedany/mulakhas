@@ -14,7 +14,7 @@ import { reliabilityReport, type ReliabilityRow } from './reliability'
 import type { Transcript } from './transcript'
 import { HearError, transcribe, type HearFailure } from './whisper'
 import { WriteError, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
-import { startingBudget, writeThread, type Budget, type Part } from './writing'
+import { startingBudget, writeThread, type Budget, type WritingPart } from './writing'
 
 export type MediaKind = 'voice' | 'video'
 export type HearState = 'waiting' | 'hearing' | 'heard' | 'failed'
@@ -64,7 +64,7 @@ export type Writing =
   | { state: 'idle' }
   | { state: 'listening' }
   /** `retryAt`: Groq asked us to wait until then before trying again. `part`: a big Thread written in parts. */
-  | { state: 'writing'; retryAt?: number; part?: Part }
+  | { state: 'writing'; retryAt?: number; part?: WritingPart }
   | { state: 'failed'; failure: WriteFailure }
 
 export interface ThreadState {
@@ -185,6 +185,8 @@ export async function createThread(deps: {
   const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
   const active = new Map<Promise<void>, Provider>()
   let writer: { key: string; model: string; budget: Budget } | null = null
+  /** Parts of a big Result already written, by prompt, so Try again carries on (see writing.ts). */
+  const partsWritten = new Map<string, Written>()
   let watcher: { key: string; model: Promise<string> } | null = null
 
   /** Saves the Thread. A failure doesn't stop anything, but is shown until a later save works. */
@@ -391,6 +393,7 @@ export async function createThread(deps: {
     },
     media: id => db.get<Blob>('blobs', id),
     async startOver() {
+      partsWritten.clear()
       const ids = state.get().messages.map(m => m.id)
       state.publish({ ...state.get(), messages: [], result: null, writing: { state: 'idle' }, draft: EMPTY_DRAFT })
       await persist()
@@ -417,10 +420,11 @@ export async function createThread(deps: {
       if (writer?.key !== key) {
         const model = await chooseWriter(fetch, key!)
         writer = { key: key!, model, budget: startingBudget(model) }
+        partsWritten.clear()
       }
       const { model, budget } = writer
-      // Keeps the part being written while showing when Groq lets us try again.
-      const writingNow = (patch: { retryAt?: number; part?: Part }) => {
+      // Keeps the part being written while showing when Groq lets us try again, and the reverse.
+      const patchWriting = (patch: { retryAt?: number; part?: WritingPart }) => {
         const current = state.get().writing
         setWriting({ ...(current.state === 'writing' ? current : {}), state: 'writing', ...patch })
       }
@@ -428,11 +432,12 @@ export async function createThread(deps: {
       try {
         written = await writeThread(messages, options, prefs.get().uiLang, {
           budget,
-          onPart: part => writingNow({ part }),
+          written: partsWritten,
+          onPart: part => patchWriting({ part }),
           send: (prompt, settings) => withBusyRetries(
             () => write(fetch, key!, model, prompt, settings),
             busyFor,
-            { sleep, now, onWait: retryAt => writingNow({ retryAt }) },
+            { sleep, now, onWait: retryAt => patchWriting({ retryAt }) },
           ),
         })
       } catch (e) {
@@ -440,6 +445,7 @@ export async function createThread(deps: {
       }
       const { text, cutOff } = written
 
+      partsWritten.clear()
       const result: ThreadResult = { id: crypto.randomUUID(), createdAt: now(), mode: options.mode, text, cutOff, report: reliabilityReport(messages) }
       state.publish({ ...state.get(), result, writing: { state: 'idle' } })
       await persist()
