@@ -73,9 +73,10 @@ const EMPTY_DRAFT: WriteOptions = { request: '', mode: 'summary', preset: null }
 export interface ThreadStore extends Observable<ThreadState> {
   /**
    * Appends Voice notes and Videos in the order they were sent, and starts hearing them. After a
-   * Result, they start a fresh Thread (the Result is already in History).
+   * Result, they start a fresh Thread, once the Result is safely in History. `ids`, one per file,
+   * makes adding the same files twice harmless: a file whose id is already in the Thread is skipped.
    */
-  addFiles(files: File[]): Promise<void>
+  addFiles(files: File[], ids?: string[]): Promise<void>
   /** Inserts an empty (or given) Text message at a position; returns its id. */
   addText(at: number, text?: string): Promise<string>
   setText(id: string, text: string): Promise<void>
@@ -249,18 +250,49 @@ export async function createThread(deps: {
   })
   startHearing()
 
+  /** Saves a Result to History. Saving it again replaces it, so this is safe to repeat. */
+  const keepInHistory = (result: ThreadResult) => {
+    const { messages } = state.get()
+    return history.add({
+      id: result.id,
+      createdAt: result.createdAt,
+      mode: result.mode,
+      files: messages.flatMap(m => (m.kind === 'text' ? [] : [m.name])),
+      title: titleOf(result.text),
+      text: result.text,
+      cutOff: result.cutOff,
+      report: result.report,
+    })
+  }
+
+  /**
+   * After a Result, the next Message added starts a fresh Thread. The Result is saved to History
+   * first: the page may have closed before summarize got that far. Says whether it started over.
+   */
+  async function freshAfterResult() {
+    const { result } = state.get()
+    if (!result) return false
+    await keepInHistory(result)
+    await store.startOver()
+    return true
+  }
+
   const store: ThreadStore = {
     get: state.get,
     subscribe: state.subscribe,
-    async addFiles(files) {
-      if (state.get().result) await store.startOver()
-      const sorted = inSentOrder(files)
-      const added: MediaMessage[] = sorted.map(f => ({ id: crypto.randomUUID(), kind: kindOf(f), name: f.name, type: f.type, size: f.size, lastModified: f.lastModified, state: 'waiting' }))
+    async addFiles(files, ids) {
+      const known = new Set(state.get().messages.map(m => m.id))
+      const idOf = new Map(files.map((f, i) => [f, ids?.[i] ?? crypto.randomUUID()]))
+      const sorted = inSentOrder(files.filter(f => !known.has(idOf.get(f)!)))
+      if (!sorted.length) return
+      await freshAfterResult()
+      const added: MediaMessage[] = sorted.map(f => ({ id: idOf.get(f)!, kind: kindOf(f), name: f.name, type: f.type, size: f.size, lastModified: f.lastModified, state: 'waiting' }))
       for (const [i, f] of sorted.entries()) await db.put('blobs', f, added[i].id)
       await commit([...state.get().messages, ...added])
       startHearing()
     },
     async addText(at, text = '') {
+      if (await freshAfterResult()) at = 0
       const id = crypto.randomUUID()
       const messages = [...state.get().messages]
       messages.splice(clampIndex(at, messages.length), 0, { id, kind: 'text', text })
@@ -284,7 +316,7 @@ export async function createThread(deps: {
     },
     async addTextNear(id, where, text = '') {
       const at = state.get().messages.findIndex(m => m.id === id)
-      return store.addText(where === 'above' ? at : at + 1, text)
+      return store.addText(where === 'above' ? at : at + 1, text) // after a Result, this starts a fresh Thread
     },
     async remove(id) {
       await commit(state.get().messages.filter(m => m.id !== id))
@@ -340,16 +372,7 @@ export async function createThread(deps: {
       state.publish({ ...state.get(), result, writing: { state: 'idle' } })
       await persist()
       try {
-        await history.add({
-          id: result.id,
-          createdAt: result.createdAt,
-          mode: result.mode,
-          files: messages.flatMap(m => (m.kind === 'text' ? [] : [m.name])),
-          title: titleOf(text),
-          text,
-          cutOff,
-          report: result.report,
-        })
+        await keepInHistory(result)
       } catch {
         state.publish({ ...state.get(), unsaved: true })
       }

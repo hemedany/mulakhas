@@ -1,5 +1,5 @@
 import { IDBFactory } from 'fake-indexeddb'
-import type { EngineDeps, Fetch } from './index'
+import type { Engine, EngineDeps, Fetch } from './index'
 
 /** A Storage backed by a Map, standing in for the browser's localStorage. */
 export class MemoryStorage implements Storage {
@@ -65,3 +65,13 @@ export function freshDevice(overrides: Partial<EngineDeps> = {}): EngineDeps {
     ...overrides,
   }
 }
+
+/** A fresh device with a Groq key already connected. */
+export function deviceWithKey(net = fakeNetwork()): EngineDeps {
+  const device = freshDevice({ fetch: net.fetch })
+  device.localStorage.setItem('m2.groqKey', 'gsk_test_key')
+  return device
+}
+
+/** The Thread as a list: Text messages by their text, Voice notes and Videos by their names. */
+export const names = (engine: Engine) => engine.thread.get().messages.map(m => (m.kind === 'text' ? m.text : m.name))

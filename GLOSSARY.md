@@ -25,7 +25,7 @@ A Message with moving pictures and, usually, sound.
 A Message the user types or pastes and places between other Messages.
 
 **Share-in**:
-A Voice note or Video arriving from another app (such as WhatsApp) through the phone's share sheet, added to the end of the current Thread.
+A Voice note or Video arriving from another app (such as WhatsApp) through the phone's share sheet, added to the end of the current Thread. After a Result, it starts a fresh Thread instead (the Result stays in History).
 _Avoid_: shared file, share target
 
 **Request**:

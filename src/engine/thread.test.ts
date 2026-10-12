@@ -1,14 +1,8 @@
 import { IDBObjectStore } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
-import { groqModels, verboseJson, voiceNote, whisperBy } from './fixtures'
+import { groqChatModels, groqModels, verboseJson, voiceNote, whisperBy, writerBy } from './fixtures'
 import { createEngine } from './index'
-import { fakeNetwork, freshDevice, json } from './testing'
-
-function deviceWithKey(net = fakeNetwork()) {
-  const device = freshDevice({ fetch: net.fetch })
-  device.localStorage.setItem('m2.groqKey', 'gsk_test_key')
-  return device
-}
+import { deviceWithKey, fakeNetwork, freshDevice, json, names } from './testing'
 
 const NOTE_1 = verboseJson([{ text: ' يا بنتي أول شي بتنقعي البرغل نص ساعة', start: 0, end: 6.4 }])
 const NOTE_2 = verboseJson([{ text: ' استعملي لحم غنم', start: 0, end: 3.1 }])
@@ -329,5 +323,50 @@ describe('saving on the device', () => {
     full.mockRestore()
     await engine.thread.setText(id, 'first, saved')
     expect(engine.thread.get()).toMatchObject({ unsaved: false })
+  })
+})
+
+describe('after a Result', () => {
+  async function withResult() {
+    const net = fakeNetwork()
+    net.on(groqChatModels)
+    net.on(whisperBy({ 'a.ogg': NOTE_1, 'b.ogg': NOTE_2 }))
+    net.on(writerBy('# Done'))
+    const engine = await createEngine(deviceWithKey(net))
+    await engine.thread.addFiles([voiceNote('a.ogg', 1)])
+    await engine.thread.summarize({ mode: 'summary', preset: null, request: 'keep it short' })
+    return engine
+  }
+
+  it('starts a fresh Thread when files are added, keeping the Result in History', async () => {
+    const engine = await withResult()
+
+    await engine.thread.addFiles([voiceNote('b.ogg', 2)])
+
+    expect(names(engine)).toEqual(['b.ogg'])
+    expect(engine.thread.get()).toMatchObject({ result: null, draft: { request: '' } })
+    expect((await engine.history.list()).map(r => r.title)).toEqual(['Done'])
+  })
+
+  it('starts a fresh Thread when a Text message is added, too', async () => {
+    const engine = await withResult()
+    const [a] = engine.thread.get().messages
+
+    await engine.thread.addTextNear(a.id, 'below', 'a new question')
+
+    expect(names(engine)).toEqual(['a new question'])
+    expect(engine.thread.get().result).toBeNull()
+  })
+
+  it('clears everything on Start over', async () => {
+    const device = freshDevice()
+    const engine = await createEngine(device)
+    await engine.thread.addFiles([voiceNote('a.ogg', 1)])
+    const [a] = engine.thread.get().messages
+
+    await engine.thread.startOver()
+
+    expect(names(await createEngine(device))).toEqual([])
+    expect(await engine.thread.media(a.id)).toBeUndefined()
   })
 })

@@ -1,50 +1,52 @@
 // Share-in: Android's share sheet POSTs files to the installed app; the service worker
 // (public/sw.js) puts them in this inbox and reloads the page. The engine empties the inbox
 // into the Thread every time it starts, so each share adds to the Thread instead of wiping it.
+import { committed, done } from './db'
 
-const INBOX_DB = 'mulakhas-share'
-const INBOX_STORE = 'files'
+export const INBOX_DB = 'mulakhas-share'
+export const INBOX_STORE = 'files'
 
-interface InboxEntry {
+/** One shared file, as public/sw.js stores it. */
+export interface InboxEntry {
   name: string
   type: string
   blob: Blob
-  /** When it arrived (ms since epoch). */
-  t: number
+  /** The file's own date, or when it arrived if it had none (ms since epoch). */
+  lastModified: number
 }
 
-function open(factory: IDBFactory): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = factory.open(INBOX_DB, 1)
-    req.onupgradeneeded = () => req.result.createObjectStore(INBOX_STORE, { autoIncrement: true })
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
+export interface ShareIn {
+  /** Stable for this share, so adding it twice is harmless. */
+  id: string
+  file: File
+}
+
+export function openInbox(factory: IDBFactory): Promise<IDBDatabase> {
+  const open = factory.open(INBOX_DB, 1)
+  open.onupgradeneeded = () => open.result.createObjectStore(INBOX_STORE, { autoIncrement: true })
+  return done(open)
 }
 
 /** Everything shared in since the last start, in the order it arrived. Does not remove it yet. */
-export async function readInbox(factory: IDBFactory): Promise<{ files: File[]; clear: () => Promise<void> }> {
-  const db = await open(factory)
-  const entries: { key: IDBValidKey; value: InboxEntry }[] = await new Promise((resolve, reject) => {
-    const found: { key: IDBValidKey; value: InboxEntry }[] = []
-    const req = db.transaction(INBOX_STORE).objectStore(INBOX_STORE).openCursor()
-    req.onsuccess = () => {
-      const cursor = req.result
-      if (!cursor) return resolve(found)
-      found.push({ key: cursor.key, value: cursor.value })
-      cursor.continue()
-    }
-    req.onerror = () => reject(req.error)
+export async function readInbox(factory: IDBFactory): Promise<{ shareIns: ShareIn[]; clear: () => Promise<void> }> {
+  const db = await openInbox(factory)
+  // One transaction, so a share landing meanwhile can't put the keys and the entries out of step.
+  const store = db.transaction(INBOX_STORE).objectStore(INBOX_STORE)
+  const [keys, entries] = await Promise.all([done(store.getAllKeys()), done(store.getAll() as IDBRequest<InboxEntry[]>)])
+  const shareIns = entries.map((entry, i) => {
+    const type = entry.type || entry.blob.type
+    // A file shared without a name is named for what it is; asUpload adds the extension Groq needs.
+    const name = entry.name || (type.startsWith('video/') ? 'video' : 'voice-note')
+    return { id: `share-${String(keys[i])}`, file: new File([entry.blob], name, { type, lastModified: entry.lastModified }) }
   })
-  const files = entries.map(({ value }) => new File([value.blob], value.name || 'shared-audio', { type: value.type || value.blob.type, lastModified: value.t }))
   return {
-    files,
-    // Only called once the files are safely in the Thread, so a crash in between loses nothing.
-    clear: () => new Promise((resolve, reject) => {
+    shareIns,
+    // Only called once the files are safely in the Thread (or can't be), so a crash in between loses nothing.
+    async clear() {
       const tx = db.transaction(INBOX_STORE, 'readwrite')
-      for (const { key } of entries) tx.objectStore(INBOX_STORE).delete(key)
-      tx.oncomplete = () => { db.close(); resolve() }
-      tx.onerror = () => reject(tx.error)
-    }),
+      for (const key of keys) tx.objectStore(INBOX_STORE).delete(key)
+      await committed(tx)
+      db.close()
+    },
   }
 }

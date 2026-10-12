@@ -42,6 +42,8 @@ export interface Engine {
   keys: KeysStore
   history: History
   thread: ThreadStore
+  /** Share-ins moved into the Thread as the app started, and whether the device couldn't keep them. */
+  sharedIn: { count: number; failed: boolean }
 }
 
 export async function createEngine(deps: EngineDeps): Promise<Engine> {
@@ -55,12 +57,18 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
 
   // Anything shared in from another app while the page was reloading joins the Thread now.
   const inbox = await readInbox(deps.indexedDB)
-  if (inbox.files.length) {
-    await thread.addFiles(inbox.files)
+  const sharedIn = { count: inbox.shareIns.length, failed: false }
+  if (sharedIn.count) {
+    try {
+      await thread.addFiles(inbox.shareIns.map(s => s.file), inbox.shareIns.map(s => s.id))
+    } catch {
+      // The device couldn't keep them (it's full). Say so and let them go: kept, they would fail every start.
+      sharedIn.failed = true
+    }
     await inbox.clear()
   }
 
-  return { prefs, keys, history, thread }
+  return { prefs, keys, history, thread, sharedIn }
 }
 
 export function browserDeps(): EngineDeps {

@@ -7,7 +7,8 @@
  *
  * Palette: Damascene. Neutrals are tinted with wine, after the painted 'Ajami rooms of
  * Damascus (deep reds, thin gold work, turquoise). Burgundy carries the brand; light gold is
- * ornament only (never small text); a darker gold is the one action colour.
+ * ornament only (never small text); a darker gold is the one action colour. Red fills only the
+ * button that confirms losing something (Start over), and is danger text elsewhere.
  *
  * Shape rule: icon-only buttons are circles; buttons that start something on their own (primary
  * actions, chips, segmented controls) are fully round; inputs and the labelled buttons paired
@@ -81,6 +82,7 @@
   --fg-muted: var(--p-w-600);
   --fg-subtle: var(--p-w-500);
   --danger: var(--p-red-600);
+  --on-danger: var(--p-cream);
   --caution: var(--p-amber-600);
   --shadow-tint: var(--p-shadow-day);
   --shadow-tint-strong: var(--p-shadow-day-strong);
@@ -114,6 +116,7 @@
   --fg-muted: var(--p-ivory-dim);
   --fg-subtle: var(--p-ivory-faint);
   --danger: var(--p-red-300);
+  --on-danger: var(--p-wine-ink);
   --caution: var(--p-amber-300);
   --shadow-tint: var(--p-shadow-night);
   --shadow-tint-strong: var(--p-shadow-night-strong);

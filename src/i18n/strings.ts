@@ -122,6 +122,7 @@ const en = {
   changeKey: "Change key",
   dropHere: "Drop to add",
   storageFull: "Couldn't keep these on this device. Free up some space and try again.",
+  shareFailed: "That share didn't come through. Try sharing it again.",
   retryingAt: (time: string): string => `Groq asked to wait. Trying again at ${time}.`,
   messageOptionsFor: (n: string): string => `Options for message ${n}`,
   playMessage: (n: string): string => `Play message ${n}`,
@@ -130,7 +131,7 @@ const en = {
   hearingPart: (n: string, of: string): string => `Listening, part ${n} of ${of}`,
   startOver: "Start over",
   startOverConfirm: "Clear these messages and start a new one? Saved results stay in History.",
-  clearAll: "Clear and start over",
+  confirmStartOver: "Clear and start over",
   cancel: "Cancel",
 }
 export type Strings = typeof en
@@ -251,6 +252,7 @@ const ar: Strings = {
   changeKey: "غيّر المفتاح",
   dropHere: "أفلت للإضافة",
   storageFull: "تعذّر حفظها على هذا الجهاز. وفّر بعض المساحة وحاول مجدداً.",
+  shareFailed: "لم تصل هذه المشاركة. جرّب مشاركتها مرة أخرى.",
   retryingAt: (time: string): string => `طلب Groq الانتظار. سنحاول مجدداً عند ${time}.`,
   messageOptionsFor: (n: string): string => `خيارات الرسالة ${n}`,
   playMessage: (n: string): string => `شغّل الرسالة ${n}`,
@@ -259,7 +261,7 @@ const ar: Strings = {
   hearingPart: (n: string, of: string): string => `يستمع، الجزء ${n} من ${of}`,
   startOver: "ابدأ من جديد",
   startOverConfirm: "هل تريد مسح هذه الرسائل والبدء من جديد؟ النتائج المحفوظة تبقى في السجل.",
-  clearAll: "امسح وابدأ من جديد",
+  confirmStartOver: "امسح وابدأ من جديد",
   cancel: "إلغاء",
 }
 
@@ -379,6 +381,7 @@ const fr: Strings = {
   changeKey: "Changer de clé",
   dropHere: "Déposez pour ajouter",
   storageFull: "Impossible de les garder sur cet appareil. Libérez de l'espace et réessayez.",
+  shareFailed: "Ce partage n'est pas arrivé. Essayez de le partager à nouveau.",
   retryingAt: (time: string): string => `Groq a demandé d'attendre. Nouvel essai à ${time}.`,
   messageOptionsFor: (n: string): string => `Options du message ${n}`,
   playMessage: (n: string): string => `Lire le message ${n}`,
@@ -387,7 +390,7 @@ const fr: Strings = {
   hearingPart: (n: string, of: string): string => `Écoute, partie ${n} sur ${of}`,
   startOver: "Recommencer",
   startOverConfirm: "Effacer ces messages et recommencer ? Les résultats enregistrés restent dans l'historique.",
-  clearAll: "Effacer et recommencer",
+  confirmStartOver: "Effacer et recommencer",
   cancel: "Annuler",
 }
 
@@ -507,6 +510,7 @@ const de: Strings = {
   changeKey: "Schlüssel ändern",
   dropHere: "Zum Hinzufügen ablegen",
   storageFull: "Konnte sie nicht auf diesem Gerät speichern. Gib etwas Speicher frei und versuche es erneut.",
+  shareFailed: "Diese Freigabe ist nicht angekommen. Teile sie noch einmal.",
   retryingAt: (time: string): string => `Groq bittet zu warten. Neuer Versuch um ${time}.`,
   messageOptionsFor: (n: string): string => `Optionen für Nachricht ${n}`,
   playMessage: (n: string): string => `Nachricht ${n} abspielen`,
@@ -515,7 +519,7 @@ const de: Strings = {
   hearingPart: (n: string, of: string): string => `Hört zu, Teil ${n} von ${of}`,
   startOver: "Neu anfangen",
   startOverConfirm: "Diese Nachrichten löschen und neu anfangen? Gespeicherte Ergebnisse bleiben im Verlauf.",
-  clearAll: "Löschen und neu anfangen",
+  confirmStartOver: "Löschen und neu anfangen",
   cancel: "Abbrechen",
 }
 
@@ -635,6 +639,7 @@ const tr: Strings = {
   changeKey: "Anahtarı değiştir",
   dropHere: "Eklemek için bırak",
   storageFull: "Bunlar bu cihazda saklanamadı. Biraz yer açıp tekrar dene.",
+  shareFailed: "Bu paylaşım ulaşmadı. Yeniden paylaşmayı dene.",
   retryingAt: (time: string): string => `Groq beklememizi istedi. ${time} saatinde tekrar denenecek.`,
   messageOptionsFor: (n: string): string => `${n}. mesajın seçenekleri`,
   playMessage: (n: string): string => `${n}. mesajı oynat`,
@@ -643,7 +648,7 @@ const tr: Strings = {
   hearingPart: (n: string, of: string): string => `Dinliyor, bölüm ${n}/${of}`,
   startOver: "Baştan başla",
   startOverConfirm: "Bu mesajlar silinip baştan başlansın mı? Kayıtlı sonuçlar geçmişte kalır.",
-  clearAll: "Sil ve baştan başla",
+  confirmStartOver: "Sil ve baştan başla",
   cancel: "Vazgeç",
 }
 
@@ -763,6 +768,7 @@ const es: Strings = {
   changeKey: "Cambiar la clave",
   dropHere: "Suelta para añadir",
   storageFull: "No se pudieron guardar en este dispositivo. Libera espacio e inténtalo de nuevo.",
+  shareFailed: "Lo que compartiste no llegó. Prueba a compartirlo de nuevo.",
   retryingAt: (time: string): string => `Groq pidió esperar. Se reintentará a las ${time}.`,
   messageOptionsFor: (n: string): string => `Opciones del mensaje ${n}`,
   playMessage: (n: string): string => `Reproducir el mensaje ${n}`,
@@ -771,7 +777,7 @@ const es: Strings = {
   hearingPart: (n: string, of: string): string => `Escuchando, parte ${n} de ${of}`,
   startOver: "Empezar de nuevo",
   startOverConfirm: "¿Borrar estos mensajes y empezar de nuevo? Los resultados guardados se quedan en el historial.",
-  clearAll: "Borrar y empezar de nuevo",
+  confirmStartOver: "Borrar y empezar de nuevo",
   cancel: "Cancelar",
 }
 

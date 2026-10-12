@@ -10,6 +10,7 @@ import { Composer } from './Composer'
 import { EmptyState } from './EmptyState'
 import { HistorySheet } from './HistorySheet'
 import { MEDIA_ACCEPT } from './media'
+import { scrollBehavior } from './motion'
 import { OwnKeySheet } from './OwnKeySheet'
 import { ResultChip, ResultInThread, ResultSheet } from './result/ResultViews'
 import { Sheet } from './Sheet'
@@ -21,17 +22,32 @@ import { useAddMessages } from './useAddMessages'
 type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result' | 'start-over' | null
 
 export function MainScreen() {
-  const { prefs, thread } = useEngine()
+  const { prefs, thread, sharedIn } = useEngine()
   const { uiLang, theme, showReliability } = usePrefs()
   const { messages, result, writing, draft, unsaved } = useThread()
   const ownKeys = useOwnKeys()
   const desktop = useIsDesktop()
   const t = useT()
-  const [sheet, setSheet] = useState<OpenSheet>(null)
+  // A first Share-in with no Groq key yet: ask for the key straight away, as when adding files here.
+  const [sheet, setSheet] = useState<OpenSheet>(() => (sharedIn.count > 0 && !ownKeys.groq ? 'keys' : null))
+  // The service worker sends the app here with ?share-failed when it couldn't read a share.
+  const [shareFailed] = useState(() => new URLSearchParams(location.search).has('share-failed'))
+  useEffect(() => { if (shareFailed) history.replaceState(null, '', location.pathname) }, [shareFailed])
   const [optionsFor, setOptionsFor] = useState<string | null>(null)
   const close = () => setSheet(null)
   const { picker, choose, onPicked, addText, newTextId, setNewTextId, dropZone, dragging, storageFailed } = useAddMessages({ onNeedKey: () => setSheet('keys') })
   const themeLabel: Record<Theme, string> = { system: t.themeSystem, light: t.themeLight, dark: t.themeDark }
+
+  // Whatever lands at the end of the Thread (added files, a Share-in) scrolls into view.
+  const list = useRef<HTMLOListElement>(null)
+  const lastId = messages.at(-1)?.id
+  const shownLast = useRef(lastId)
+  useEffect(() => {
+    if (lastId && lastId !== shownLast.current) list.current?.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() })
+    shownLast.current = lastId
+  }, [lastId])
+
+  const problem = storageFailed || sharedIn.failed ? t.storageFull : shareFailed ? t.shareFailed : unsaved ? t.notSaved : null
 
   const summarize = () => { void thread.summarize(draft).catch(() => {}) }
   // On phones a fresh Result rises as a sheet; on desktop it appears in the Thread.
@@ -51,8 +67,8 @@ export function MainScreen() {
         {/* Outside the scroller so it stays put. Phones: fades down the page. Desktop: fills the margins. */}
         <Pattern className="opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />
         <main aria-label={t.mainLabel} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          {(storageFailed || unsaved) && (
-            <p role="alert" className="mx-auto mt-3 max-w-2xl rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger">{storageFailed ? t.storageFull : t.notSaved}</p>
+          {problem && (
+            <p role="alert" className="mx-auto mt-3 max-w-2xl rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger">{problem}</p>
           )}
           {messages.length === 0 ? (
             <EmptyState picked={draft.mode === 'exact' ? 'exact' : draft.preset}
@@ -63,7 +79,7 @@ export function MainScreen() {
             <div className="flex min-h-full flex-col">
               <div className="mx-auto w-full flex-1 px-3 py-5 lg:max-w-3xl lg:border-x lg:border-ornament/30 lg:bg-bg lg:px-12 lg:py-10">
                 <div className="mx-auto max-w-2xl">
-                  <ol className="space-y-3">
+                  <ol ref={list} className="space-y-3">
                     {messages.map((m, i) => (
                       <MessageRow key={m.id} message={m} n={i + 1} isNewText={m.id === newTextId}
                         onOptions={() => setOptionsFor(m.id)} onConnectKey={() => setSheet('keys')} />
@@ -107,7 +123,7 @@ export function MainScreen() {
         <p className="text-fg-muted">{t.startOverConfirm}</p>
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={() => { close(); void thread.startOver() }}
-            className="h-12 flex-1 rounded-full bg-danger px-4 font-medium text-on-accent transition-transform duration-(--duration-press) active:scale-[0.98]">{t.clearAll}</button>
+            className="h-12 flex-1 rounded-full bg-danger px-4 font-medium text-on-danger transition-transform duration-(--duration-press) active:scale-[0.98]">{t.confirmStartOver}</button>
           <button type="button" onClick={close}
             className="h-12 flex-1 rounded-full border border-line px-4 font-medium transition-transform duration-(--duration-press) active:scale-[0.98]">{t.cancel}</button>
         </div>

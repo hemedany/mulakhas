@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { recording, verboseJson, voiceNote, whisperBy } from './fixtures'
 import { createEngine } from './index'
-import { fakeNetwork, freshDevice, json } from './testing'
-
-function deviceWithKey(net = fakeNetwork()) {
-  const device = freshDevice({ fetch: net.fetch })
-  device.localStorage.setItem('m2.groqKey', 'gsk_test_key')
-  return device
-}
+import { deviceWithKey, fakeNetwork, json } from './testing'
 
 const uploads = (net: ReturnType<typeof fakeNetwork>) =>
   net.requests

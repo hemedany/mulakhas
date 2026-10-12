@@ -20,14 +20,14 @@ export interface Db {
   delete(store: StoreName, key: IDBValidKey): Promise<void>
 }
 
-function done<T>(req: IDBRequest<T>): Promise<T> {
+export function done<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error)
   })
 }
 
-function committed(tx: IDBTransaction): Promise<void> {
+export function committed(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)

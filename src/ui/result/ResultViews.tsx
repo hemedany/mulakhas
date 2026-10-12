@@ -5,6 +5,7 @@ import { BrandBar } from '@/brand/Ornament'
 import type { ThreadResult } from '@/engine'
 import { titleOf } from '@/engine/writer'
 import { useT } from '@/i18n/i18n'
+import { scrollBehavior } from '../motion'
 import { Sheet } from '../Sheet'
 import { ResultBody } from './ResultBody'
 
@@ -12,7 +13,7 @@ import { ResultBody } from './ResultBody'
 export function ResultInThread({ result }: { result: ThreadResult }) {
   const t = useT()
   const ref = useRef<HTMLElement>(null)
-  useEffect(() => { ref.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }, [result.id])
+  useEffect(() => { ref.current?.scrollIntoView({ block: 'start', behavior: scrollBehavior() }) }, [result.id])
   return (
     <article ref={ref} aria-label={t.resultHeading} className="mt-6 scroll-mt-6 overflow-hidden rounded-card border border-ornament/40 bg-surface shadow-raised">
       <BrandBar patternClassName="opacity-[0.22]">
