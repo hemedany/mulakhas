@@ -10,15 +10,18 @@ import type { Strings } from '@/i18n/strings'
 import { Player } from './Player'
 import { formatDuration } from './time'
 
-const failureText = (t: Strings): Record<HearFailure, string> => ({
-  rejected: t.failRejected,
-  busy: t.failBusy,
-  unreachable: t.failUnreachable,
-  unsupported: t.failUnsupported,
-  undecodable: t.failUndecodable,
-  'too-big': t.failTooBig,
-  unknown: t.failUnknown,
-})
+/** What each way of failing says, and what the person can do about it. */
+const FAILURES: Record<HearFailure, { says: (t: Strings) => string; fix: 'try-again' | 'change-key' }> = {
+  // A refused key can't be fixed by trying again with the same key.
+  rejected: { says: t => t.failRejected, fix: 'change-key' },
+  busy: { says: t => t.failBusy, fix: 'try-again' },
+  unreachable: { says: t => t.failUnreachable, fix: 'try-again' },
+  unsupported: { says: t => t.failUnsupported, fix: 'try-again' },
+  undecodable: { says: t => t.failUndecodable, fix: 'try-again' },
+  'too-long': { says: t => t.failTooLong, fix: 'try-again' },
+  'too-big': { says: t => t.failTooBig, fix: 'try-again' },
+  unknown: { says: t => t.failUnknown, fix: 'try-again' },
+}
 
 function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnectKey: () => void }) {
   const t = useT()
@@ -32,13 +35,13 @@ function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnect
       return (
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg">
           <KhatamMark size={16} className="text-ornament" />
-          {message.part ? t.hearingPart(formatNumber(message.part.n, uiLang), formatNumber(message.part.of, uiLang)) : t.stateHearing}
+          {message.parts
+            ? t.stateHearingPart(formatNumber(message.parts.heard.length + 1, uiLang), formatNumber(message.parts.of, uiLang))
+            : t.stateHearing}
         </span>
       )
     case 'failed':
-      // A refused key cannot be fixed by trying again with the same key, nor a file the browser can't open.
-      if (message.failure === 'undecodable') return null
-      return message.failure === 'rejected'
+      return FAILURES[message.failure ?? 'unknown'].fix === 'change-key'
         ? <button type="button" onClick={onConnectKey} className="text-xs font-semibold text-accent">{t.changeKey}</button>
         : (
           <button type="button" onClick={() => thread.retry(message.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
@@ -70,7 +73,7 @@ function WhatItHeard({ transcript }: { transcript: Transcript }) {
 
 function FailureNote({ failure }: { failure: HearFailure }) {
   const t = useT()
-  return <p role="alert" className="mt-1 text-xs text-danger">{failureText(t)[failure]}</p>
+  return <p role="alert" className="mt-1 text-xs text-danger">{FAILURES[failure].says(t)}</p>
 }
 
 function RetryNote({ at }: { at: number }) {

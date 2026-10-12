@@ -1,55 +1,70 @@
-// Converting what Groq can't take as it is: files over 25 MB, and formats Whisper rejects
-// (.mov, .3gp, .aac, .amr...). The browser decodes the sound; Mulakhas turns it into mono 16 kHz
-// WAV, which is what Whisper listens at anyway, in parts of about ten minutes.
+// Converting what Groq can't take as it is: files over its size limit, and formats Whisper rejects
+// (.mov, .3gp, .aac...). The browser decodes the sound; Mulakhas turns it into mono 16 kHz 16-bit
+// WAV, which is what Whisper listens at anyway, in parts of about ten minutes cut at a pause, so no
+// word is split between two parts.
 
 /** Whisper listens at 16 kHz, so nothing it would hear is lost. */
 export const SAMPLE_RATE = 16_000
-/** Ten minutes of mono 16-bit 16 kHz WAV is about 19 MB, under Groq's 25 MB. */
-export const PART_SECONDS = 600
-/** Each part starts this much before the previous one ends, so a word cut at the edge is heard whole once. */
-export const OVERLAP_SECONDS = 5
+/** Ten minutes of mono 16-bit 16 kHz WAV is about 19 MB, under Groq's limit. */
+const PART_SECONDS = 600
+/** How far before each ten-minute mark to look for a pause to cut at. */
+const SEARCH_SECONDS = 30
+/** The stretch whose loudness is compared when looking for that pause (a tenth of a second). */
+const WINDOW = SAMPLE_RATE / 10
 /** A last part shorter than this joins the one before it instead (eleven minutes is still about 21 MB). */
 const SHORTEST_PART_SECONDS = 60
 
 /** The sound of a file as mono 16 kHz samples. Rejects when the browser can't decode it. */
 export type DecodeAudio = (audio: Blob) => Promise<Float32Array>
 
+/** One part of a sound, as samples [from, to) of the whole. */
 export interface Part {
-  /** The samples sent to Whisper, [from, to). */
   from: number
   to: number
-  /** The stretch of the whole recording (seconds) this part's Transcript speaks for: the overlaps are split down the middle. */
-  keepFrom: number
-  keepTo: number
 }
 
-/** Splits a recording of `samples` samples into the parts Whisper hears one by one. */
-export function partsOf(samples: number): Part[] {
+export const secondsOf = (samples: number) => samples / SAMPLE_RATE
+
+/** Where to cut a sound into parts of about ten minutes: at the quietest moment in the half-minute before each mark. */
+export function partsOf(samples: Float32Array): Part[] {
   const length = PART_SECONDS * SAMPLE_RATE
-  const overlap = OVERLAP_SECONDS * SAMPLE_RATE
-  let count = Math.max(1, Math.ceil(samples / length))
-  if (count > 1 && samples - (count - 1) * length < SHORTEST_PART_SECONDS * SAMPLE_RATE) count--
-  return Array.from({ length: count }, (_, k) => {
-    const start = k * length
-    const last = k === count - 1
-    const end = last ? samples : start + length
-    return {
-      from: Math.max(0, start - overlap),
-      to: end,
-      keepFrom: k === 0 ? 0 : (start - overlap / 2) / SAMPLE_RATE,
-      keepTo: last ? Infinity : (end - overlap / 2) / SAMPLE_RATE,
-    }
-  })
+  let count = Math.max(1, Math.ceil(samples.length / length))
+  if (count > 1 && samples.length - (count - 1) * length < SHORTEST_PART_SECONDS * SAMPLE_RATE) count--
+  const edges = [0, ...Array.from({ length: count - 1 }, (_, k) => quietestBefore(samples, (k + 1) * length)), samples.length]
+  return edges.slice(1).map((to, k) => ({ from: edges[k], to }))
 }
 
-/** Mono 16-bit PCM WAV of samples [from, to). */
-export function toWav(samples: Float32Array, from = 0, to = samples.length): Blob {
-  const count = to - from
-  const buffer = new ArrayBuffer(44 + count * 2)
-  const header = new DataView(buffer)
+function quietestBefore(samples: Float32Array, mark: number) {
+  let cut = mark
+  let quietest = Infinity
+  for (let at = mark; at >= mark - SEARCH_SECONDS * SAMPLE_RATE; at -= WINDOW) {
+    let energy = 0
+    for (let i = at - WINDOW / 2; i < at + WINDOW / 2; i++) energy += samples[i] * samples[i]
+    if (energy < quietest) {
+      quietest = energy
+      cut = at
+    }
+  }
+  return cut
+}
+
+/** The whole sound as 16-bit PCM, in a Blob so the browser can keep it out of the page's memory. */
+export function toPcm(samples: Float32Array): Blob {
+  const pcm = new Int16Array(samples.length)
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]))
+    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff
+  }
+  return new Blob([pcm.buffer])
+}
+
+/** One part of the PCM as a mono 16 kHz WAV file. */
+export function wavOf(pcm: Blob, { from, to }: Part): Blob {
+  const bytes = (to - from) * 2
+  const header = new DataView(new ArrayBuffer(44))
   const ascii = (at: number, text: string) => { for (let i = 0; i < text.length; i++) header.setUint8(at + i, text.charCodeAt(i)) }
   ascii(0, 'RIFF')
-  header.setUint32(4, 36 + count * 2, true)
+  header.setUint32(4, 36 + bytes, true)
   ascii(8, 'WAVE')
   ascii(12, 'fmt ')
   header.setUint32(16, 16, true) // size of this chunk
@@ -60,13 +75,8 @@ export function toWav(samples: Float32Array, from = 0, to = samples.length): Blo
   header.setUint16(32, 2, true) // bytes per sample
   header.setUint16(34, 16, true) // bits per sample
   ascii(36, 'data')
-  header.setUint32(40, count * 2, true)
-  const pcm = new Int16Array(buffer, 44, count)
-  for (let i = 0; i < count; i++) {
-    const s = Math.max(-1, Math.min(1, samples[from + i]))
-    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff
-  }
-  return new Blob([buffer], { type: 'audio/wav' })
+  header.setUint32(40, bytes, true)
+  return new Blob([header.buffer, pcm.slice(from * 2, to * 2)], { type: 'audio/wav' })
 }
 
 /** Lowers the sample rate to 16 kHz by averaging each new sample's share of the old ones, which also keeps out aliasing. */
@@ -94,10 +104,23 @@ export async function decodeInBrowser(audio: Blob): Promise<Float32Array> {
     context = new OfflineAudioContext(1, 1, 48_000)
   }
   const decoded = await context.decodeAudioData(data)
-  const mono = new Float32Array(decoded.length)
-  for (let c = 0; c < decoded.numberOfChannels; c++) {
-    const channel = decoded.getChannelData(c)
-    for (let i = 0; i < mono.length; i++) mono[i] += channel[i] / decoded.numberOfChannels
+  let mono = decoded.getChannelData(0)
+  if (decoded.numberOfChannels > 1) {
+    mono = new Float32Array(decoded.length)
+    for (let c = 0; c < decoded.numberOfChannels; c++) {
+      const channel = decoded.getChannelData(c)
+      for (let i = 0; i < mono.length; i++) mono[i] += channel[i] / decoded.numberOfChannels
+    }
   }
   return decoded.sampleRate === SAMPLE_RATE ? mono : downsample(mono, decoded.sampleRate)
+}
+
+/** Lets one decode run at a time: decoding two long Videos at once can use up a phone's memory. */
+export function oneAtATime(decode: DecodeAudio): DecodeAudio {
+  let queue: Promise<unknown> = Promise.resolve()
+  return audio => {
+    const run = queue.then(() => decode(audio))
+    queue = run.catch(() => {})
+    return run
+  }
 }

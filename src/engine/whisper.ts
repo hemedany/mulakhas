@@ -20,7 +20,7 @@ export interface Transcript {
   segments: Segment[]
 }
 
-export type HearFailure = 'rejected' | 'busy' | 'unreachable' | 'unsupported' | 'undecodable' | 'too-big' | 'unknown'
+export type HearFailure = 'rejected' | 'busy' | 'unreachable' | 'unsupported' | 'undecodable' | 'too-long' | 'too-big' | 'unknown'
 
 export class HearError extends Error {
   readonly failure: HearFailure
@@ -33,8 +33,8 @@ export class HearError extends Error {
 }
 
 export const WHISPER_MODEL = 'whisper-large-v3'
-/** Groq's free tier accepts files up to 25 MB. */
-export const WHISPER_MAX_BYTES = 25 * 1024 * 1024
+/** Groq's free tier takes files up to 25 MB; this leaves room for however it counts them. Bigger ones are converted. */
+export const WHISPER_MAX_BYTES = 24_000_000
 
 // Starting thresholds, from Whisper's own decoding heuristics (log-prob -1.0, compression 2.4,
 // no-speech 0.6), made stricter for flagging: tune against real WhatsApp notes.
@@ -75,6 +75,9 @@ const EXTENSION_OF_TYPE: Record<string, string> = {
   'audio/x-wav': 'wav', 'audio/flac': 'flac', 'audio/webm': 'webm', 'video/mp4': 'mp4', 'video/webm': 'webm',
 }
 
+/** A file name without its extension. */
+export const stemOf = (name: string) => name.replace(/\.[^.]*$/, '') || 'audio'
+
 /**
  * The file as Groq will take it, or null when it has to be converted first. WhatsApp names voice
  * notes .opus (Ogg Opus); Groq takes the same audio as an .ogg file of type audio/ogg.
@@ -83,7 +86,7 @@ export function asUpload(audio: Blob, name: string): File | null {
   if (/\.(opus|oga)$/i.test(name)) return new File([audio], name.replace(/\.(opus|oga)$/i, '.ogg'), { type: 'audio/ogg' })
   if (ACCEPTED_NAME.test(name)) return new File([audio], name, { type: audio.type })
   const extension = EXTENSION_OF_TYPE[audio.type.split(';')[0]]
-  return extension ? new File([audio], `${name.replace(/\.[^.]*$/, '') || 'audio'}.${extension}`, { type: audio.type }) : null
+  return extension ? new File([audio], `${stemOf(name)}.${extension}`, { type: audio.type }) : null
 }
 
 /** Sends one upload, already in a form Groq takes, to Whisper. */

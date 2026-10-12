@@ -1,15 +1,15 @@
 // The Thread: the ordered Messages Mulakhas reads together. Saved on the device after every
 // change (files included), so nothing is lost when the page reloads, and heard in the
 // background as soon as a Groq key is connected.
+import { oneAtATime, type DecodeAudio } from './audio'
 import type { Db } from './db'
+import { hearFile, type PartsHeard } from './hearing'
 import type { History, Mode } from './history'
 import type { KeysStore } from './keys'
 import { observable, type Observable } from './observable'
 import type { PrefsStore } from './prefs'
 import type { Fetch } from './providers'
 import { reliabilityReport, type ReliabilityRow } from './reliability'
-import type { DecodeAudio } from './audio'
-import { hearFile } from './hearing'
 import { HearError, transcribe, type HearFailure, type Transcript } from './whisper'
 import { WriteError, buildPrompt, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
 
@@ -27,8 +27,10 @@ export interface MediaMessage {
   failure?: HearFailure
   /** While Groq has asked us to wait: when the next try happens (ms since epoch). */
   retryAt?: number
-  /** While a long recording is heard in parts: the part being heard (from 1) and how many there are. */
-  part?: { n: number; of: number }
+  /** A long Voice note or Video heard in parts: the parts heard so far, kept until all are heard. */
+  parts?: PartsHeard
+  /** How many times decoding this file started without finishing (see hearing.ts). */
+  decodeTries?: number
   transcript?: Transcript
 }
 
@@ -165,10 +167,12 @@ export async function createThread(deps: {
   sleep: (ms: number) => Promise<void>
   now: () => number
 }): Promise<ThreadStore> {
-  const { db, keys, prefs, history, fetch, decode, sleep, now } = deps
+  const { db, keys, prefs, history, fetch, sleep, now } = deps
+  const decode = oneAtATime(deps.decode)
   const saved = await db.get<Partial<ThreadState>>('thread', CURRENT)
-  // A Message that was being heard when the page closed is heard again (after any wait Groq asked for).
-  const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const, part: undefined } : m))
+  // A Message that was being heard when the page closed is heard again (after any wait Groq asked
+  // for), carrying on from the parts already heard.
+  const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const } : m))
   const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
   const active = new Set<Promise<void>>()
   let writer: { key: string; model: string } | null = null
@@ -211,11 +215,15 @@ export async function createThread(deps: {
             e => (e instanceof HearError && e.failure === 'busy' ? e.retryAfterMs : undefined),
             { sleep, now, onWait: retryAt => update(message.id, { retryAt }) },
           ),
-          onPart: (n, of) => update(message.id, { part: { n, of } }),
+          progress: message.parts,
+          onProgress: parts => update(message.id, { parts }),
+          decodeTries: message.decodeTries ?? 0,
+          onDecodeTries: tries => update(message.id, { decodeTries: tries || undefined }),
         })
-        return await update(message.id, { state: 'heard', transcript, retryAt: undefined, part: undefined })
+        return await update(message.id, { state: 'heard', transcript, retryAt: undefined, parts: undefined })
       } catch (e) {
-        return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined, part: undefined })
+        // Parts already heard are kept, so Try again carries on from the next one.
+        return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined })
       }
     } catch {
       // Storage itself failed; never leave the Message looking as if it is still being heard.
@@ -325,7 +333,8 @@ export async function createThread(deps: {
     async retry(id) {
       const m = state.get().messages.find(x => x.id === id)
       if (!m || m.kind === 'text' || m.state !== 'failed') return
-      await update(id, { state: 'waiting', failure: undefined })
+      // Trying again on purpose also gives a file that kept closing the page another go.
+      await update(id, { state: 'waiting', failure: undefined, decodeTries: undefined })
       startHearing()
     },
     media: id => db.get<Blob>('blobs', id),

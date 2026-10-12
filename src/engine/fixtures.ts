@@ -33,12 +33,15 @@ export function verboseJson(segments: FakeSegment[], language = 'Arabic') {
   }
 }
 
+/** The file in a transcription request, if it is one. */
+export const uploadedFile = (init: RequestInit | undefined) => (init?.body instanceof FormData ? (init.body.get('file') as File) : null)
+
 /** Answers Groq transcription requests by uploaded file name; anything else falls through. */
 export function whisperBy(byName: Record<string, ReturnType<typeof verboseJson>>) {
   return (url: URL, init: RequestInit | undefined) => {
     if (url.host !== 'api.groq.com' || !url.pathname.endsWith('/audio/transcriptions')) return undefined
-    if (!(init?.body instanceof FormData)) return undefined
-    const file = init.body.get('file') as File
+    const file = uploadedFile(init)
+    if (!file) return undefined
     const answer = byName[file.name]
     return answer ? json(answer) : json({ error: { message: `no fixture for ${file.name}` } }, 500)
   }
@@ -52,17 +55,6 @@ export const groqModels = (url: URL) =>
 /** A tiny fake audio file. */
 export function voiceNote(name: string, lastModified: number, type = 'audio/ogg') {
   return new File([new Uint8Array([79, 103, 103, 83, 0, 2])], name, { type, lastModified })
-}
-
-/**
- * A recording the fake decoder (testing.ts) can decode: `seconds` long, padded to `bytes`, so a
- * test can make one over Groq's 25 MB, or in a format Whisper rejects, without real audio.
- */
-export function recording(name: string, seconds: number, { bytes = 64, type = 'audio/ogg', lastModified = 1 } = {}) {
-  const head = new TextEncoder().encode(`FAKE-PCM ${seconds}\n`)
-  const body = new Uint8Array(Math.max(bytes, head.length))
-  body.set(head)
-  return new File([body], name, { type, lastModified })
 }
 
 /** Groq's model list as a free key sees it (October 2026), trimmed. */
