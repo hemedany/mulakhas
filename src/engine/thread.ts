@@ -63,7 +63,10 @@ export interface ThreadState {
 const EMPTY_DRAFT: WriteOptions = { request: '', mode: 'summary', preset: null }
 
 export interface ThreadStore extends Observable<ThreadState> {
-  /** Appends Voice notes and Videos, ordered among themselves by file date, and starts hearing them. */
+  /**
+   * Appends Voice notes and Videos in the order they were sent, and starts hearing them. After a
+   * Result, they start a fresh Thread (the Result is already in History).
+   */
   addFiles(files: File[]): Promise<void>
   /** Inserts an empty (or given) Text message at a position; returns its id. */
   addText(at: number, text?: string): Promise<string>
@@ -208,6 +211,7 @@ export async function createThread(deps: {
     get: state.get,
     subscribe: state.subscribe,
     async addFiles(files) {
+      if (state.get().result) await store.startOver()
       const sorted = inSentOrder(files)
       const added: MediaMessage[] = sorted.map(f => ({ id: crypto.randomUUID(), kind: kindOf(f), name: f.name, type: f.type, size: f.size, lastModified: f.lastModified, state: 'waiting' }))
       for (const [i, f] of sorted.entries()) await db.put('blobs', f, added[i].id)

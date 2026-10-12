@@ -123,6 +123,10 @@ const en = {
   playMessage: (n: string): string => `Play message ${n}`,
   pauseMessage: (n: string): string => `Pause message ${n}`,
   clarityOf: (n: string): string => `Message ${n}`,
+  startOver: "Start over",
+  startOverConfirm: "Clear these messages and start a new one? Saved results stay in History.",
+  clearAll: "Clear and start over",
+  cancel: "Cancel",
 }
 export type Strings = typeof en
 
@@ -243,6 +247,10 @@ const ar: Strings = {
   playMessage: (n: string): string => `شغّل الرسالة ${n}`,
   pauseMessage: (n: string): string => `أوقف الرسالة ${n}`,
   clarityOf: (n: string): string => `الرسالة ${n}`,
+  startOver: "ابدأ من جديد",
+  startOverConfirm: "هل تريد مسح هذه الرسائل والبدء من جديد؟ النتائج المحفوظة تبقى في السجل.",
+  clearAll: "امسح وابدأ من جديد",
+  cancel: "إلغاء",
 }
 
 const fr: Strings = {
@@ -362,6 +370,10 @@ const fr: Strings = {
   playMessage: (n: string): string => `Lire le message ${n}`,
   pauseMessage: (n: string): string => `Mettre en pause le message ${n}`,
   clarityOf: (n: string): string => `Message ${n}`,
+  startOver: "Recommencer",
+  startOverConfirm: "Effacer ces messages et recommencer ? Les résultats enregistrés restent dans l'historique.",
+  clearAll: "Effacer et recommencer",
+  cancel: "Annuler",
 }
 
 const de: Strings = {
@@ -481,6 +493,10 @@ const de: Strings = {
   playMessage: (n: string): string => `Nachricht ${n} abspielen`,
   pauseMessage: (n: string): string => `Nachricht ${n} pausieren`,
   clarityOf: (n: string): string => `Nachricht ${n}`,
+  startOver: "Neu anfangen",
+  startOverConfirm: "Diese Nachrichten löschen und neu anfangen? Gespeicherte Ergebnisse bleiben im Verlauf.",
+  clearAll: "Löschen und neu anfangen",
+  cancel: "Abbrechen",
 }
 
 const tr: Strings = {
@@ -600,6 +616,10 @@ const tr: Strings = {
   playMessage: (n: string): string => `${n}. mesajı oynat`,
   pauseMessage: (n: string): string => `${n}. mesajı duraklat`,
   clarityOf: (n: string): string => `Mesaj ${n}`,
+  startOver: "Baştan başla",
+  startOverConfirm: "Bu mesajlar silinip baştan başlansın mı? Kayıtlı sonuçlar geçmişte kalır.",
+  clearAll: "Sil ve baştan başla",
+  cancel: "Vazgeç",
 }
 
 const es: Strings = {
@@ -719,6 +739,10 @@ const es: Strings = {
   playMessage: (n: string): string => `Reproducir el mensaje ${n}`,
   pauseMessage: (n: string): string => `Pausar el mensaje ${n}`,
   clarityOf: (n: string): string => `Mensaje ${n}`,
+  startOver: "Empezar de nuevo",
+  startOverConfirm: "¿Borrar estos mensajes y empezar de nuevo? Los resultados guardados se quedan en el historial.",
+  clearAll: "Borrar y empezar de nuevo",
+  cancel: "Cancelar",
 }
 
 export const STRINGS: Record<Lang, Strings> = { en, ar, fr, de, tr, es }

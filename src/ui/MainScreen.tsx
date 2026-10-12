@@ -1,4 +1,4 @@
-import { ChatTextIcon, MicrophoneIcon, UploadSimpleIcon } from '@phosphor-icons/react'
+import { ArrowCounterClockwiseIcon, ChatTextIcon, MicrophoneIcon, UploadSimpleIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { Pattern } from '@/brand/Ornament'
 import { useEngine, useIsDesktop, useOwnKeys, usePrefs, useThread } from '@/app/engine-hooks'
@@ -18,7 +18,7 @@ import { MessageRow } from './thread/MessageRow'
 import { WritingStatus } from './thread/WritingStatus'
 import { useAddMessages } from './useAddMessages'
 
-type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result' | null
+type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result' | 'start-over' | null
 
 export function MainScreen() {
   const { prefs, thread } = useEngine()
@@ -94,6 +94,18 @@ export function MainScreen() {
           <button type="button" onClick={() => { close(); void addText() }} className="flex h-13 w-full items-center gap-3 text-start font-medium">
             <ChatTextIcon size={22} className="text-accent" />{t.addTextMessage}
           </button>
+          <button type="button" onClick={() => setSheet('start-over')} className="flex h-13 w-full items-center gap-3 text-start font-medium text-danger">
+            <ArrowCounterClockwiseIcon size={22} />{t.startOver}
+          </button>
+        </div>
+      </Sheet>
+      <Sheet open={sheet === 'start-over'} onClose={close} title={t.startOver} closeLabel={t.close}>
+        <p className="text-fg-muted">{t.startOverConfirm}</p>
+        <div className="mt-5 flex gap-2">
+          <button type="button" onClick={() => { close(); void thread.startOver() }}
+            className="h-12 flex-1 rounded-control bg-danger px-4 font-medium text-on-accent transition-transform duration-(--duration-press) active:scale-[0.98]">{t.clearAll}</button>
+          <button type="button" onClick={close}
+            className="h-12 flex-1 rounded-control border border-line px-4 font-medium transition-transform duration-(--duration-press) active:scale-[0.98]">{t.cancel}</button>
         </div>
       </Sheet>
       <MessageOptions id={optionsFor} onClose={() => setOptionsFor(null)} onTextAdded={setNewTextId} />

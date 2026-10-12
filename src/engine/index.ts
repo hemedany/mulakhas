@@ -3,6 +3,7 @@ import { createHistory, type History } from './history'
 import { createKeys, type KeysStore } from './keys'
 import { migrateFromV1 } from './migrate'
 import { createPrefs, type PrefsStore } from './prefs'
+import { readInbox } from './share-inbox'
 import { createThread, type ThreadStore } from './thread'
 import type { Fetch } from './providers'
 
@@ -47,12 +48,16 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
   const keys = createKeys(deps.localStorage, deps.fetch)
   const prefs = createPrefs(deps.localStorage, deps.languages)
   const history = createHistory(db)
-  return {
-    prefs,
-    keys,
-    history,
-    thread: await createThread({ db, keys, prefs, history, fetch: deps.fetch, sleep: deps.sleep, now: deps.now }),
+  const thread = await createThread({ db, keys, prefs, history, fetch: deps.fetch, sleep: deps.sleep, now: deps.now })
+
+  // Anything shared in from another app while the page was reloading joins the Thread now.
+  const inbox = await readInbox(deps.indexedDB)
+  if (inbox.files.length) {
+    await thread.addFiles(inbox.files)
+    await inbox.clear()
   }
+
+  return { prefs, keys, history, thread }
 }
 
 export function browserDeps(): EngineDeps {
