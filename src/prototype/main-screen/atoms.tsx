@@ -26,7 +26,7 @@ export function Wave({ name, played = 0, bars = 28, className = '' }: { name: st
       {heights.map((h, i) => (
         <span
           key={i}
-          className={`w-[3px] shrink-0 rounded-full ${i / bars < played ? 'bg-accent' : 'bg-line-strong'}`}
+          className={`w-[3px] shrink-0 rounded-full ${i / bars < played ? 'bg-accent' : 'bg-fg-subtle/55'}`}
           style={{ height: `${Math.round(h * 100)}%` }}
         />
       ))}
