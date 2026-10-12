@@ -65,19 +65,8 @@ A question the user asks about a Result after it is made.
 **History**:
 The Results saved on the user's device.
 
-### Who pays for the thinking
-
-**Owner**:
-The person who runs a Mulakhas deployment and holds its provider keys.
-
-**Invite**:
-A link from the Owner that lets someone use Mulakhas on the Owner's keys, up to a Daily allowance, without ever seeing a key.
-_Avoid_: invite code, access token, family key
-
-**Daily allowance**:
-How much Voice note and Video time one Invite may use per day.
-_Avoid_: quota, limit (on their own)
+### Keys
 
 **Own key**:
-A provider key a user connects themselves so Mulakhas runs on their account instead of the Owner's.
+A provider key a user connects once so Mulakhas runs on their own account: a Groq key (required) and, optionally, a Gemini key that lets Mulakhas watch Videos.
 _Avoid_: BYOK, API key setup
