@@ -170,3 +170,31 @@ describe('after writing', () => {
   })
 })
 
+
+describe('the Request draft', () => {
+  it('keeps the Request, Mode and preset being written across a reload', async () => {
+    const { device } = setup()
+    const engine = await createEngine(device)
+
+    await engine.thread.setDraft({ request: 'for six people', mode: 'summary', preset: 'recipe' })
+    const reopened = await createEngine(device)
+
+    expect(reopened.thread.get().draft).toEqual({ request: 'for six people', mode: 'summary', preset: 'recipe' })
+  })
+})
+
+describe('History', () => {
+  it('forgets a deleted Result', async () => {
+    const { net, device } = setup()
+    net.on(groqChatModels)
+    net.on(whisperBy({ 'a.ogg': NOTE_1 }))
+    net.on(writerBy(RECIPE))
+    const engine = await createEngine(device)
+    await engine.thread.addFiles([voiceNote('a.ogg', 1)])
+    const { id } = await engine.thread.summarize({ mode: 'summary', preset: null, request: '' })
+
+    await engine.history.remove(id)
+
+    expect(await (await createEngine(device)).history.list()).toEqual([])
+  })
+})

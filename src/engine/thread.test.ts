@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { groqModels, verboseJson, voiceNote, whisperBy } from './fixtures'
 import { createEngine } from './index'
-import { fakeNetwork, freshDevice } from './testing'
+import { fakeNetwork, freshDevice, json } from './testing'
 
 function deviceWithKey(net = fakeNetwork()) {
   const device = freshDevice({ fetch: net.fetch })
@@ -204,5 +204,91 @@ describe('Text messages and order', () => {
     const names = (await createEngine(device)).thread.get().messages.map(m => (m.kind === 'text' ? m.text : m.name))
     expect(names).toEqual(['a.ogg', 'use lamb', 'before everything'])
     expect(await engine.thread.media(b.id)).toBeUndefined()
+  })
+})
+
+describe('review fixes: retries and keys', () => {
+  it('waits as long as Groq asks, even beyond a minute, and says when it will try again', async () => {
+    let calls = 0
+    const net = fakeNetwork()
+    net.on((url, init) => {
+      if (!url.pathname.endsWith('/audio/transcriptions')) return undefined
+      return ++calls === 1
+        ? new Response('{"error":{"code":"rate_limit_exceeded"}}', { status: 429, headers: { 'retry-after': '1800' } })
+        : whisperBy({ 'PTT-0003.ogg': NOTE_1 })(url, init)
+    })
+    const seen: (number | undefined)[] = []
+    let engine!: Awaited<ReturnType<typeof createEngine>>
+    engine = await createEngine({
+      ...deviceWithKey(net),
+      sleep: async ms => {
+        const m = engine.thread.get().messages[0]
+        seen.push(m.kind !== 'text' ? m.retryAt : undefined)
+        void ms
+      },
+      now: () => 1_000_000,
+    })
+
+    await engine.thread.addFiles([voiceNote('PTT-0003.ogg', 1000)])
+    await engine.thread.idle()
+
+    expect(seen).toEqual([1_000_000 + 1_800_000])
+    expect(engine.thread.get().messages[0]).toMatchObject({ state: 'heard', retryAt: undefined })
+  })
+
+  it('hears again Messages that failed on a rejected key once a new key is connected', async () => {
+    let goodKey = false
+    const net = fakeNetwork()
+    net.on(url => (url.pathname.endsWith('/models') ? json({ object: 'list', data: [] }) : undefined))
+    net.on((url, init) => {
+      if (!url.pathname.endsWith('/audio/transcriptions')) return undefined
+      return goodKey ? whisperBy({ 'PTT-0003.ogg': NOTE_1 })(url, init) : json({ error: { code: 'invalid_api_key' } }, 401)
+    })
+    const engine = await createEngine(deviceWithKey(net))
+    await engine.thread.addFiles([voiceNote('PTT-0003.ogg', 1000)])
+    await engine.thread.idle()
+    expect(engine.thread.get().messages[0]).toMatchObject({ state: 'failed', failure: 'rejected' })
+
+    goodKey = true
+    await engine.keys.connect('groq', 'gsk_new_good_key')
+    await engine.thread.idle()
+
+    expect(engine.thread.get().messages[0]).toMatchObject({ state: 'heard' })
+  })
+
+  it('does not hear a Message again when Try again reaches one that is already heard', async () => {
+    const net = fakeNetwork()
+    net.on(whisperBy({ 'PTT-0003.ogg': NOTE_1 }))
+    const engine = await createEngine(deviceWithKey(net))
+    await engine.thread.addFiles([voiceNote('PTT-0003.ogg', 1000)])
+    await engine.thread.idle()
+
+    await engine.thread.retry(engine.thread.get().messages[0].id)
+    await engine.thread.idle()
+
+    expect(net.requests.filter(r => r.url.pathname.endsWith('/audio/transcriptions'))).toHaveLength(1)
+  })
+
+  it('labels the uploaded WhatsApp note as Ogg audio, not just renames it', async () => {
+    const net = fakeNetwork()
+    net.on(whisperBy({ 'PTT-0003.ogg': NOTE_1 }))
+    const engine = await createEngine(deviceWithKey(net))
+
+    await engine.thread.addFiles([voiceNote('PTT-0003.opus', 1000, 'application/octet-stream')])
+    await engine.thread.idle()
+
+    const form = net.requests[0].init?.body as FormData
+    expect((form.get('file') as File).type).toBe('audio/ogg')
+  })
+
+  it('moves a Message by one and adds a Text message right next to another', async () => {
+    const engine = await createEngine(freshDevice())
+    await engine.thread.addFiles([voiceNote('a.ogg', 1), voiceNote('b.ogg', 2)])
+    const [a, b] = engine.thread.get().messages
+
+    await engine.thread.moveBy(b.id, -1)
+    await engine.thread.addTextNear(a.id, 'above', 'before a')
+
+    expect(engine.thread.get().messages.map(m => (m.kind === 'text' ? m.text : m.name))).toEqual(['b.ogg', 'before a', 'a.ogg'])
   })
 })

@@ -14,10 +14,12 @@ export interface Prefs {
   theme: Theme
   /** Had Mulakhas v1 data on this device; used to show the makeover card instead of the tutorial. */
   wasV1User: boolean
+  /** Show the Reliability report under Results. */
+  showReliability: boolean
 }
 
 export interface PrefsStore extends Observable<Prefs> {
-  set(patch: Partial<Pick<Prefs, 'uiLang' | 'theme'>>): void
+  set(patch: Partial<Pick<Prefs, 'uiLang' | 'theme' | 'showReliability'>>): void
 }
 
 export function createPrefs(ls: Storage, browserLanguages: readonly string[]): PrefsStore {
@@ -27,6 +29,7 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
     uiLang: isLang(storedLang) ? storedLang : pickLang(browserLanguages),
     theme: isTheme(storedTheme) ? storedTheme : 'system',
     wasV1User: ls.getItem(KEYS.wasV1User) === '1',
+    showReliability: ls.getItem(KEYS.showReliability) !== '0',
   })
 
   return {
@@ -35,6 +38,7 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
     set(patch) {
       if (patch.uiLang) ls.setItem(KEYS.uiLang, patch.uiLang)
       if (patch.theme) ls.setItem(KEYS.theme, patch.theme)
+      if (patch.showReliability !== undefined) ls.setItem(KEYS.showReliability, patch.showReliability ? '1' : '0')
       state.publish({ ...state.get(), ...patch })
     },
   }

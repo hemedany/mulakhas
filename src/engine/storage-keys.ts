@@ -18,4 +18,5 @@ export const KEYS = {
   migratedFromV1: 'm2.migratedFromV1',
   groqKey: 'm2.groqKey',
   geminiKey: 'm2.geminiKey',
+  showReliability: 'm2.showReliability',
 } as const

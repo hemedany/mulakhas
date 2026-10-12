@@ -28,6 +28,8 @@ export interface EngineDeps {
   fetch: Fetch
   /** Waiting before a retry; instant in tests. */
   sleep: (ms: number) => Promise<void>
+  /** The clock (ms since epoch). */
+  now: () => number
 }
 
 /** The Mulakhas core: everything below the screens. */
@@ -49,7 +51,7 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
     prefs,
     keys,
     history,
-    thread: await createThread({ db, keys, prefs, history, fetch: deps.fetch, sleep: deps.sleep }),
+    thread: await createThread({ db, keys, prefs, history, fetch: deps.fetch, sleep: deps.sleep, now: deps.now }),
   }
 }
 
@@ -61,5 +63,6 @@ export function browserDeps(): EngineDeps {
     prefersDarkScheme: window.matchMedia('(prefers-color-scheme: dark)').matches,
     fetch: window.fetch.bind(window),
     sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
+    now: () => Date.now(),
   }
 }

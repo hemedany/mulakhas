@@ -20,6 +20,7 @@ export interface SavedResult {
 export interface History {
   list(): Promise<SavedResult[]>
   add(result: SavedResult): Promise<void>
+  remove(id: string): Promise<void>
 }
 
 export function createHistory(db: Db): History {
@@ -29,5 +30,6 @@ export function createHistory(db: Db): History {
       return all.sort((a, b) => b.createdAt - a.createdAt)
     },
     add: result => db.put('history', result),
+    remove: id => db.delete('history', id),
   }
 }

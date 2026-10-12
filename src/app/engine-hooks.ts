@@ -23,3 +23,13 @@ export function useThread() {
   const { thread } = useEngine()
   return useSyncExternalStore(thread.subscribe, thread.get)
 }
+
+const desktopQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 64rem)') : null
+
+/** Wide screens (Tailwind's lg): the Result sits in the Thread instead of rising as a sheet. */
+export function useIsDesktop() {
+  return useSyncExternalStore(
+    onChange => { desktopQuery?.addEventListener('change', onChange); return () => desktopQuery?.removeEventListener('change', onChange) },
+    () => desktopQuery?.matches ?? false,
+  )
+}

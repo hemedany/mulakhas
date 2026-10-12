@@ -94,7 +94,7 @@ describe('first-time visitors', () => {
   it('start in the browser language when Mulakhas speaks it', async () => {
     const engine = await createEngine(freshDevice({ languages: ['fr-FR', 'en'] }))
 
-    expect(engine.prefs.get()).toEqual({ uiLang: 'fr', theme: 'system', wasV1User: false })
+    expect(engine.prefs.get()).toEqual({ uiLang: 'fr', theme: 'system', wasV1User: false, showReliability: true })
   })
 
   it('fall back to English for languages Mulakhas does not speak', async () => {
@@ -116,10 +116,10 @@ describe('preferences', () => {
     const device = freshDevice()
     const engine = await createEngine(device)
 
-    engine.prefs.set({ uiLang: 'tr', theme: 'light' })
+    engine.prefs.set({ uiLang: 'tr', theme: 'light', showReliability: false })
     const reopened = await createEngine(device)
 
-    expect(reopened.prefs.get()).toMatchObject({ uiLang: 'tr', theme: 'light' })
+    expect(reopened.prefs.get()).toMatchObject({ uiLang: 'tr', theme: 'light', showReliability: false })
   })
 
   it('notify subscribers when they change', async () => {

@@ -1,5 +1,6 @@
 import { ArrowClockwiseIcon, CheckIcon, DotsThreeVerticalIcon, VideoCameraIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
+import { formatNumber } from '@/i18n/numbers'
 import { KhatamMark } from '@/brand/Khatam'
 import { Pattern, StarBadge } from '@/brand/Ornament'
 import { useEngine, useOwnKeys, usePrefs } from '@/app/engine-hooks'
@@ -18,29 +19,27 @@ const failureText = (t: Strings): Record<HearFailure, string> => ({
   unknown: t.failUnknown,
 })
 
-function StateLine({ message }: { message: MediaMessage }) {
+function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnectKey: () => void }) {
   const t = useT()
   const { thread } = useEngine()
   const { groq } = useOwnKeys()
-  if (message.state === 'heard') {
-    return <span className="inline-flex items-center gap-1 text-xs text-fg-muted"><CheckIcon size={14} weight="bold" className="text-ornament" />{t.stateHeard}</span>
+  switch (message.state) {
+    case 'heard':
+      return <span className="inline-flex items-center gap-1 text-xs text-fg-muted"><CheckIcon size={14} weight="bold" className="text-ornament" />{t.stateHeard}</span>
+    case 'hearing':
+      return <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg"><KhatamMark size={16} className="text-ornament" />{t.stateHearing}</span>
+    case 'failed':
+      // A refused key cannot be fixed by trying again with the same key.
+      return message.failure === 'rejected'
+        ? <button type="button" onClick={onConnectKey} className="text-xs font-semibold text-accent">{t.changeKey}</button>
+        : (
+          <button type="button" onClick={() => thread.retry(message.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
+            <ArrowClockwiseIcon size={14} weight="bold" className="rtl:-scale-x-100" />{t.tryAgain}
+          </button>
+        )
+    case 'waiting':
+      return <span className="text-xs text-fg-subtle">{groq ? t.stateWaiting : t.stateNeedsKey}</span>
   }
-  if (message.state === 'hearing') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg">
-        <KhatamMark size={16} className="text-ornament motion-safe:animate-[spin_2.4s_linear_infinite]" />
-        {t.stateHearing}
-      </span>
-    )
-  }
-  if (message.state === 'failed') {
-    return (
-      <button type="button" onClick={() => thread.retry(message.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
-        <ArrowClockwiseIcon size={14} weight="bold" className="rtl:-scale-x-100" />{t.tryAgain}
-      </button>
-    )
-  }
-  return <span className="text-xs text-fg-subtle">{groq ? t.stateWaiting : t.stateNeedsKey}</span>
 }
 
 /** The Transcript behind "What it heard", with Unclear passages marked. Closed by default. */
@@ -52,7 +51,7 @@ function WhatItHeard({ transcript }: { transcript: Transcript }) {
       <p dir="auto" className="mt-1.5 rounded-control bg-sunken px-3 py-2 text-sm text-fg-muted">
         {transcript.segments.map((s, i) => (
           <span key={i}>
-            {s.unclear ? <mark title={t.unclearMark} className="rounded-[0.3em] bg-caution/20 px-0.5 text-fg">{s.text}</mark> : s.text}
+            {s.unclear ? <mark title={t.unclearMark} className="rounded-sm bg-caution/20 px-0.5 text-fg">{s.text}</mark> : s.text}
             {' '}
           </span>
         ))}
@@ -61,13 +60,22 @@ function WhatItHeard({ transcript }: { transcript: Transcript }) {
   )
 }
 
-function MediaBubble({ message, n }: { message: MediaMessage; n: number }) {
+function FailureNote({ failure }: { failure: HearFailure }) {
   const t = useT()
-  const label = `${message.kind === 'video' ? t.video : t.voiceNote} ${n}`
+  return <p role="alert" className="mt-1 text-xs text-danger">{failureText(t)[failure]}</p>
+}
+
+function RetryNote({ at }: { at: number }) {
+  const t = useT()
+  const { uiLang } = usePrefs()
+  return <p className="mt-1 text-xs text-fg-muted">{t.retryingAt(new Intl.DateTimeFormat(uiLang, { timeStyle: 'short' }).format(at))}</p>
+}
+
+function MediaBubble({ message, n, onConnectKey }: { message: MediaMessage; n: number; onConnectKey: () => void }) {
   return (
     <div className="rounded-card rounded-ss-md border border-line bg-surface px-3 py-2.5 shadow-raised">
       {message.kind === 'voice' ? (
-        <Player id={message.id} label={label} knownSeconds={message.transcript?.duration} />
+        <Player id={message.id} n={n} knownSeconds={message.transcript?.duration} />
       ) : (
         <div className="relative flex h-24 items-center justify-center gap-2 overflow-hidden rounded-control bg-sunken text-fg-muted">
           <Pattern className="opacity-[0.12]" />
@@ -77,29 +85,34 @@ function MediaBubble({ message, n }: { message: MediaMessage; n: number }) {
       )}
       <div className="mt-1.5 flex items-center justify-between gap-3">
         <span className="truncate text-xs text-fg-subtle" dir="ltr">{message.name}</span>
-        <StateLine message={message} />
+        <StateLine message={message} onConnectKey={onConnectKey} />
       </div>
-      {message.state === 'failed' && message.failure && (
-        <p role="alert" className="mt-1 text-xs text-danger">{failureText(t)[message.failure]}</p>
-      )}
+      {message.retryAt && <RetryNote at={message.retryAt} />}
+      {message.state === 'failed' && message.failure && <FailureNote failure={message.failure} />}
       {message.state === 'heard' && message.transcript && <WhatItHeard transcript={message.transcript} />}
     </div>
   )
 }
+
+const SAVE_DELAY_MS = 400
 
 function TextBubble({ message, autoFocus }: { message: TextMessage; autoFocus: boolean }) {
   const t = useT()
   const { thread } = useEngine()
   const [draft, setDraft] = useState(message.text)
   const ref = useRef<HTMLTextAreaElement>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => { if (autoFocus) ref.current?.focus() }, [autoFocus])
+  // Saved while typing, so closing the app mid-sentence loses nothing.
+  const save = (text: string) => { if (timer.current) clearTimeout(timer.current); void thread.setText(message.id, text) }
+  const saveSoon = (text: string) => { if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => save(text), SAVE_DELAY_MS) }
   return (
     <div className="rounded-card rounded-ss-md border border-brand/15 bg-brand-soft px-3.5 pt-2 pb-2.5">
       <label className="text-xs text-fg-muted">
         {t.textMessage}
         <textarea ref={ref} rows={1} dir="auto" value={draft} placeholder={t.textMessagePlaceholder}
-          onChange={e => setDraft(e.target.value)}
-          onBlur={() => { if (draft !== message.text) void thread.setText(message.id, draft) }}
+          onChange={e => { setDraft(e.target.value); saveSoon(e.target.value) }}
+          onBlur={() => { if (draft !== message.text) save(draft) }}
           className="mt-1 block w-full resize-none bg-transparent text-base text-fg placeholder:text-fg-subtle focus:outline-none [field-sizing:content]" />
       </label>
     </div>
@@ -107,17 +120,17 @@ function TextBubble({ message, autoFocus }: { message: TextMessage; autoFocus: b
 }
 
 /** One Message in the Thread: its position in an eight-pointed star, the bubble, and its options. */
-export function MessageRow({ message, n, focusNew, onOptions }: { message: Message; n: number; focusNew: boolean; onOptions: () => void }) {
+export function MessageRow({ message, n, isNewText, onOptions, onConnectKey }: { message: Message; n: number; isNewText: boolean; onOptions: () => void; onConnectKey: () => void }) {
   const t = useT()
   const { uiLang } = usePrefs()
   return (
     <li className="flex items-start gap-2.5">
       <StarBadge n={n} lang={uiLang} className="mt-1.5" />
       <div className="min-w-0 max-w-[24rem] flex-1 lg:max-w-none">
-        {message.kind === 'text' ? <TextBubble message={message} autoFocus={focusNew} /> : <MediaBubble message={message} n={n} />}
+        {message.kind === 'text' ? <TextBubble message={message} autoFocus={isNewText} /> : <MediaBubble message={message} n={n} onConnectKey={onConnectKey} />}
       </div>
-      <button type="button" aria-label={`${t.messageOptions} ${n}`} onClick={onOptions}
-        className="mt-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-subtle transition-colors hover:bg-sunken hover:text-fg">
+      <button type="button" aria-label={t.messageOptionsFor(formatNumber(n, uiLang))} onClick={onOptions}
+        className="mt-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-subtle transition-colors duration-(--duration-press) hover:bg-sunken hover:text-fg">
         <DotsThreeVerticalIcon size={20} weight="bold" />
       </button>
     </li>

@@ -50,6 +50,7 @@ export function freshDevice(overrides: Partial<EngineDeps> = {}): EngineDeps {
     prefersDarkScheme: false,
     fetch: fakeNetwork().fetch,
     sleep: async () => {},
+    now: () => Date.now(),
     ...overrides,
   }
 }

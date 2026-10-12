@@ -9,9 +9,9 @@
  * Damascus (deep reds, thin gold work, turquoise). Burgundy carries the brand; light gold is
  * ornament only (never small text); a darker gold is the one action colour.
  *
- * Shape rule: buttons that start something on their own (primary actions, chips, segmented
- * controls) are fully round; inputs and the buttons paired with them use --radius-control;
- * message bubbles and cards --radius-card; sheets --radius-sheet.
+ * Shape rule: icon-only buttons are circles; buttons that start something on their own (primary
+ * actions, chips, segmented controls) are fully round; inputs and the labelled buttons paired
+ * with them use --radius-control; message bubbles and cards --radius-card; sheets --radius-sheet.
  *
  * Spacing is Tailwind's 4px scale (--spacing in index.css); motion durations and curves are
  * the --duration-* and --ease-* tokens there.

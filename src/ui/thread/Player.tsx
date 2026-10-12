@@ -1,12 +1,16 @@
 import { PauseIcon, PlayIcon } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
+import { usePrefs } from '@/app/engine-hooks'
 import { useT } from '@/i18n/i18n'
+import { formatNumber } from '@/i18n/numbers'
 import { formatDuration } from './time'
 import { useMediaUrl } from './useMediaUrl'
 
 /** Plays a Voice note from the device. The track is honest: it only shows how far playback has got. */
-export function Player({ id, label, knownSeconds }: { id: string; label: string; knownSeconds?: number }) {
+export function Player({ id, n, knownSeconds }: { id: string; n: number; knownSeconds?: number }) {
   const t = useT()
+  const { uiLang } = usePrefs()
+  const number = formatNumber(n, uiLang)
   const url = useMediaUrl(id)
   const audio = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -17,7 +21,7 @@ export function Player({ id, label, knownSeconds }: { id: string; label: string;
 
   return (
     <div className="flex items-center gap-2.5">
-      <button type="button" aria-label={`${playing ? t.pause : t.play}: ${label}`} disabled={!url}
+      <button type="button" aria-label={playing ? t.pauseMessage(number) : t.playMessage(number)} disabled={!url}
         onClick={() => { const a = audio.current; if (!a) return; if (a.paused) void a.play(); else a.pause() }}
         className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.92] disabled:opacity-50">
         {playing ? <PauseIcon size={16} weight="fill" /> : <PlayIcon size={16} weight="fill" />}

@@ -67,9 +67,10 @@ export function toTranscript(body: { text?: string; language?: string; duration?
   }
 }
 
-/** WhatsApp names voice notes .opus (Ogg Opus); Groq accepts the same audio labelled .ogg. */
-export function uploadName(name: string) {
-  return name.replace(/\.(opus|oga)$/i, '.ogg')
+/** WhatsApp names voice notes .opus (Ogg Opus); Groq accepts the same audio as an .ogg file of type audio/ogg. */
+export function asUpload(audio: Blob, name: string): File {
+  if (/\.(opus|oga)$/i.test(name)) return new File([audio], name.replace(/\.(opus|oga)$/i, '.ogg'), { type: 'audio/ogg' })
+  return new File([audio], name, { type: audio.type })
 }
 
 function retryAfterMs(res: Response) {
@@ -80,7 +81,7 @@ function retryAfterMs(res: Response) {
 export async function transcribe(fetch: Fetch, key: string, audio: Blob, name: string): Promise<Transcript> {
   if (audio.size > WHISPER_MAX_BYTES) throw new HearError('too-big')
   const form = new FormData()
-  form.append('file', audio, uploadName(name))
+  form.append('file', asUpload(audio, name))
   form.append('model', WHISPER_MODEL)
   form.append('response_format', 'verbose_json')
   form.append('timestamp_granularities[]', 'segment')
