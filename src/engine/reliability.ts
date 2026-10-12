@@ -1,19 +1,20 @@
 // The Reliability report: measured from how confidently Whisper heard each passage, never
-// graded by the writing model.
+// graded by a model. Gemini doesn't measure how sure it is, so a Video it watched has no clarity.
 import type { Message } from './thread'
-import type { Transcript } from './whisper'
+import type { Transcript } from './transcript'
 
 export interface ReliabilityRow {
   /** The Message's position in the Thread. */
   n: number
   name: string
-  /** 0..100, the duration-weighted confidence of its segments. */
-  clarity: number
+  /** 0..100, the duration-weighted confidence of its segments; null for a Video Gemini watched. */
+  clarity: number | null
   /** The Unclear passages, as heard. */
   unclear: string[]
 }
 
-export function clarity(transcript: Transcript): number {
+export function clarity(transcript: Transcript): number | null {
+  if (transcript.watched) return null
   const parts = transcript.segments.map(s => ({ weight: Math.max(0.01, s.end - s.start), confidence: s.confidence }))
   const total = parts.reduce((sum, p) => sum + p.weight, 0)
   if (!total) return 0

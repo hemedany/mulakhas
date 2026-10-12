@@ -87,3 +87,54 @@ export function writerBy(content: string) {
       ? json(chatAnswer(content, JSON.parse(String(init?.body)).model))
       : undefined
 }
+
+const GOOGLE = 'generativelanguage.googleapis.com'
+
+/** Google's model list as a free key sees it (October 2026), trimmed. */
+export const geminiModels = (url: URL) =>
+  url.host === GOOGLE && url.pathname === '/v1beta/models'
+    ? json({
+      models: [
+        ['gemini-2.5-flash', ['generateContent', 'countTokens']],
+        ['gemini-2.5-flash-lite', ['generateContent']],
+        ['gemini-3-flash-preview-09-2026', ['generateContent']],
+        ['gemini-3-flash', ['generateContent', 'countTokens']],
+        ['gemini-3-flash-lite', ['generateContent']],
+        ['gemini-3-pro', ['generateContent']],
+        ['gemini-3-flash-image', ['generateContent']],
+        ['gemini-embedding-001', ['embedContent']],
+      ].map(([id, methods]) => ({ name: `models/${id}`, displayName: id, supportedGenerationMethods: methods })),
+    })
+    : undefined
+
+/** What Gemini returns after watching a Video, as the JSON its answer carries. */
+export function watched(speech: { start: number; end: number; text: string; clear?: boolean }[], shown: string, language: string | null = 'Arabic') {
+  return { language, speech: speech.map(p => ({ clear: true, ...p })), shown }
+}
+
+/**
+ * Gemini's Files API and generateContent for uploaded Videos: the resumable upload, processing
+ * (one poll), the answer from `answer` (or an error Response), and deleting the upload.
+ */
+export function geminiWatching(answer: ReturnType<typeof watched> | Response) {
+  return (url: URL, init: RequestInit | undefined) => {
+    if (url.host !== GOOGLE) return undefined
+    const headers = new Headers(init?.headers)
+    const file = { name: 'files/v1d30abc', displayName: 'clip.mp4', mimeType: 'video/mp4', uri: `https://${GOOGLE}/v1beta/files/v1d30abc` }
+    if (url.pathname === '/upload/v1beta/files' && headers.get('x-goog-upload-command') === 'start')
+      return new Response('', { headers: { 'x-goog-upload-url': `https://${GOOGLE}/upload/v1beta/files?upload_id=AFake&upload_protocol=resumable`, 'x-goog-upload-status': 'active' } })
+    if (url.pathname === '/upload/v1beta/files' && url.searchParams.get('upload_id'))
+      return json({ file: { ...file, state: 'PROCESSING' } })
+    if (url.pathname === '/v1beta/files/v1d30abc' && init?.method === 'DELETE') return json({})
+    if (url.pathname === '/v1beta/files/v1d30abc') return json({ ...file, state: 'ACTIVE', videoMetadata: { videoDuration: '12.400s' } })
+    if (url.pathname.endsWith(':generateContent')) {
+      if (answer instanceof Response) return answer.clone()
+      return json({
+        candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(answer) }] }, finishReason: 'STOP', index: 0 }],
+        usageMetadata: { promptTokenCount: 3120, candidatesTokenCount: 210, totalTokenCount: 3330 },
+        modelVersion: url.pathname.split('/').at(-1)!.replace(':generateContent', ''),
+      })
+    }
+    return undefined
+  }
+}

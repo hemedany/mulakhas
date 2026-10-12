@@ -23,6 +23,7 @@ function Reliability({ report }: { report: ReliabilityRow[] }) {
               <span className="tabular w-11 shrink-0 font-semibold">{row.clarity}</span>
               <span className="min-w-0">
                 <span className="block">{row.message} <span className="text-fg-subtle" dir="ltr">({r.name})</span></span>
+                {row.note && <span className="block text-fg-muted">{row.note}</span>}
                 {row.unclear && <span className="block text-fg-muted">{t.unclearWords}: <bdi>{row.unclear}</bdi></span>}
               </span>
             </li>

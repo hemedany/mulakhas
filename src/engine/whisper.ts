@@ -1,24 +1,6 @@
 // Hearing: Groq Whisper turns one Voice note into a Transcript with per-segment confidence.
 import { GROQ_API, retryAfterMs, type Fetch } from './providers'
-
-export interface Segment {
-  start: number
-  end: number
-  text: string
-  /** 0..1, from the segment's average token log-probability. */
-  confidence: number
-  /** Heard with low confidence: flagged as an Unclear passage. */
-  unclear: boolean
-}
-
-export interface Transcript {
-  text: string
-  /** As Whisper names it ("Arabic", "English"), or null if it did not say. */
-  language: string | null
-  /** Seconds of audio. */
-  duration: number
-  segments: Segment[]
-}
+import type { Transcript } from './transcript'
 
 export type HearFailure = 'rejected' | 'busy' | 'unreachable' | 'unsupported' | 'undecodable' | 'too-long' | 'too-big' | 'unknown'
 
@@ -51,8 +33,12 @@ interface VerboseSegment {
   no_speech_prob: number
 }
 
+// Whisper's own test for a stretch with no speech in it (its "no speech" and log-probability
+// thresholds): what it writes there is invented, often "thanks for watching", so it is left out.
+const isSilence = (s: VerboseSegment) => s.no_speech_prob > 0.6 && s.avg_logprob < -1
+
 export function toTranscript(body: { text?: string; language?: string; duration?: number; segments?: VerboseSegment[] }): Transcript {
-  const segments = (body.segments ?? []).map(s => ({
+  const segments = (body.segments ?? []).filter(s => !isSilence(s)).map(s => ({
     start: s.start,
     end: s.end,
     text: s.text.trim(),
@@ -60,7 +46,7 @@ export function toTranscript(body: { text?: string; language?: string; duration?
     unclear: s.avg_logprob < UNCLEAR_LOGPROB || s.compression_ratio > UNCLEAR_COMPRESSION || (s.no_speech_prob > UNCLEAR_NO_SPEECH && s.text.trim() !== ''),
   }))
   return {
-    text: (body.text ?? segments.map(s => s.text).join(' ')).trim(),
+    text: (body.segments ? segments.map(s => s.text).join(' ') : body.text ?? '').trim(),
     language: body.language ?? null,
     duration: body.duration ?? segments.at(-1)?.end ?? 0,
     segments,

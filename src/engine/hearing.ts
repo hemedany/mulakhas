@@ -3,7 +3,8 @@
 // whose Transcripts are joined back into one. Parts already heard are kept, so a reload or a
 // failure part-way carries on from the next part instead of sending everything again.
 import { partsOf, secondsOf, toPcm, wavOf, type DecodeAudio, type Part } from './audio'
-import { HearError, WHISPER_MAX_BYTES, asUpload, stemOf, type Transcript } from './whisper'
+import type { Transcript } from './transcript'
+import { HearError, WHISPER_MAX_BYTES, asUpload, stemOf } from './whisper'
 
 /** A Voice note or Video heard in parts: how many there are, and the Transcripts of those heard so far. */
 export interface PartsHeard {

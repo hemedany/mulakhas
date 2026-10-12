@@ -5,6 +5,7 @@ import { KhatamMark } from '@/brand/Khatam'
 import { Pattern, StarBadge } from '@/brand/Ornament'
 import { useEngine, useOwnKeys, usePrefs } from '@/app/engine-hooks'
 import type { HearFailure, MediaMessage, Message, TextMessage, Transcript } from '@/engine'
+import { isSilent } from '@/engine/transcript'
 import { useT } from '@/i18n/i18n'
 import type { Strings } from '@/i18n/strings'
 import { Player } from './Player'
@@ -30,7 +31,11 @@ function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnect
   const { groq } = useOwnKeys()
   switch (message.state) {
     case 'heard':
-      return <span className="inline-flex items-center gap-1 text-xs text-fg-muted"><CheckIcon size={14} weight="bold" className="text-ornament" />{t.stateHeard}</span>
+      return (
+        <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+          <CheckIcon size={14} weight="bold" className="text-ornament" />{message.transcript?.watched ? t.stateWatched : t.stateHeard}
+        </span>
+      )
     case 'hearing':
       return (
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg">
@@ -53,22 +58,50 @@ function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnect
   }
 }
 
-/** The Transcript behind "What it heard", with Unclear passages marked. Closed by default. */
+/**
+ * The Transcript behind "What it heard", with Unclear passages marked, and for a Video Gemini
+ * watched, what it shows. Closed by default.
+ */
 function WhatItHeard({ transcript }: { transcript: Transcript }) {
   const t = useT()
   return (
     <details className="mt-1.5">
       <summary className="cursor-pointer list-none text-xs font-medium text-accent">{t.whatItHeard}</summary>
-      <p dir="auto" className="mt-1.5 rounded-control bg-sunken px-3 py-2 text-sm text-fg-muted">
-        {transcript.segments.map((s, i) => (
-          <span key={i}>
-            {s.unclear ? <mark title={t.unclearMark} className="rounded-sm bg-caution/20 px-0.5 text-fg">{s.text}</mark> : s.text}
-            {' '}
-          </span>
-        ))}
-      </p>
+      <div className="mt-1.5 space-y-2 rounded-control bg-sunken px-3 py-2 text-sm text-fg-muted">
+        {transcript.segments.length > 0 && (
+          <p dir="auto">
+            {transcript.segments.map((s, i) => (
+              <span key={i}>
+                {s.unclear ? <mark title={t.unclearMark} className="rounded-sm bg-caution/20 px-0.5 text-fg">{s.text}</mark> : s.text}
+                {' '}
+              </span>
+            ))}
+          </p>
+        )}
+        {transcript.shown && (
+          <p dir="auto"><span className="block text-xs font-semibold text-fg">{t.whatItShows}</span>{transcript.shown}</p>
+        )}
+      </div>
     </details>
   )
+}
+
+/** What the person should know about how a heard Message was heard: no speech, or a Video only heard, not watched. */
+function HeardNote({ message, onConnectKey }: { message: MediaMessage; onConnectKey: () => void }) {
+  const t = useT()
+  const { gemini } = useOwnKeys()
+  const { transcript, watchFailure } = message
+  if (!transcript) return null
+  if (watchFailure === 'rejected') {
+    return (
+      <p className="mt-1 text-xs text-fg-muted">
+        {t.watchRejected} <button type="button" onClick={onConnectKey} className="font-semibold text-accent">{t.changeKey}</button>
+      </p>
+    )
+  }
+  if (watchFailure) return <p className="mt-1 text-xs text-fg-muted">{t.watchFailed}</p>
+  if (transcript.watched || !isSilent(transcript)) return null
+  return <p className="mt-1 text-xs text-caution">{message.kind === 'video' && !gemini ? t.noSpeechVideo : t.noSpeech}</p>
 }
 
 function FailureNote({ failure }: { failure: HearFailure }) {
@@ -100,7 +133,8 @@ function MediaBubble({ message, n, onConnectKey }: { message: MediaMessage; n: n
       </div>
       {message.retryAt && <RetryNote at={message.retryAt} />}
       {message.state === 'failed' && message.failure && <FailureNote failure={message.failure} />}
-      {message.state === 'heard' && message.transcript && <WhatItHeard transcript={message.transcript} />}
+      {message.state === 'heard' && <HeardNote message={message} onConnectKey={onConnectKey} />}
+      {message.state === 'heard' && message.transcript && (!isSilent(message.transcript) || message.transcript.shown) && <WhatItHeard transcript={message.transcript} />}
     </div>
   )
 }

@@ -57,10 +57,10 @@ function describe(message: Message, n: number, total: number) {
   if (message.kind === 'text') return `${head}: TEXT MESSAGE =====\n${message.text.trim() || '(empty)'}`
   const what = message.kind === 'video' ? 'VIDEO' : 'VOICE NOTE'
   if (message.state !== 'heard' || !message.transcript) return `${head}: ${what} =====\n(this ${what.toLowerCase()} could not be heard)`
-  const body = message.transcript.segments.length
-    ? message.transcript.segments.map(s => (s.unclear ? `⟦unclear: ${s.text}⟧` : s.text)).join(' ')
-    : message.transcript.text
-  return `${head}: ${what} (transcript) =====\n${body || '(no speech)'}`
+  const { segments, text, watched, shown } = message.transcript
+  const said = (segments.length ? segments.map(s => (s.unclear ? `⟦unclear: ${s.text}⟧` : s.text)).join(' ') : text) || '(no speech)'
+  if (!watched) return `${head}: ${what} (transcript) =====\n${said}`
+  return `${head}: ${what} (what is said, then what it shows) =====\n${said}\n[What the video shows]: ${shown || '(nothing described)'}`
 }
 
 /** The writer's whole prompt: the Request, which language to write in, then every Message in order. */

@@ -3,6 +3,7 @@
 // background as soon as a Groq key is connected.
 import { oneAtATime, type DecodeAudio } from './audio'
 import type { Db } from './db'
+import { GEMINI_MAX_BYTES, WatchError, chooseWatcher, watchVideo, type WatchFailure } from './gemini'
 import { hearFile, type PartsHeard } from './hearing'
 import type { History, Mode } from './history'
 import type { KeysStore } from './keys'
@@ -10,7 +11,8 @@ import { observable, type Observable } from './observable'
 import type { PrefsStore } from './prefs'
 import type { Fetch } from './providers'
 import { reliabilityReport, type ReliabilityRow } from './reliability'
-import { HearError, transcribe, type HearFailure, type Transcript } from './whisper'
+import type { Transcript } from './transcript'
+import { HearError, transcribe, type HearFailure } from './whisper'
 import { WriteError, buildPrompt, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
 
 export type MediaKind = 'voice' | 'video'
@@ -31,6 +33,8 @@ export interface MediaMessage {
   parts?: PartsHeard
   /** How many times decoding this file started without finishing (see hearing.ts). */
   decodeTries?: number
+  /** A Video Gemini couldn't watch, so only its sound was heard: why. */
+  watchFailure?: WatchFailure
   transcript?: Transcript
 }
 
@@ -176,6 +180,7 @@ export async function createThread(deps: {
   const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
   const active = new Set<Promise<void>>()
   let writer: { key: string; model: string } | null = null
+  let watcher: { key: string; model: Promise<string> } | null = null
 
   /** Saves the Thread. A failure doesn't stop anything, but is shown until a later save works. */
   const persist = async () => {
@@ -207,6 +212,17 @@ export async function createThread(deps: {
         await sleep(left)
         await update(message.id, { retryAt: undefined })
       }
+      // With a Google key, Gemini watches a Video; if it can't, Whisper still hears its sound.
+      const google = message.kind === 'video' && audio.size <= GEMINI_MAX_BYTES ? keys.get().gemini : null
+      let watchFailure: WatchFailure | undefined
+      if (google) {
+        try {
+          const transcript = await watch(message, audio, google)
+          return await update(message.id, { state: 'heard', transcript, retryAt: undefined, watchFailure: undefined })
+        } catch (e) {
+          watchFailure = e instanceof WatchError ? e.failure : 'unknown'
+        }
+      }
       try {
         const transcript = await hearFile(audio, message.name, {
           decode,
@@ -220,7 +236,7 @@ export async function createThread(deps: {
           decodeTries: message.decodeTries ?? 0,
           onDecodeTries: tries => update(message.id, { decodeTries: tries || undefined }),
         })
-        return await update(message.id, { state: 'heard', transcript, retryAt: undefined, parts: undefined })
+        return await update(message.id, { state: 'heard', transcript, retryAt: undefined, parts: undefined, watchFailure })
       } catch (e) {
         // Parts already heard are kept, so Try again carries on from the next one.
         return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined })
@@ -229,6 +245,20 @@ export async function createThread(deps: {
       // Storage itself failed; never leave the Message looking as if it is still being heard.
       state.publish({ ...state.get(), messages: patchMedia(state.get().messages, message.id, { state: 'failed', failure: 'unknown', retryAt: undefined }) })
     }
+  }
+
+  /** Gemini watching a Video, with the newest Flash model the key can use (looked up once per key). */
+  async function watch(message: MediaMessage, video: Blob, key: string) {
+    if (watcher?.key !== key) watcher = { key, model: chooseWatcher(fetch, key) }
+    const model = await watcher.model.catch(e => { watcher = null; throw e })
+    return watchVideo(fetch, key, model, video, message.name, message.type, {
+      sleep,
+      retrying: call => withBusyRetries(
+        call,
+        e => (e instanceof WatchError && e.failure === 'busy' ? e.retryAfterMs : undefined),
+        { sleep, now, onWait: retryAt => update(message.id, { retryAt }) },
+      ),
+    })
   }
 
   /** Starts hearing waiting Messages, two at a time. */

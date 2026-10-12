@@ -53,7 +53,7 @@ The document Mulakhas produces for a Thread, in either Mode.
 _Avoid_: output, answer, response
 
 **Transcript**:
-The words Mulakhas heard in one Voice note or Video. Users see it only behind "what it heard"; they never have to correct it.
+The words Mulakhas heard in one Voice note or Video; for a Video Gemini watched, also what it shows. Users see it only behind "what it heard"; they never have to correct it.
 
 **Unclear passage**:
 A stretch of a Transcript that was heard with low confidence, flagged as `[unclear]` inside the Result.
