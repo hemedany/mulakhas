@@ -6,8 +6,8 @@ import { createPrefs, type PrefsStore } from './prefs'
 
 export type { SavedResult, Mode } from './history'
 export type { OwnKeys } from './keys'
-export type { Prefs, Theme } from './prefs'
-export { LANGS, LANG_NAMES, RTL_LANGS, type Lang } from './langs'
+export { THEMES, type Prefs, type Theme } from './prefs'
+export { LANGS, LANG_NAMES, RTL_LANGS, pickLang, type Lang } from './langs'
 
 /** Everything the engine touches on the device, injectable so tests can simulate devices and reloads. */
 export interface EngineDeps {
@@ -15,6 +15,8 @@ export interface EngineDeps {
   indexedDB: IDBFactory
   /** The browser's preferred languages, most preferred first. */
   languages: readonly string[]
+  /** Whether the device is currently set to a dark colour scheme. */
+  prefersDarkScheme: boolean
 }
 
 /** The Mulakhas core: everything below the screens. */
@@ -26,7 +28,7 @@ export interface Engine {
 
 export async function createEngine(deps: EngineDeps): Promise<Engine> {
   const db = await openDb(deps.indexedDB)
-  await migrateFromV1(deps.localStorage, db)
+  await migrateFromV1(deps.localStorage, db, deps.prefersDarkScheme)
 
   return {
     prefs: createPrefs(deps.localStorage, deps.languages),
@@ -36,5 +38,10 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
 }
 
 export function browserDeps(): EngineDeps {
-  return { localStorage: window.localStorage, indexedDB: window.indexedDB, languages: navigator.languages }
+  return {
+    localStorage: window.localStorage,
+    indexedDB: window.indexedDB,
+    languages: navigator.languages,
+    prefersDarkScheme: window.matchMedia('(prefers-color-scheme: dark)').matches,
+  }
 }

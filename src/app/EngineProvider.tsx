@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { browserDeps, createEngine, type Engine } from '@/engine'
+import { browserDeps, createEngine, pickLang, RTL_LANGS, type Engine } from '@/engine'
+import { STRINGS } from '@/i18n/strings'
 import { EngineContext } from './engine-hooks'
 
 export function EngineProvider({ children }: { children: ReactNode }) {
@@ -11,10 +12,12 @@ export function EngineProvider({ children }: { children: ReactNode }) {
   }, [])
 
   if (failure) {
-    // Storage can be unavailable (private mode on some browsers, blocked site data).
+    // Storage can be unavailable (private mode on some browsers, blocked site data), so the
+    // saved interface language is unreachable too: fall back to the browser's language.
+    const lang = pickLang(navigator.languages)
     return (
-      <main className="mx-auto max-w-md p-6 text-sm">
-        <p>Mulakhas could not open its storage on this device. Check that site data is allowed for this page and reload.</p>
+      <main lang={lang} dir={RTL_LANGS.has(lang) ? 'rtl' : 'ltr'} className="mx-auto max-w-md p-6 text-sm">
+        <p>{STRINGS[lang].storageUnavailable}</p>
         <p className="mt-2 opacity-60">{failure.message}</p>
       </main>
     )

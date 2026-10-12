@@ -7,6 +7,7 @@ function plural(lang: string, n: number, forms: Partial<Record<Intl.LDMLPluralRu
 }
 
 const en = {
+  storageUnavailable: "Mulakhas couldn't open its storage on this device. Allow site data for this page, then reload.",
   listSeparator: ", ",
   brand: "Mulakhas",
   modeSummary: "Summarize",
@@ -17,7 +18,7 @@ const en = {
   requestPlaceholderExact: "Optional. For example: keep it in Arabic, or add an English translation under each message.",
   summarize: "Summarize it",
   extractWords: "Extract the words",
-  resultTitle: "Your summary",
+  resultTitle: "Your result",
   copy: "Copy",
   copied: "Copied",
   share: "Share",
@@ -44,6 +45,7 @@ const en = {
 export type Strings = typeof en
 
 const ar: Strings = {
+  storageUnavailable: "تعذّر على ملخّص فتح مساحة التخزين على هذا الجهاز. اسمح بحفظ بيانات الموقع لهذه الصفحة ثم أعد التحميل.",
   listSeparator: "، ",
   brand: "ملخّص",
   modeSummary: "لخّص",
@@ -80,6 +82,7 @@ const ar: Strings = {
 }
 
 const fr: Strings = {
+  storageUnavailable: "Mulakhas n'a pas pu ouvrir son stockage sur cet appareil. Autorisez les données de site pour cette page, puis rechargez.",
   listSeparator: ", ",
   brand: "Mulakhas",
   modeSummary: "Résumer",
@@ -90,7 +93,7 @@ const fr: Strings = {
   requestPlaceholderExact: "Facultatif. Par exemple : garder en arabe, ou ajouter une traduction française sous chaque message.",
   summarize: "Résumer",
   extractWords: "Extraire les mots",
-  resultTitle: "Votre résumé",
+  resultTitle: "Votre résultat",
   copy: "Copier",
   copied: "Copié",
   share: "Partager",
@@ -116,6 +119,7 @@ const fr: Strings = {
 }
 
 const de: Strings = {
+  storageUnavailable: "Mulakhas konnte seinen Speicher auf diesem Gerät nicht öffnen. Erlaube Websitedaten für diese Seite und lade sie neu.",
   listSeparator: ", ",
   brand: "Mulakhas",
   modeSummary: "Zusammenfassen",
@@ -126,7 +130,7 @@ const de: Strings = {
   requestPlaceholderExact: "Optional. Zum Beispiel: auf Arabisch lassen oder eine deutsche Übersetzung ergänzen.",
   summarize: "Zusammenfassen",
   extractWords: "Worte extrahieren",
-  resultTitle: "Deine Zusammenfassung",
+  resultTitle: "Dein Ergebnis",
   copy: "Kopieren",
   copied: "Kopiert",
   share: "Teilen",
@@ -152,6 +156,7 @@ const de: Strings = {
 }
 
 const tr: Strings = {
+  storageUnavailable: "Mulakhas bu cihazda depolama alanını açamadı. Bu sayfa için site verilerine izin verin ve yeniden yükleyin.",
   listSeparator: ", ",
   brand: "Mulakhas",
   modeSummary: "Özetle",
@@ -162,7 +167,7 @@ const tr: Strings = {
   requestPlaceholderExact: "İsteğe bağlı. Örneğin: Arapça kalsın ya da her mesajın altına Türkçe çeviri eklensin.",
   summarize: "Özetle",
   extractWords: "Sözcükleri çıkar",
-  resultTitle: "Özetin",
+  resultTitle: "Sonucun",
   copy: "Kopyala",
   copied: "Kopyalandı",
   share: "Paylaş",
@@ -188,6 +193,7 @@ const tr: Strings = {
 }
 
 const es: Strings = {
+  storageUnavailable: "Mulakhas no pudo abrir su almacenamiento en este dispositivo. Permite los datos del sitio para esta página y vuelve a cargarla.",
   listSeparator: ", ",
   brand: "Mulakhas",
   modeSummary: "Resumir",
@@ -198,7 +204,7 @@ const es: Strings = {
   requestPlaceholderExact: "Opcional. Por ejemplo: déjalo en árabe o añade traducción al español bajo cada mensaje.",
   summarize: "Resumir",
   extractWords: "Extraer palabras",
-  resultTitle: "Tu resumen",
+  resultTitle: "Tu resultado",
   copy: "Copiar",
   copied: "Copiado",
   share: "Compartir",

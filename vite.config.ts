@@ -9,11 +9,11 @@ import { defineConfig, type Plugin } from 'vite'
 const CSP = [
   "default-src 'none'",
   "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self'",
   "font-src 'self'",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
-  'connect-src https://api.groq.com https://generativelanguage.googleapis.com',
+  "connect-src 'self' https://api.groq.com https://generativelanguage.googleapis.com",
   "manifest-src 'self'",
   "worker-src 'self'",
   "base-uri 'none'",

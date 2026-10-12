@@ -2,7 +2,7 @@ import { DocumentSync } from '@/app/document-sync'
 import { EngineProvider } from '@/app/EngineProvider'
 import { useEngine, usePrefs } from '@/app/engine-hooks'
 import { HistoryList } from '@/app/HistoryList'
-import { LANGS, LANG_NAMES, type Lang, type Theme } from '@/engine'
+import { LANGS, LANG_NAMES, THEMES, type Lang, type Theme } from '@/engine'
 import { useT } from '@/i18n/i18n'
 
 // Foundation shell (ticket 01). The real main screen is chosen in ticket 02.
@@ -10,6 +10,7 @@ function Shell() {
   const { prefs } = useEngine()
   const { uiLang, theme } = usePrefs()
   const t = useT()
+  const themeLabel: Record<Theme, string> = { system: t.themeSystem, light: t.themeLight, dark: t.themeDark }
 
   return (
     <main className="mx-auto max-w-xl px-4 py-8">
@@ -32,9 +33,7 @@ function Shell() {
             value={theme}
             onChange={e => prefs.set({ theme: e.target.value as Theme })}
           >
-            <option value="system">{t.themeSystem}</option>
-            <option value="light">{t.themeLight}</option>
-            <option value="dark">{t.themeDark}</option>
+            {THEMES.map(th => <option key={th} value={th}>{themeLabel[th]}</option>)}
           </select>
         </div>
       </header>

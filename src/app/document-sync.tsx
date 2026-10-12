@@ -2,15 +2,15 @@ import { useEffect, useSyncExternalStore } from 'react'
 import { RTL_LANGS, type Theme } from '@/engine'
 import { usePrefs } from './engine-hooks'
 
-const dark = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
+const darkSchemeQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null
 
 function subscribeToSystemTheme(onChange: () => void) {
-  dark?.addEventListener('change', onChange)
-  return () => dark?.removeEventListener('change', onChange)
+  darkSchemeQuery?.addEventListener('change', onChange)
+  return () => darkSchemeQuery?.removeEventListener('change', onChange)
 }
 
 function useResolvedTheme(theme: Theme): 'light' | 'dark' {
-  const systemDark = useSyncExternalStore(subscribeToSystemTheme, () => dark?.matches ?? false)
+  const systemDark = useSyncExternalStore(subscribeToSystemTheme, () => darkSchemeQuery?.matches ?? false)
   return theme === 'system' ? (systemDark ? 'dark' : 'light') : theme
 }
 

@@ -33,11 +33,39 @@ describe('returning v1 users lose nothing', () => {
     expect(saved[1].mode).toBe('summary')
   })
 
-  it('keeps their interface language, theme and Gemini key', async () => {
+  it('keeps their interface language and Gemini key', async () => {
     const engine = await createEngine(v1Device())
 
-    expect(engine.prefs.get()).toMatchObject({ uiLang: 'ar', theme: 'dark', wasV1User: true })
+    expect(engine.prefs.get()).toMatchObject({ uiLang: 'ar', wasV1User: true })
     expect(engine.keys.get()).toEqual({ groq: null, gemini: 'AIza-v1-saved-key' })
+  })
+
+  // v1 saved the device's theme on every visit, so a saved theme only means a deliberate
+  // choice when it differs from what the device uses now.
+  it('keep a theme they deliberately switched to', async () => {
+    const device = { ...v1Device(), prefersDarkScheme: false }
+
+    const engine = await createEngine(device)
+
+    expect(engine.prefs.get().theme).toBe('dark')
+  })
+
+  it('follow the device theme when v1 had only recorded the device default', async () => {
+    const device = { ...v1Device(), prefersDarkScheme: true }
+
+    const engine = await createEngine(device)
+
+    expect(engine.prefs.get().theme).toBe('system')
+  })
+
+  it('can still roll back to v1: its settings are never overwritten', async () => {
+    const device = v1Device()
+    const engine = await createEngine(device)
+
+    engine.prefs.set({ uiLang: 'fr', theme: 'system' })
+
+    expect(device.localStorage.getItem('uiLang')).toBe('ar')
+    expect(device.localStorage.getItem('theme')).toBe('dark')
   })
 
   it('migrates once and leaves the v1 data in place as a backup', async () => {

@@ -18,6 +18,7 @@ export function freshDevice(overrides: Partial<EngineDeps> = {}): EngineDeps {
     localStorage: new MemoryStorage(),
     indexedDB: new IDBFactory(),
     languages: ['en-US'],
+    prefersDarkScheme: false,
     ...overrides,
   }
 }

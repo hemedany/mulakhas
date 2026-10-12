@@ -1,6 +1,13 @@
 import { isLang, pickLang, type Lang } from './langs'
+import { observable, type Observable } from './observable'
+import { KEYS } from './storage-keys'
 
-export type Theme = 'system' | 'light' | 'dark'
+export const THEMES = ['system', 'light', 'dark'] as const
+export type Theme = (typeof THEMES)[number]
+
+export function isTheme(value: unknown): value is Theme {
+  return typeof value === 'string' && (THEMES as readonly string[]).includes(value)
+}
 
 export interface Prefs {
   uiLang: Lang
@@ -9,40 +16,26 @@ export interface Prefs {
   wasV1User: boolean
 }
 
-export interface PrefsStore {
-  get(): Prefs
+export interface PrefsStore extends Observable<Prefs> {
   set(patch: Partial<Pick<Prefs, 'uiLang' | 'theme'>>): void
-  subscribe(listener: (prefs: Prefs) => void): () => void
-}
-
-// v1 already used `uiLang` and `theme` with the same meaning, so the keys are shared.
-const K = { uiLang: 'uiLang', theme: 'theme', wasV1: 'm2.wasV1User' } as const
-
-function isTheme(v: unknown): v is Theme {
-  return v === 'system' || v === 'light' || v === 'dark'
 }
 
 export function createPrefs(ls: Storage, browserLanguages: readonly string[]): PrefsStore {
-  const storedLang = ls.getItem(K.uiLang)
-  const storedTheme = ls.getItem(K.theme)
-  let prefs: Prefs = {
+  const storedLang = ls.getItem(KEYS.uiLang)
+  const storedTheme = ls.getItem(KEYS.theme)
+  const state = observable<Prefs>({
     uiLang: isLang(storedLang) ? storedLang : pickLang(browserLanguages),
     theme: isTheme(storedTheme) ? storedTheme : 'system',
-    wasV1User: ls.getItem(K.wasV1) === '1',
-  }
-  const listeners = new Set<(p: Prefs) => void>()
+    wasV1User: ls.getItem(KEYS.wasV1User) === '1',
+  })
 
   return {
-    get: () => prefs,
+    get: state.get,
+    subscribe: state.subscribe,
     set(patch) {
-      prefs = { ...prefs, ...patch }
-      if (patch.uiLang) ls.setItem(K.uiLang, patch.uiLang)
-      if (patch.theme) ls.setItem(K.theme, patch.theme)
-      for (const l of listeners) l(prefs)
-    },
-    subscribe(listener) {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
+      if (patch.uiLang) ls.setItem(KEYS.uiLang, patch.uiLang)
+      if (patch.theme) ls.setItem(KEYS.theme, patch.theme)
+      state.publish({ ...state.get(), ...patch })
     },
   }
 }
