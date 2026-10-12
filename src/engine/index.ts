@@ -5,7 +5,8 @@ import { migrateFromV1 } from './migrate'
 import { createPrefs, type PrefsStore } from './prefs'
 
 export type { SavedResult, Mode } from './history'
-export type { OwnKeys } from './keys'
+export type { ConnectOutcome, OwnKeys } from './keys'
+export type { Provider } from './providers'
 export { THEMES, type Prefs, type Theme } from './prefs'
 export { LANGS, LANG_NAMES, RTL_LANGS, pickLang, type Lang } from './langs'
 
@@ -17,6 +18,8 @@ export interface EngineDeps {
   languages: readonly string[]
   /** Whether the device is currently set to a dark colour scheme. */
   prefersDarkScheme: boolean
+  /** The network. Only Groq and Google are ever called. */
+  fetch: typeof globalThis.fetch
 }
 
 /** The Mulakhas core: everything below the screens. */
@@ -32,7 +35,7 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
 
   return {
     prefs: createPrefs(deps.localStorage, deps.languages),
-    keys: createKeys(deps.localStorage),
+    keys: createKeys(deps.localStorage, deps.fetch),
     history: createHistory(db),
   }
 }
@@ -43,5 +46,6 @@ export function browserDeps(): EngineDeps {
     indexedDB: window.indexedDB,
     languages: navigator.languages,
     prefersDarkScheme: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    fetch: window.fetch.bind(window),
   }
 }

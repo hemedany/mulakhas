@@ -21,7 +21,8 @@ export function StarBadge({ n, lang, className = '' }: { n: number; lang: string
       <svg viewBox="0 0 32 32" className="absolute inset-0 size-full" aria-hidden="true">
         <polygon points={BADGE_STAR} fill="var(--surface)" stroke="var(--ornament)" strokeWidth="1.1" strokeLinejoin="round" />
       </svg>
-      <span className="tabular relative text-xs font-semibold text-fg">{new Intl.NumberFormat(lang).format(n)}</span>
+      {/* Arabic counts in Arabic-Indic digits, as in the Levant (CLDR now defaults Arabic to Latin digits). */}
+      <span className="tabular relative text-xs font-semibold text-fg">{new Intl.NumberFormat(lang, lang === 'ar' ? { numberingSystem: 'arab' } : {}).format(n)}</span>
     </span>
   )
 }

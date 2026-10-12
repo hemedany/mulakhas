@@ -13,3 +13,8 @@ export function usePrefs() {
   const { prefs } = useEngine()
   return useSyncExternalStore(prefs.subscribe, prefs.get)
 }
+
+export function useOwnKeys() {
+  const { keys } = useEngine()
+  return useSyncExternalStore(keys.subscribe, keys.get)
+}

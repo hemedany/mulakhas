@@ -12,13 +12,43 @@ export class MemoryStorage implements Storage {
   setItem(key: string, value: string) { this.#data.set(key, String(value)) }
 }
 
-/** A fresh, isolated device: empty localStorage and IndexedDB. Reuse the same object to simulate a reload. */
+type Handler = (url: URL, init: RequestInit | undefined) => Response | Promise<Response> | undefined
+
+/**
+ * The network as the engine sees it: every request is recorded, and handlers answer the ones
+ * a test cares about. An unanswered request fails like a dropped connection.
+ */
+export function fakeNetwork() {
+  const handlers: Handler[] = []
+  const requests: { url: URL; init: RequestInit | undefined }[] = []
+  const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(input instanceof Request ? input.url : String(input))
+    requests.push({ url, init })
+    for (const h of handlers) {
+      const res = await h(url, init)
+      if (res) return res
+    }
+    throw new TypeError('Failed to fetch')
+  }) as typeof globalThis.fetch
+  return {
+    fetch,
+    requests,
+    on(handler: Handler) { handlers.push(handler) },
+  }
+}
+
+export function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+}
+
+/** A fresh, isolated device: empty localStorage and IndexedDB, no network. Reuse the same object to simulate a reload. */
 export function freshDevice(overrides: Partial<EngineDeps> = {}): EngineDeps {
   return {
     localStorage: new MemoryStorage(),
     indexedDB: new IDBFactory(),
     languages: ['en-US'],
     prefersDarkScheme: false,
+    fetch: fakeNetwork().fetch,
     ...overrides,
   }
 }
