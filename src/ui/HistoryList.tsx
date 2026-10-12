@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useEngine, usePrefs } from '@/app/engine-hooks'
 import type { SavedResult } from '@/engine'
 import { useT } from '@/i18n/i18n'
-import { useEngine, usePrefs } from './engine-hooks'
 
 export function HistoryList() {
   const { history } = useEngine()
@@ -14,7 +14,7 @@ export function HistoryList() {
   }, [history])
 
   if (!saved) return null
-  if (!saved.length) return <p className="text-sm text-fg-muted">{t.historyEmpty}</p>
+  if (!saved.length) return <p className="py-6 text-center text-sm text-fg-muted">{t.historyEmpty}</p>
 
   const date = new Intl.DateTimeFormat(uiLang, { dateStyle: 'medium', timeStyle: 'short' })
   return (

@@ -41,12 +41,6 @@
   --p-gold-400: oklch(0.8 0.11 82);
   --p-gold-600: oklch(0.62 0.11 72);
 
-  --p-teal-300: oklch(0.74 0.1 185);
-  --p-teal-600: oklch(0.49 0.085 190);
-  --p-teal-700: oklch(0.43 0.075 192);
-  --p-teal-wash: oklch(0.95 0.025 188);
-  --p-teal-night: oklch(0.3 0.045 188);
-
   --p-red-600: oklch(0.53 0.17 27);
   --p-red-300: oklch(0.74 0.13 25);
   --p-amber-600: oklch(0.62 0.13 70);
@@ -86,12 +80,6 @@
   --on-accent: oklch(0.985 0.012 80);
 }
 
-:root[data-accent="teal"] {
-  --accent: var(--p-teal-600);
-  --accent-strong: var(--p-teal-700);
-  --accent-soft: var(--p-teal-wash);
-  --on-accent: var(--p-w-0);
-}
 
 /* ---- semantic: dark ("Ajami night") ---- */
 :root[data-theme="dark"] {
@@ -123,9 +111,3 @@
   --on-accent: oklch(0.2 0.05 14);
 }
 
-:root[data-theme="dark"][data-accent="teal"] {
-  --accent: var(--p-teal-300);
-  --accent-strong: oklch(0.82 0.09 185);
-  --accent-soft: var(--p-teal-night);
-  --on-accent: oklch(0.18 0.03 12);
-}

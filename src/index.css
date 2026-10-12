@@ -99,11 +99,26 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
-  /* Prototype toggle: subtle ornament keeps patterns on the header, arch and sheet only. */
-  [data-ornament="subtle"] .ornament-page {
-    display: none;
+  /* Nothing behind an open sheet scrolls. */
+  html:has(dialog[open]) {
+    overflow: hidden;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .sheet::backdrop {
+    background: oklch(0.2 0.06 14 / 0.5);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet[open] .sheet-panel {
+      transition: transform 320ms var(--ease-drawer), opacity 200ms var(--ease-snappy);
+      @starting-style {
+        transform: translateY(32px);
+        opacity: 0;
+      }
+    }
   }
 }
