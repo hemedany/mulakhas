@@ -32,6 +32,10 @@ _Avoid_: shared file, share target
 What the user asks Mulakhas to make from a Thread, in their own words or by picking a preset.
 _Avoid_: instructions, prompt, query
 
+**Dictation**:
+Speaking a Request or Follow-up instead of typing it. Dictation only ever fills those boxes; it never adds a Message to the Thread.
+_Avoid_: voice input, recording
+
 ### What Mulakhas gives back
 
 **Mode**:
