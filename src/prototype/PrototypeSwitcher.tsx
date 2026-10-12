@@ -32,7 +32,7 @@ export function PrototypeSwitcher({ variants, current, onChange, toggles }: {
 
   const chip = 'h-8 rounded-full px-2.5 text-xs font-medium transition-colors'
   return (
-    <div dir="ltr" lang="en" className="shrink-0 border-t border-black/10 bg-[#101214] px-2 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] text-white">
+    <div data-prototype-switcher dir="ltr" lang="en" className="shrink-0 border-t border-black/10 bg-[#101214] px-2 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] text-white">
       <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1.5">
         <span className="me-1 shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white/60">PROTOTYPE</span>
         <button type="button" aria-label="Previous variant" onClick={() => go(-1)} className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-white/10"><CaretLeftIcon size={16} /></button>

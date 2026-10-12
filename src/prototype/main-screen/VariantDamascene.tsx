@@ -21,7 +21,7 @@ import {
   VideoCameraIcon,
   XIcon,
 } from '@phosphor-icons/react'
-import { useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { KhatamMark } from '@/brand/Khatam'
 import { ArchFrame, OrnamentRule, Pattern, StarBadge } from '@/brand/Ornament'
 import { StateTag, Wave } from './atoms'
@@ -30,6 +30,14 @@ import { duration, type SampleCopy, type SampleMessage } from './sample'
 import type { VariantProps } from './types'
 
 export const name = 'Damascene'
+
+const desktopQuery = window.matchMedia('(min-width: 64rem)')
+function useIsDesktop() {
+  return useSyncExternalStore(
+    cb => { desktopQuery.addEventListener('change', cb); return () => desktopQuery.removeEventListener('change', cb) },
+    () => desktopQuery.matches,
+  )
+}
 
 const PRESET_ICON: Record<string, Icon> = {
   recipe: CookingPotIcon,
@@ -114,7 +122,7 @@ function Bubble({ m, n, copy, lang }: { m: SampleMessage; n: number; copy: Sampl
   return (
     <li className="flex items-start gap-2.5">
       <StarBadge n={n} lang={lang} className="mt-1.5" />
-      <div className="min-w-0 max-w-[24rem] flex-1 lg:max-w-[30rem]">
+      <div className="min-w-0 max-w-[24rem] flex-1 lg:max-w-none">
         {m.kind === 'text' ? (
           <div className="rounded-card rounded-ss-md border border-brand/15 bg-brand-soft px-3.5 py-2.5">
             <p className="text-[0.95rem]">{m.text}</p>
@@ -155,13 +163,13 @@ function Bubble({ m, n, copy, lang }: { m: SampleMessage; n: number; copy: Sampl
   )
 }
 
-function Composer({ copy, onSummarize, disabled }: { copy: SampleCopy; onSummarize: () => void; disabled: boolean }) {
+function Composer({ copy, onSummarize, disabled, followUp = false }: { copy: SampleCopy; onSummarize: () => void; disabled: boolean; followUp?: boolean }) {
   const [mode, setMode] = useState<'summary' | 'exact'>('summary')
   const [preset, setPreset] = useState<string | null>('recipe')
   return (
     <footer className="relative shrink-0 border-t border-ornament/40 bg-surface pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto max-w-3xl px-3 pt-2.5 pb-3 lg:px-8">
-        <div className="-mx-3 mb-2.5 flex items-center gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
+      <div className="mx-auto max-w-2xl px-3 pt-2.5 pb-3 lg:px-0">
+        {!followUp && <div className="-mx-3 mb-2.5 flex items-center gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
           <div role="radiogroup" aria-label="Mode" className="flex shrink-0 rounded-full bg-sunken p-0.5">
             {(['summary', 'exact'] as const).map(m => (
               <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => setMode(m)}
@@ -176,21 +184,21 @@ function Composer({ copy, onSummarize, disabled }: { copy: SampleCopy; onSummari
               {p.label}
             </button>
           ))}
-        </div>
+        </div>}
         <div className="flex items-end gap-2">
           <button type="button" aria-label={copy.addMessages} title={copy.addMessages}
             className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-150 active:scale-[0.94]">
             <PlusIcon size={20} />
           </button>
           <label className="relative min-w-0 flex-1">
-            <span className="sr-only">{copy.requestLabel}</span>
-            <textarea rows={1} placeholder={copy.requestLabel}
+            <span className="sr-only">{followUp ? copy.followUp : copy.requestLabel}</span>
+            <textarea rows={1} placeholder={followUp ? copy.followUp : copy.requestLabel}
               className="block max-h-36 min-h-11 w-full resize-none rounded-[1.375rem] border border-line bg-sunken py-2.5 ps-4 pe-11 leading-6 placeholder:text-fg-subtle focus:border-accent focus:outline-none [field-sizing:content]" />
             <span className="absolute end-0.5 bottom-0">
               <button type="button" aria-label="Dictate" className="grid size-11 place-items-center rounded-full text-fg-muted"><MicrophoneIcon size={22} /></button>
             </span>
           </label>
-          <button type="button" aria-label={copy.summarize} title={copy.summarize} onClick={onSummarize} disabled={disabled}
+          <button type="button" aria-label={followUp ? copy.ask : copy.summarize} title={followUp ? copy.ask : copy.summarize} onClick={followUp ? undefined : onSummarize} disabled={disabled}
             className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[transform,opacity] duration-150 ease-snappy active:scale-[0.94] disabled:opacity-40">
             <ArrowUpIcon size={20} weight="bold" />
           </button>
@@ -202,20 +210,20 @@ function Composer({ copy, onSummarize, disabled }: { copy: SampleCopy; onSummari
 
 function ResultSheet({ copy, onClose }: { copy: SampleCopy; onClose: () => void }) {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col justify-end lg:static lg:z-auto lg:w-[min(40rem,46vw)] lg:shrink-0 lg:border-s lg:border-ornament/40">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-brand-deep/45 lg:hidden" />
+    <div className="absolute inset-0 z-10 flex flex-col justify-end">
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-brand-deep/45" />
       <section role="dialog" aria-label={copy.result}
-        className="relative mx-auto flex max-h-[90%] w-full max-w-2xl flex-col overflow-hidden rounded-t-sheet bg-surface shadow-floating lg:mx-0 lg:h-full lg:max-h-none lg:max-w-none lg:rounded-none lg:shadow-none">
-        <div className="relative h-14 shrink-0 overflow-hidden bg-brand text-on-brand lg:h-12">
+        className="relative mx-auto flex max-h-[90%] w-full max-w-2xl flex-col overflow-hidden rounded-t-sheet bg-surface shadow-floating">
+        <div className="relative h-14 shrink-0 overflow-hidden bg-brand text-on-brand">
           <Pattern onBrand className="opacity-[0.22]" />
-          <div className="relative mx-auto mt-2 h-1.5 w-10 rounded-full bg-on-brand/40 lg:hidden" aria-hidden="true" />
-          <div className="relative flex items-center justify-between px-4 lg:h-full lg:px-6">
+          <div className="relative mx-auto mt-2 h-1.5 w-10 rounded-full bg-on-brand/40" aria-hidden="true" />
+          <div className="relative flex items-center justify-between px-4">
             <span className="flex items-center gap-2 text-sm font-medium"><KhatamMark size={18} />{copy.result}</span>
             <button type="button" aria-label="Close" onClick={onClose} className="-mt-1 grid size-10 place-items-center rounded-full hover:bg-white/10"><XIcon size={20} /></button>
           </div>
         </div>
         <div className="h-px bg-ornament/70" />
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-4 lg:px-10 lg:pt-8">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-4">
           <Markdown source={copy.resultMd} titleClass="font-display text-[1.75rem] leading-tight font-semibold" />
           <OrnamentRule className="my-6" />
           <h3 className="text-sm font-semibold">{copy.reliability}</h3>
@@ -225,7 +233,7 @@ function ResultSheet({ copy, onClose }: { copy: SampleCopy; onClose: () => void 
             ))}
           </ul>
         </div>
-        <div className="border-t border-line px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:px-10 lg:pb-5">
+        <div className="border-t border-line px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="flex gap-2">
             <button type="button" className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-control bg-accent font-medium text-on-accent transition-transform active:scale-[0.98]"><CopyIcon size={18} />{copy.copy}</button>
             <button type="button" className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-control border border-line font-medium transition-transform active:scale-[0.98]"><ShareNetworkIcon size={18} />{copy.share}</button>
@@ -241,30 +249,64 @@ function ResultSheet({ copy, onClose }: { copy: SampleCopy; onClose: () => void 
   )
 }
 
+function ResultInThread({ copy }: { copy: SampleCopy }) {
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => { ref.current?.scrollIntoView({ block: 'start' }) }, [])
+  return (
+    <article ref={ref} aria-label={copy.result} className="mt-6 scroll-mt-6 overflow-hidden rounded-card border border-ornament/40 bg-surface shadow-raised">
+      <div className="relative flex h-11 items-center justify-between overflow-hidden bg-brand px-5 text-on-brand">
+        <Pattern onBrand className="opacity-[0.22]" />
+        <span className="relative flex items-center gap-2 text-sm font-medium"><KhatamMark size={18} />{copy.appName}</span>
+        <span className="relative rounded-full bg-white/10 px-2.5 py-0.5 text-xs">{copy.modeSummary}</span>
+      </div>
+      <div className="h-px bg-ornament/70" />
+      <div className="px-8 pt-7 pb-6">
+        <Markdown source={copy.resultMd} titleClass="font-display text-[2rem] leading-tight font-semibold" />
+        <OrnamentRule className="my-6" />
+        <h3 className="text-sm font-semibold">{copy.reliability}</h3>
+        <ul className="mt-2 space-y-1 text-sm text-fg-muted">
+          {copy.reliabilityRows.map(r => (
+            <li key={r.n} className="flex gap-3"><span className="tabular w-9 shrink-0 font-medium text-fg">{r.clarity}%</span><span>{copy.kind.voice} {r.n}: {r.note}</span></li>
+          ))}
+        </ul>
+        <div className="mt-6 flex gap-2">
+          <button type="button" className="inline-flex h-11 items-center gap-1.5 rounded-control bg-accent px-5 font-medium text-on-accent transition-transform active:scale-[0.98]"><CopyIcon size={18} />{copy.copy}</button>
+          <button type="button" className="inline-flex h-11 items-center gap-1.5 rounded-control border border-line px-5 font-medium transition-transform active:scale-[0.98]"><ShareNetworkIcon size={18} />{copy.share}</button>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 export default function VariantDamascene({ copy, thread, state, onSummarize, onReset }: VariantProps) {
   const lang = copy.appName === 'ملخّص' ? 'ar' : 'en'
   const empty = state === 'empty'
+  const desktop = useIsDesktop()
+  const resultInThread = state === 'result' && desktop
   return (
     <div className="flex h-full flex-col bg-bg">
       <Header copy={copy} />
       <div className="relative flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="relative flex min-w-0 flex-1 flex-col">
+          {/* Outside the scroller so it stays put. Phones: fades down the page. Desktop: fills the margins around a manuscript column. */}
+          <Pattern className="ornament-page opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />
           <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            {/* Phones: pattern fades down the page. Desktop: it fills the margins around a manuscript column. */}
-            <Pattern className="ornament-page opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />
             <div className="relative flex min-h-full flex-col">
               {empty ? (
                 <Empty copy={copy} />
               ) : (
-                <ol className="mx-auto w-full max-w-3xl flex-1 space-y-3 px-3 py-5 lg:border-x lg:border-ornament/30 lg:bg-bg lg:px-8 lg:py-8">
-                  {thread.map((m, i) => <Bubble key={i} m={m} n={i + 1} copy={copy} lang={lang} />)}
-                </ol>
+                <div className="mx-auto w-full flex-1 px-3 py-5 lg:max-w-3xl lg:border-x lg:border-ornament/30 lg:bg-bg lg:px-12 lg:py-10">
+                  <ol className="mx-auto max-w-2xl space-y-3">
+                    {thread.map((m, i) => <Bubble key={i} m={m} n={i + 1} copy={copy} lang={lang} />)}
+                  </ol>
+                  {resultInThread && <div className="mx-auto max-w-2xl"><ResultInThread copy={copy} /></div>}
+                </div>
               )}
             </div>
           </main>
-          {!empty && <Composer copy={copy} onSummarize={onSummarize} disabled={false} />}
+          {!empty && <Composer copy={copy} onSummarize={onSummarize} disabled={false} followUp={resultInThread} />}
         </div>
-        {state === 'result' && <ResultSheet copy={copy} onClose={onReset} />}
+        {state === 'result' && !desktop && <ResultSheet copy={copy} onClose={onReset} />}
       </div>
     </div>
   )
