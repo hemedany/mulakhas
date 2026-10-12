@@ -14,13 +14,21 @@ export interface WriteOptions {
 
 export type WriteFailure = 'no-key' | 'empty' | 'nothing-heard' | 'rejected' | 'busy' | 'unreachable' | 'too-big' | 'unknown'
 
+/** Groq's own figures when a request is too large for the key's tokens-per-minute limit. */
+export interface TooLarge {
+  limit: number
+  requested: number
+}
+
 export class WriteError extends Error {
   readonly failure: WriteFailure
   readonly retryAfterMs: number | null
-  constructor(failure: WriteFailure, retryAfterMs: number | null = null) {
+  readonly tooLarge: TooLarge | null
+  constructor(failure: WriteFailure, retryAfterMs: number | null = null, tooLarge: TooLarge | null = null) {
     super(failure)
     this.failure = failure
     this.retryAfterMs = retryAfterMs
+    this.tooLarge = tooLarge
   }
 }
 
@@ -52,7 +60,8 @@ If several speakers can clearly be told apart, label who is speaking (their name
 
 Respond in clean Markdown only: headings, bold, bullet and numbered lists. Start with a "# " title.`
 
-function describe(message: Message, n: number, total: number) {
+/** One Message as the writer reads it: a labelled block, its Transcript or text below the label. */
+export function messageBlock(message: Message, n: number, total: number) {
   const head = `===== Message ${n} of ${total}`
   if (message.kind === 'text') return `${head}: TEXT MESSAGE =====\n${message.text.trim() || '(empty)'}`
   const what = message.kind === 'video' ? 'VIDEO' : 'VOICE NOTE'
@@ -63,20 +72,46 @@ function describe(message: Message, n: number, total: number) {
   return `${head}: ${what} (what is said, then what it shows) =====\n${said}\n[What the video shows]: ${shown || '(nothing described)'}`
 }
 
-/** The writer's whole prompt: the Request, which language to write in, then every Message in order. */
-export function buildPrompt(messages: Message[], options: WriteOptions, lang: Lang) {
+export const isExact = (options: WriteOptions) => options.mode === 'exact' || options.preset === 'exact'
+
+/** The Request in words: Exact words, or a preset and the user's own wishes. */
+function requestOf(options: WriteOptions) {
   const wishes = options.request.trim()
-  const exact = options.mode === 'exact' || options.preset === 'exact'
-  const ask = exact
-    ? EXACT_WORDS + (wishes ? `\nAdditional wishes: ${wishes}` : '')
-    : [options.preset && options.preset !== 'exact' ? PRESET_PROMPT[options.preset] : null, wishes || null]
-      .filter(Boolean).join('\nAdditional wishes: ') || DEFAULT_REQUEST
+  if (isExact(options)) return EXACT_WORDS + (wishes ? `\nAdditional wishes: ${wishes}` : '')
+  return [options.preset && options.preset !== 'exact' ? PRESET_PROMPT[options.preset] : null, wishes || null]
+    .filter(Boolean).join('\nAdditional wishes: ') || DEFAULT_REQUEST
+}
+
+export interface PromptShape {
+  /** The blocks are condensed notes, not the Messages themselves. */
+  condensed?: boolean
+  /** Exact words written in parts: this part carries on from an earlier one. */
+  continuing?: boolean
+}
+
+/** The writer's whole prompt: the Request, which language to write in, then the Messages' blocks in order. */
+export function promptFrom(blocks: string[], options: WriteOptions, lang: Lang, { condensed = false, continuing = false }: PromptShape = {}) {
   // Exact words keeps every message in the language it was spoken in; only the labels follow the interface.
-  const language = exact
+  const language = isExact(options)
     ? `Write the title and the message labels in ${LANGUAGE_NAME[lang]}; keep the messages themselves in their own language unless the Request asks for a translation.`
     : `Write the Result in ${LANGUAGE_NAME[lang]}, unless the Request asks for another language.`
-  const thread = messages.map((m, i) => describe(m, i + 1, messages.length)).join('\n\n')
-  return `WHAT THE USER WANTS (the Request):\n${ask}\n\n${language}\n\nTHE CONVERSATION:\n\n${thread}`
+  const carryOn = continuing
+    ? '\n\nThis part carries on from an earlier part of the same Result: do NOT add a title, start directly with the first message below.'
+    : ''
+  const heading = condensed ? 'THE CONVERSATION (condensed notes on every message, in order):' : 'THE CONVERSATION:'
+  return `WHAT THE USER WANTS (the Request):\n${requestOf(options)}\n\n${language}${carryOn}\n\n${heading}\n\n${blocks.join('\n\n')}`
+}
+
+/** The writer's whole prompt for a Thread: the Request, which language to write in, then every Message in order. */
+export function buildPrompt(messages: Message[], options: WriteOptions, lang: Lang) {
+  return promptFrom(messages.map((m, i) => messageBlock(m, i + 1, messages.length)), options, lang)
+}
+
+/** Condensing part of a big Thread into notes for the final write (see writing.ts). */
+export const CONDENSE_PROMPT = `You prepare notes for a writer who will turn a long conversation into one Result. You receive some of its messages, in order. For each message, write compact notes that keep EVERY detail that could matter for the Request: facts, names, quantities, times, steps and decisions, and above all corrections ("not X, Y"). Keep the language each message was in. Copy ⟦unclear: …⟧ markers as they are. Start each message's notes with its label exactly as given (for example "===== Message 7 of 40: VOICE NOTE ====="). No introduction and no conclusion.`
+
+export function condensePrompt(blocks: string[], options: WriteOptions) {
+  return `THE REQUEST THE NOTES ARE FOR:\n${requestOf(options)}\n\nTHE MESSAGES:\n\n${blocks.join('\n\n')}`
 }
 
 /** Worth pressing Summarize: some Text, or a Voice note or Video that is heard or may still be. */
@@ -113,7 +148,19 @@ export interface Written {
   cutOff: boolean
 }
 
-export async function write(fetch: Fetch, key: string, model: string, prompt: string): Promise<Written> {
+/** The most the writer may write in one answer. Groq's free tier counts it against the tokens-per-minute limit. */
+export const WRITE_MAX_TOKENS = 4096
+
+// "Request too large for model `openai/gpt-oss-120b` … on tokens per minute (TPM): Limit 8000, Requested 9412, …"
+const TOO_LARGE = /Limit (\d+), Requested (\d+)/
+
+export async function write(
+  fetch: Fetch,
+  key: string,
+  model: string,
+  prompt: string,
+  { system = SYSTEM_PROMPT, maxTokens = WRITE_MAX_TOKENS }: { system?: string; maxTokens?: number } = {},
+): Promise<Written> {
   let res: Response
   try {
     res = await fetch(`${GROQ_API}/chat/completions`, {
@@ -121,9 +168,9 @@ export async function write(fetch: Fetch, key: string, model: string, prompt: st
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: prompt }],
+        messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
         temperature: 0.3,
-        max_completion_tokens: 4096,
+        max_completion_tokens: maxTokens,
         ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'medium' } : {}),
       }),
     })
@@ -139,7 +186,10 @@ export async function write(fetch: Fetch, key: string, model: string, prompt: st
     return { text, cutOff }
   }
   if (res.status === 401 || res.status === 403) throw new WriteError('rejected')
-  if (res.status === 413) throw new WriteError('too-big')
+  if (res.status === 413) {
+    const found = TOO_LARGE.exec(await res.text().catch(() => ''))
+    throw new WriteError('too-big', null, found ? { limit: Number(found[1]), requested: Number(found[2]) } : null)
+  }
   if (res.status === 429 || res.status >= 500) throw new WriteError('busy', retryAfterMs(res))
   throw new WriteError('unknown')
 }

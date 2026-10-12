@@ -13,7 +13,8 @@ import type { Fetch } from './providers'
 import { reliabilityReport, type ReliabilityRow } from './reliability'
 import type { Transcript } from './transcript'
 import { HearError, transcribe, type HearFailure } from './whisper'
-import { WriteError, buildPrompt, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
+import { WriteError, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
+import { startingBudget, writeThread, type Budget, type Part } from './writing'
 
 export type MediaKind = 'voice' | 'video'
 export type HearState = 'waiting' | 'hearing' | 'heard' | 'failed'
@@ -60,8 +61,8 @@ export interface ThreadResult {
 export type Writing =
   | { state: 'idle' }
   | { state: 'listening' }
-  /** `retryAt`: Groq asked us to wait until then before trying again. */
-  | { state: 'writing'; retryAt?: number }
+  /** `retryAt`: Groq asked us to wait until then before trying again. `part`: a big Thread written in parts. */
+  | { state: 'writing'; retryAt?: number; part?: Part }
   | { state: 'failed'; failure: WriteFailure }
 
 export interface ThreadState {
@@ -126,7 +127,8 @@ async function withBusyRetries<T>(
     } catch (e) {
       const asked = busyFor(e)
       if (asked === undefined || attempt >= MAX_ATTEMPTS) throw e
-      const wait = asked ?? 2000 * attempt
+      // Groq says how long to wait when it is rate-limiting; a server error gets 2 s, then 4 s, and so on.
+      const wait = asked ?? 2000 * 2 ** (attempt - 1)
       await onWait(now() + wait)
       await sleep(wait)
       await onWait(undefined)
@@ -179,7 +181,7 @@ export async function createThread(deps: {
   const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const } : m))
   const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
   const active = new Set<Promise<void>>()
-  let writer: { key: string; model: string } | null = null
+  let writer: { key: string; model: string; budget: Budget } | null = null
   let watcher: { key: string; model: Promise<string> } | null = null
 
   /** Saves the Thread. A failure doesn't stop anything, but is shown until a later save works. */
@@ -392,16 +394,27 @@ export async function createThread(deps: {
       if (!canWrite(messages)) fail(messages.some(m => m.kind !== 'text') ? 'nothing-heard' : 'empty')
 
       setWriting({ state: 'writing' })
-      if (writer?.key !== key) writer = { key: key!, model: await chooseWriter(fetch, key!) }
-      const prompt = buildPrompt(messages, options, prefs.get().uiLang)
-      const model = writer.model
+      if (writer?.key !== key) {
+        const model = await chooseWriter(fetch, key!)
+        writer = { key: key!, model, budget: startingBudget(model) }
+      }
+      const { model, budget } = writer
+      // Keeps the part being written while showing when Groq lets us try again.
+      const writingNow = (patch: { retryAt?: number; part?: Part }) => {
+        const current = state.get().writing
+        setWriting({ ...(current.state === 'writing' ? current : {}), state: 'writing', ...patch })
+      }
       let written: Written
       try {
-        written = await withBusyRetries(
-          () => write(fetch, key!, model, prompt),
-          e => (e instanceof WriteError && e.failure === 'busy' ? e.retryAfterMs : undefined),
-          { sleep, now, onWait: retryAt => setWriting({ state: 'writing', retryAt }) },
-        )
+        written = await writeThread(messages, options, prefs.get().uiLang, {
+          budget,
+          onPart: part => writingNow({ part }),
+          send: (prompt, settings) => withBusyRetries(
+            () => write(fetch, key!, model, prompt, settings),
+            e => (e instanceof WriteError && e.failure === 'busy' ? e.retryAfterMs : undefined),
+            { sleep, now, onWait: retryAt => writingNow({ retryAt }) },
+          ),
+        })
       } catch (e) {
         return fail(e instanceof WriteError ? e.failure : 'unknown')
       }

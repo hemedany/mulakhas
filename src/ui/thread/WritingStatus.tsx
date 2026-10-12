@@ -3,6 +3,7 @@ import { KhatamProgress } from '@/brand/Khatam'
 import { usePrefs, useThread } from '@/app/engine-hooks'
 import type { WriteFailure } from '@/engine'
 import { useT } from '@/i18n/i18n'
+import { formatNumber } from '@/i18n/numbers'
 import type { Strings } from '@/i18n/strings'
 
 const failureText = (t: Strings): Record<WriteFailure, string> => ({
@@ -40,8 +41,15 @@ export function WritingStatus({ onRetry, onConnectKey }: { onRetry: () => void; 
   // The star fills one tip per eighth of the Messages heard: honest progress, not a loop.
   const media = messages.filter(m => m.kind !== 'text')
   const done = media.filter(m => m.state === 'heard' || m.state === 'failed').length
-  const progress = writing.state === 'writing' ? 1 : media.length ? done / media.length : 1
-  const label = writing.state === 'listening' ? t.writingListening : t.writingNow
+  // Writing in parts, it fills again part by part.
+  const progress = writing.state === 'writing'
+    ? (writing.part ? (writing.part.n - 1) / writing.part.of : 1)
+    : media.length ? done / media.length : 1
+  const label = writing.state === 'listening'
+    ? t.writingListening
+    : writing.part
+      ? t.writingPart(formatNumber(writing.part.n, uiLang), formatNumber(writing.part.of, uiLang))
+      : t.writingNow
   const retryTime = writing.state === 'writing' && writing.retryAt
     ? new Intl.DateTimeFormat(uiLang, { timeStyle: 'short' }).format(writing.retryAt)
     : null
