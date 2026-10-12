@@ -12,7 +12,7 @@ export class MemoryStorage implements Storage {
   setItem(key: string, value: string) { this.#data.set(key, String(value)) }
 }
 
-type Handler = (url: URL, init: RequestInit | undefined) => Response | Promise<Response> | undefined
+type Handler = (url: URL, init: RequestInit | undefined) => Response | undefined | Promise<Response | undefined>
 
 /**
  * The network as the engine sees it: every request is recorded, and handlers answer the ones

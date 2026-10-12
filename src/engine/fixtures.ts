@@ -53,3 +53,34 @@ export const groqModels = (url: URL) =>
 export function voiceNote(name: string, lastModified: number, type = 'audio/ogg') {
   return new File([new Uint8Array([79, 103, 103, 83, 0, 2])], name, { type, lastModified })
 }
+
+/** Groq's model list as a free key sees it (October 2026), trimmed. */
+export const groqChatModels = (url: URL) =>
+  url.host === 'api.groq.com' && url.pathname.endsWith('/models')
+    ? json({
+      object: 'list',
+      data: ['whisper-large-v3', 'whisper-large-v3-turbo', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-prompt-guard-2-86m']
+        .map(id => ({ id, object: 'model', owned_by: 'groq', active: true })),
+    })
+    : undefined
+
+/** An OpenAI-compatible chat completion as Groq returns it, trimmed. */
+export function chatAnswer(content: string, model = 'openai/gpt-oss-120b') {
+  return {
+    id: 'chatcmpl-fake',
+    object: 'chat.completion',
+    created: 1791800000,
+    model,
+    choices: [{ index: 0, message: { role: 'assistant', content, reasoning: 'Combining the voice notes in order.' }, logprobs: null, finish_reason: 'stop' }],
+    usage: { prompt_tokens: 812, completion_tokens: 240, total_tokens: 1052 },
+    x_groq: { id: 'req_01k0fakechat' },
+  }
+}
+
+/** Answers every chat completion with the same Result. */
+export function writerBy(content: string) {
+  return (url: URL, init: RequestInit | undefined) =>
+    url.host === 'api.groq.com' && url.pathname.endsWith('/chat/completions')
+      ? json(chatAnswer(content, JSON.parse(String(init?.body)).model))
+      : undefined
+}

@@ -7,7 +7,9 @@ import { createThread, type ThreadStore } from './thread'
 import type { Fetch } from './providers'
 
 export type { SavedResult, Mode } from './history'
-export type { Message, MediaMessage, TextMessage, ThreadState, HearState } from './thread'
+export type { Message, MediaMessage, TextMessage, ThreadState, ThreadResult, Writing, HearState } from './thread'
+export type { ReliabilityRow } from './reliability'
+export type { WriteFailure, WriteOptions } from './writer'
 export type { Transcript, Segment, HearFailure } from './whisper'
 export type { ConnectOutcome, OwnKeys } from './keys'
 export { PROVIDERS, PROVIDER_INFO, type Fetch, type Provider } from './providers'
@@ -41,11 +43,13 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
   await migrateFromV1(deps.localStorage, db, deps.prefersDarkScheme)
 
   const keys = createKeys(deps.localStorage, deps.fetch)
+  const prefs = createPrefs(deps.localStorage, deps.languages)
+  const history = createHistory(db)
   return {
-    prefs: createPrefs(deps.localStorage, deps.languages),
+    prefs,
     keys,
-    history: createHistory(db),
-    thread: await createThread({ db, keys, fetch: deps.fetch, sleep: deps.sleep }),
+    history,
+    thread: await createThread({ db, keys, prefs, history, fetch: deps.fetch, sleep: deps.sleep }),
   }
 }
 

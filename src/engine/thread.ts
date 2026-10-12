@@ -2,10 +2,14 @@
 // change (files included), so nothing is lost when the page reloads, and heard in the
 // background as soon as a Groq key is connected.
 import type { Db } from './db'
+import type { History, Mode } from './history'
 import type { KeysStore } from './keys'
 import { observable, type Observable } from './observable'
+import type { PrefsStore } from './prefs'
 import type { Fetch } from './providers'
+import { reliabilityReport, type ReliabilityRow } from './reliability'
 import { HearError, transcribe, type HearFailure, type Transcript } from './whisper'
+import { WriteError, buildRequest, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions } from './writer'
 
 export type MediaKind = 'voice' | 'video'
 export type HearState = 'waiting' | 'hearing' | 'heard' | 'failed'
@@ -30,8 +34,24 @@ export interface TextMessage {
 
 export type Message = MediaMessage | TextMessage
 
+/** The Result written for this Thread. */
+export interface ThreadResult {
+  id: string
+  createdAt: number
+  mode: Mode
+  text: string
+  report: ReliabilityRow[]
+}
+
+export type Writing =
+  | { state: 'idle' }
+  | { state: 'listening' | 'writing' }
+  | { state: 'failed'; failure: WriteFailure }
+
 export interface ThreadState {
   messages: Message[]
+  result: ThreadResult | null
+  writing: Writing
 }
 
 export interface ThreadStore extends Observable<ThreadState> {
@@ -47,6 +67,8 @@ export interface ThreadStore extends Observable<ThreadState> {
   /** The original file of a Voice note or Video. */
   media(id: string): Promise<Blob | undefined>
   startOver(): Promise<void>
+  /** Waits for every Message to be heard, writes the Result, keeps it with the Thread and saves it to History. */
+  summarize(options: WriteOptions): Promise<ThreadResult>
   /** Resolves once nothing is being heard and nothing that can be heard is waiting. */
   idle(): Promise<void>
 }
@@ -86,21 +108,25 @@ export function kindOf(file: File): MediaKind {
 export async function createThread(deps: {
   db: Db
   keys: KeysStore
+  prefs: PrefsStore
+  history: History
   fetch: Fetch
   sleep: (ms: number) => Promise<void>
 }): Promise<ThreadStore> {
-  const { db, keys, fetch, sleep } = deps
-  const saved = await db.get<ThreadState>('thread', CURRENT)
+  const { db, keys, prefs, history, fetch, sleep } = deps
+  const saved = await db.get<Partial<ThreadState>>('thread', CURRENT)
   // A Message that was being heard when the page closed is heard again.
   const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const } : m))
-  const state = observable<ThreadState>({ messages: restored })
+  const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' } })
   const active = new Set<Promise<void>>()
+  let writer: { key: string; model: string } | null = null
 
-  const persist = (messages: Message[]) => db.put('thread', { messages }, CURRENT)
+  const persist = () => db.put('thread', { messages: state.get().messages, result: state.get().result }, CURRENT)
   async function commit(messages: Message[]) {
-    state.publish({ messages })
-    await persist(messages)
+    state.publish({ ...state.get(), messages })
+    await persist()
   }
+  const setWriting = (writing: Writing) => state.publish({ ...state.get(), writing })
   const update = (id: string, patch: Partial<MediaMessage>) =>
     commit(state.get().messages.map(m => (m.id === id && m.kind !== 'text' ? { ...m, ...patch } : m)))
 
@@ -130,7 +156,7 @@ export async function createThread(deps: {
       if (active.size >= MAX_PARALLEL) return
       if (m.kind === 'text' || m.state !== 'waiting') continue
       // Claim it synchronously so the next pump does not start it twice.
-      state.publish({ messages: state.get().messages.map(x => (x.id === m.id ? { ...m, state: 'hearing' as const } : x)) })
+      state.publish({ ...state.get(), messages: state.get().messages.map(x => (x.id === m.id ? { ...m, state: 'hearing' as const } : x)) })
       const job = hear(m, key).finally(() => { active.delete(job); pump() })
       active.add(job)
     }
@@ -178,8 +204,53 @@ export async function createThread(deps: {
     media: id => db.get<Blob>('blobs', id),
     async startOver() {
       const ids = state.get().messages.map(m => m.id)
-      await commit([])
+      state.publish({ messages: [], result: null, writing: { state: 'idle' } })
+      await persist()
       for (const id of ids) await db.delete('blobs', id)
+    },
+    async summarize(options) {
+      const fail = (failure: WriteFailure): never => {
+        setWriting({ state: 'failed', failure })
+        throw new WriteError(failure)
+      }
+      const key = keys.get().groq
+      if (!key) fail('no-key')
+      setWriting({ state: 'listening' })
+      while (active.size) await Promise.allSettled([...active])
+      const { messages } = state.get()
+      const usable = messages.some(m => (m.kind === 'text' ? m.text.trim() : m.state === 'heard'))
+      if (!usable) fail('empty')
+
+      setWriting({ state: 'writing' })
+      if (writer?.key !== key) writer = { key: key!, model: await chooseWriter(fetch, key!) }
+      const user = buildRequest(messages, options, prefs.get().uiLang)
+      let text = ''
+      for (let attempt = 1; !text; attempt++) {
+        try {
+          text = await write(fetch, key!, writer.model, user)
+        } catch (e) {
+          const err = e instanceof WriteError ? e : new WriteError('unknown')
+          if (err.failure === 'busy' && attempt < MAX_ATTEMPTS) {
+            await sleep(Math.min(err.retryAfterMs ?? 2000 * attempt, MAX_RETRY_WAIT_MS))
+            continue
+          }
+          fail(err.failure)
+        }
+      }
+
+      const result: ThreadResult = { id: crypto.randomUUID(), createdAt: Date.now(), mode: options.mode, text, report: reliabilityReport(messages) }
+      state.publish({ ...state.get(), result, writing: { state: 'idle' } })
+      await persist()
+      await history.add({
+        id: result.id,
+        createdAt: result.createdAt,
+        mode: result.mode,
+        files: messages.flatMap(m => (m.kind === 'text' ? [] : [m.name])),
+        title: titleOf(text),
+        text,
+        report: result.report,
+      })
+      return result
     },
     async idle() {
       while (active.size) await Promise.allSettled([...active])

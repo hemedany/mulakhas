@@ -1,4 +1,5 @@
 import type { Db } from './db'
+import type { ReliabilityRow } from './reliability'
 
 export type Mode = 'summary' | 'exact'
 
@@ -12,10 +13,13 @@ export interface SavedResult {
   title: string
   /** The Result as Markdown. */
   text: string
+  /** Measured per-Message clarity (v2 Results only). */
+  report?: ReliabilityRow[]
 }
 
 export interface History {
   list(): Promise<SavedResult[]>
+  add(result: SavedResult): Promise<void>
 }
 
 export function createHistory(db: Db): History {
@@ -24,5 +28,6 @@ export function createHistory(db: Db): History {
       const all = await db.getAll<SavedResult>('history')
       return all.sort((a, b) => b.createdAt - a.createdAt)
     },
+    add: result => db.put('history', result),
   }
 }
