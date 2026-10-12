@@ -2,7 +2,7 @@
 import type { Lang } from './langs'
 import type { Mode } from './history'
 import type { PresetId } from './presets'
-import { GROQ_API, type Fetch } from './providers'
+import { GROQ_API, retryAfterMs, type Fetch } from './providers'
 import type { Message } from './thread'
 
 export interface WriteOptions {
@@ -12,7 +12,7 @@ export interface WriteOptions {
   request: string
 }
 
-export type WriteFailure = 'no-key' | 'empty' | 'rejected' | 'busy' | 'unreachable' | 'too-big' | 'unknown'
+export type WriteFailure = 'no-key' | 'empty' | 'nothing-heard' | 'rejected' | 'busy' | 'unreachable' | 'too-big' | 'unknown'
 
 export class WriteError extends Error {
   readonly failure: WriteFailure
@@ -63,20 +63,37 @@ function describe(message: Message, n: number, total: number) {
   return `${head}: ${what} (transcript) =====\n${body || '(no speech)'}`
 }
 
-export function buildRequest(messages: Message[], options: WriteOptions, lang: Lang) {
+/** The writer's whole prompt: the Request, which language to write in, then every Message in order. */
+export function buildPrompt(messages: Message[], options: WriteOptions, lang: Lang) {
   const wishes = options.request.trim()
-  const ask = options.mode === 'exact'
+  const exact = options.mode === 'exact' || options.preset === 'exact'
+  const ask = exact
     ? EXACT_WORDS + (wishes ? `\nAdditional wishes: ${wishes}` : '')
     : [options.preset && options.preset !== 'exact' ? PRESET_PROMPT[options.preset] : null, wishes || null]
       .filter(Boolean).join('\nAdditional wishes: ') || DEFAULT_REQUEST
-  const language = `Write the Result in ${LANGUAGE_NAME[lang]}, unless the Request asks for another language.`
-  const conversation = messages.map((m, i) => describe(m, i + 1, messages.length)).join('\n\n')
-  return `WHAT THE USER WANTS (the Request):\n${ask}\n\n${language}\n\nTHE CONVERSATION:\n\n${conversation}`
+  // Exact words keeps every message in the language it was spoken in; only the labels follow the interface.
+  const language = exact
+    ? `Write the title and the message labels in ${LANGUAGE_NAME[lang]}; keep the messages themselves in their own language unless the Request asks for a translation.`
+    : `Write the Result in ${LANGUAGE_NAME[lang]}, unless the Request asks for another language.`
+  const thread = messages.map((m, i) => describe(m, i + 1, messages.length)).join('\n\n')
+  return `WHAT THE USER WANTS (the Request):\n${ask}\n\n${language}\n\nTHE CONVERSATION:\n\n${thread}`
+}
+
+/** Worth pressing Summarize: some Text, or a Voice note or Video that is heard or may still be. */
+export function mayWrite(messages: Message[]) {
+  return messages.some(m => (m.kind === 'text' ? m.text.trim() !== '' : m.state !== 'failed'))
+}
+
+/** Ready to write once hearing has finished: some Text, or something that was heard. */
+export function canWrite(messages: Message[]) {
+  return messages.some(m => (m.kind === 'text' ? m.text.trim() !== '' : m.state === 'heard'))
 }
 
 // Preferred writers, best first; the first one the key can use wins.
 const PREFERRED = ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'openai/gpt-oss-20b', 'llama-3.1-8b-instant']
 const NOT_A_WRITER = /whisper|tts|guard|orpheus|safeguard|playai|distil/i
+/** Billions of parameters, read from a model id such as "llama-3.3-70b-versatile"; 0 when it doesn't say. */
+const sizeOf = (id: string) => Number(/(\d+)b\b/i.exec(id)?.[1] ?? 0)
 
 export async function chooseWriter(fetch: Fetch, key: string): Promise<string> {
   let ids: string[] = []
@@ -86,15 +103,17 @@ export async function chooseWriter(fetch: Fetch, key: string): Promise<string> {
   } catch {
     // Fall through to the default; the write itself will report a dropped connection.
   }
-  return PREFERRED.find(id => ids.includes(id)) ?? ids.find(id => !NOT_A_WRITER.test(id)) ?? PREFERRED[0]
+  const largest = ids.filter(id => !NOT_A_WRITER.test(id)).sort((a, b) => sizeOf(b) - sizeOf(a))[0]
+  return PREFERRED.find(id => ids.includes(id)) ?? largest ?? PREFERRED[0]
 }
 
-function retryAfterMs(res: Response) {
-  const s = Number(res.headers.get('retry-after'))
-  return Number.isFinite(s) && s > 0 ? s * 1000 : null
+export interface Written {
+  text: string
+  /** The model ran out of room before it finished, so the end is missing. */
+  cutOff: boolean
 }
 
-export async function write(fetch: Fetch, key: string, model: string, user: string): Promise<string> {
+export async function write(fetch: Fetch, key: string, model: string, prompt: string): Promise<Written> {
   let res: Response
   try {
     res = await fetch(`${GROQ_API}/chat/completions`, {
@@ -102,7 +121,7 @@ export async function write(fetch: Fetch, key: string, model: string, user: stri
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }],
+        messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: prompt }],
         temperature: 0.3,
         max_completion_tokens: 4096,
         ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'medium' } : {}),
@@ -112,9 +131,12 @@ export async function write(fetch: Fetch, key: string, model: string, user: stri
     throw new WriteError('unreachable')
   }
   if (res.ok) {
-    const text: string = (await res.json()).choices?.[0]?.message?.content?.trim() ?? ''
-    if (!text) throw new WriteError('unknown')
-    return text
+    const choice = (await res.json()).choices?.[0]
+    const text: string = choice?.message?.content?.trim() ?? ''
+    const cutOff = choice?.finish_reason === 'length'
+    // Thinking can use up all the room before a single word of the Result is written.
+    if (!text) throw new WriteError(cutOff ? 'too-big' : 'unknown')
+    return { text, cutOff }
   }
   if (res.status === 401 || res.status === 403) throw new WriteError('rejected')
   if (res.status === 413) throw new WriteError('too-big')

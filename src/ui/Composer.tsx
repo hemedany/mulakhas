@@ -1,6 +1,7 @@
 import { ArrowUpIcon, PlusIcon } from '@phosphor-icons/react'
 import { useEngine, useThread } from '@/app/engine-hooks'
 import { PRESETS } from '@/engine/presets'
+import { mayWrite } from '@/engine/writer'
 import { useT } from '@/i18n/i18n'
 
 /**
@@ -12,7 +13,7 @@ export function Composer({ onAdd, onSummarize, busy }: { onAdd: () => void; onSu
   const { thread } = useEngine()
   const { draft, messages } = useThread()
   const setDraft = (patch: Partial<typeof draft>) => void thread.setDraft({ ...draft, ...patch })
-  const hasSomething = messages.some(m => (m.kind === 'text' ? m.text.trim() : m.state !== 'failed'))
+  const hasSomething = mayWrite(messages)
   const go = draft.mode === 'exact' ? t.extractWords : t.summarize
 
   return (

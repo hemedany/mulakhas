@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { IDBObjectStore } from 'fake-indexeddb'
+import { describe, expect, it, vi } from 'vitest'
 import { groqModels, verboseJson, voiceNote, whisperBy } from './fixtures'
 import { createEngine } from './index'
 import { fakeNetwork, freshDevice, json } from './testing'
@@ -290,5 +291,43 @@ describe('review fixes: retries and keys', () => {
     await engine.thread.addTextNear(a.id, 'above', 'before a')
 
     expect(engine.thread.get().messages.map(m => (m.kind === 'text' ? m.text : m.name))).toEqual(['b.ogg', 'before a', 'a.ogg'])
+  })
+
+  it('still honours a wait Groq asked for when the page is reloaded during it', async () => {
+    const T = 1_791_800_000_000
+    const busy = fakeNetwork()
+    busy.on(url => (url.pathname.endsWith('/audio/transcriptions')
+      ? new Response('{"error":{"code":"rate_limit_exceeded"}}', { status: 429, headers: { 'retry-after': '600' } })
+      : undefined))
+    const device = { ...deviceWithKey(busy), now: () => T }
+    let waiting!: () => void
+    const startedWaiting = new Promise<void>(resolve => { waiting = resolve })
+    const before = await createEngine({ ...device, sleep: () => { waiting(); return new Promise<void>(() => {}) } })
+    await before.thread.addFiles([voiceNote('a.ogg', 1)])
+    await startedWaiting
+
+    // The page closes four minutes into the ten-minute wait.
+    const net = fakeNetwork()
+    net.on(whisperBy({ 'a.ogg': NOTE_1 }))
+    const waits: number[] = []
+    const after = await createEngine({ ...device, fetch: net.fetch, now: () => T + 240_000, sleep: async ms => { waits.push(ms) } })
+    await after.thread.idle()
+
+    expect(waits).toEqual([360_000])
+    expect(after.thread.get().messages[0]).toMatchObject({ state: 'heard', retryAt: undefined })
+  })
+})
+
+describe('saving on the device', () => {
+  it('says when a change could not be saved, and stops saying so once a later save works', async () => {
+    const engine = await createEngine(freshDevice())
+    const full = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => { throw new DOMException('The quota has been exceeded.', 'QuotaExceededError') })
+
+    const id = await engine.thread.addText(0, 'first')
+    expect(engine.thread.get()).toMatchObject({ unsaved: true })
+
+    full.mockRestore()
+    await engine.thread.setText(id, 'first, saved')
+    expect(engine.thread.get()).toMatchObject({ unsaved: false })
   })
 })

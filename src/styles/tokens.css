@@ -11,7 +11,8 @@
  *
  * Shape rule: icon-only buttons are circles; buttons that start something on their own (primary
  * actions, chips, segmented controls) are fully round; inputs and the labelled buttons paired
- * with them use --radius-control; message bubbles and cards --radius-card; sheets --radius-sheet.
+ * with them use --radius-control; message bubbles and cards --radius-card; sheets --radius-sheet;
+ * highlights inside text (unclear words, code) Tailwind's rounded-sm.
  *
  * Spacing is Tailwind's 4px scale (--spacing in index.css); motion durations and curves are
  * the --duration-* and --ease-* tokens there.

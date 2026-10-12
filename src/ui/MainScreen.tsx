@@ -23,7 +23,7 @@ type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result'
 export function MainScreen() {
   const { prefs, thread } = useEngine()
   const { uiLang, theme, showReliability } = usePrefs()
-  const { messages, result, writing, draft } = useThread()
+  const { messages, result, writing, draft, unsaved } = useThread()
   const ownKeys = useOwnKeys()
   const desktop = useIsDesktop()
   const t = useT()
@@ -51,9 +51,13 @@ export function MainScreen() {
         {/* Outside the scroller so it stays put. Phones: fades down the page. Desktop: fills the margins. */}
         <Pattern className="opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />
         <main aria-label={t.mainLabel} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          {storageFailed && <p role="alert" className="mx-auto mt-3 max-w-2xl rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger">{t.storageFull}</p>}
+          {(storageFailed || unsaved) && (
+            <p role="alert" className="mx-auto mt-3 max-w-2xl rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger">{storageFailed ? t.storageFull : t.notSaved}</p>
+          )}
           {messages.length === 0 ? (
-            <EmptyState picked={draft.preset} onPick={preset => void thread.setDraft({ ...draft, preset })}
+            <EmptyState picked={draft.mode === 'exact' ? 'exact' : draft.preset}
+              // Exact words is a Mode, not a preset; every other preset is a kind of Summary.
+              onPick={p => void thread.setDraft(p === 'exact' ? { ...draft, mode: 'exact', preset: null } : { ...draft, mode: 'summary', preset: p })}
               onChooseFiles={choose} onAddText={() => void addText()} />
           ) : (
             <div className="flex min-h-full flex-col">
@@ -103,9 +107,9 @@ export function MainScreen() {
         <p className="text-fg-muted">{t.startOverConfirm}</p>
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={() => { close(); void thread.startOver() }}
-            className="h-12 flex-1 rounded-control bg-danger px-4 font-medium text-on-accent transition-transform duration-(--duration-press) active:scale-[0.98]">{t.clearAll}</button>
+            className="h-12 flex-1 rounded-full bg-danger px-4 font-medium text-on-accent transition-transform duration-(--duration-press) active:scale-[0.98]">{t.clearAll}</button>
           <button type="button" onClick={close}
-            className="h-12 flex-1 rounded-control border border-line px-4 font-medium transition-transform duration-(--duration-press) active:scale-[0.98]">{t.cancel}</button>
+            className="h-12 flex-1 rounded-full border border-line px-4 font-medium transition-transform duration-(--duration-press) active:scale-[0.98]">{t.cancel}</button>
         </div>
       </Sheet>
       <MessageOptions id={optionsFor} onClose={() => setOptionsFor(null)} onTextAdded={setNewTextId} />

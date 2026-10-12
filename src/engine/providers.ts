@@ -11,6 +11,12 @@ export const PROVIDER_INFO: Record<Provider, { name: string; keyPage: string; ke
   gemini: { name: 'Google', keyPage: 'https://aistudio.google.com/apikey', keyHint: 'AIza…' },
 }
 
+/** Seconds from a Retry-After header, as milliseconds; null when absent or unreadable. */
+export function retryAfterMs(res: Response) {
+  const s = Number(res.headers.get('retry-after'))
+  return Number.isFinite(s) && s > 0 ? s * 1000 : null
+}
+
 export const GROQ_API = 'https://api.groq.com/openai/v1'
 export const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta'
 

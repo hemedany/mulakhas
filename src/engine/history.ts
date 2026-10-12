@@ -13,6 +13,8 @@ export interface SavedResult {
   title: string
   /** The Result as Markdown. */
   text: string
+  /** The writer ran out of room, so the end is missing. */
+  cutOff?: boolean
   /** Measured per-Message clarity (v2 Results only). */
   report?: ReliabilityRow[]
 }

@@ -1,5 +1,6 @@
 import { useRef, useState, type DragEvent } from 'react'
 import { useEngine, useOwnKeys } from '@/app/engine-hooks'
+import { isMedia } from './media'
 
 /**
  * Everything that adds Messages to the Thread: the file picker, drag and drop, and Text
@@ -15,7 +16,7 @@ export function useAddMessages({ onNeedKey }: { onNeedKey: () => void }) {
   const [newTextId, setNewTextId] = useState<string | null>(null)
 
   const addFiles = async (files: File[]) => {
-    const media = files.filter(f => /^(audio|video)\//.test(f.type) || /\.(opus|oga|ogg|m4a|aac|mp3|wav|flac|mp4|mov|webm|3gp|mkv)$/i.test(f.name))
+    const media = files.filter(isMedia)
     if (!media.length) return
     try {
       setStorageFailed(false)

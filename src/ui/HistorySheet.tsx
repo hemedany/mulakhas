@@ -55,7 +55,7 @@ export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => 
         )}
       </Sheet>
       <Sheet open={open && !!opened} onClose={() => setOpened(null)} title={t.resultHeading} closeLabel={t.close}>
-        {opened && <ResultBody text={opened.text} report={opened.report} />}
+        {opened && <ResultBody text={opened.text} cutOff={opened.cutOff} report={opened.report} />}
       </Sheet>
     </>
   )

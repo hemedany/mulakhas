@@ -22,7 +22,7 @@ export function ResultInThread({ result }: { result: ThreadResult }) {
         </div>
       </BrandBar>
       <div className="px-8 pt-7 pb-7">
-        <ResultBody text={result.text} report={result.report} titleClass="font-display text-3xl font-semibold" />
+        <ResultBody text={result.text} cutOff={result.cutOff} report={result.report} titleClass="font-display text-3xl font-semibold" />
       </div>
     </article>
   )
@@ -49,7 +49,7 @@ export function ResultSheet({ result, open, onClose }: { result: ThreadResult | 
   const t = useT()
   return (
     <Sheet open={open && !!result} onClose={onClose} title={t.resultHeading} closeLabel={t.close}>
-      {result && <ResultBody text={result.text} report={result.report} />}
+      {result && <ResultBody text={result.text} cutOff={result.cutOff} report={result.report} />}
     </Sheet>
   )
 }

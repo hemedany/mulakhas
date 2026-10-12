@@ -1,5 +1,5 @@
 // Hearing: Groq Whisper turns one Voice note into a Transcript with per-segment confidence.
-import { GROQ_API, type Fetch } from './providers'
+import { GROQ_API, retryAfterMs, type Fetch } from './providers'
 
 export interface Segment {
   start: number
@@ -71,11 +71,6 @@ export function toTranscript(body: { text?: string; language?: string; duration?
 export function asUpload(audio: Blob, name: string): File {
   if (/\.(opus|oga)$/i.test(name)) return new File([audio], name.replace(/\.(opus|oga)$/i, '.ogg'), { type: 'audio/ogg' })
   return new File([audio], name, { type: audio.type })
-}
-
-function retryAfterMs(res: Response) {
-  const s = Number(res.headers.get('retry-after'))
-  return Number.isFinite(s) && s > 0 ? s * 1000 : null
 }
 
 export async function transcribe(fetch: Fetch, key: string, audio: Blob, name: string): Promise<Transcript> {

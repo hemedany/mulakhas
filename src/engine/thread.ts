@@ -9,7 +9,7 @@ import type { PrefsStore } from './prefs'
 import type { Fetch } from './providers'
 import { reliabilityReport, type ReliabilityRow } from './reliability'
 import { HearError, transcribe, type HearFailure, type Transcript } from './whisper'
-import { WriteError, buildRequest, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions } from './writer'
+import { WriteError, buildPrompt, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
 
 export type MediaKind = 'voice' | 'video'
 export type HearState = 'waiting' | 'hearing' | 'heard' | 'failed'
@@ -42,6 +42,8 @@ export interface ThreadResult {
   createdAt: number
   mode: Mode
   text: string
+  /** The writer ran out of room, so the end is missing. */
+  cutOff?: boolean
   report: ReliabilityRow[]
 }
 
@@ -58,6 +60,8 @@ export interface ThreadState {
   writing: Writing
   /** The Request being written, kept so a reload does not lose it. */
   draft: WriteOptions
+  /** The last change could not be saved on the device, so closing the app would lose it. */
+  unsaved: boolean
 }
 
 const EMPTY_DRAFT: WriteOptions = { request: '', mode: 'summary', preset: null }
@@ -94,6 +98,30 @@ const MAX_PARALLEL = 2
 const MAX_ATTEMPTS = 3
 
 const clampIndex = (at: number, length: number) => Math.max(0, Math.min(at, length))
+
+/**
+ * Makes a call to Groq, and while Groq says it is busy waits exactly as long as it asks (its
+ * hourly audio limit can mean many minutes) and tries again, up to MAX_ATTEMPTS times.
+ * `onWait` is told when the next try will happen, then `undefined` once it starts.
+ */
+async function withBusyRetries<T>(
+  call: () => Promise<T>,
+  busyFor: (e: unknown) => number | null | undefined,
+  { sleep, now, onWait }: { sleep: (ms: number) => Promise<void>; now: () => number; onWait: (retryAt: number | undefined) => unknown },
+): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await call()
+    } catch (e) {
+      const asked = busyFor(e)
+      if (asked === undefined || attempt >= MAX_ATTEMPTS) throw e
+      const wait = asked ?? 2000 * attempt
+      await onWait(now() + wait)
+      await sleep(wait)
+      await onWait(undefined)
+    }
+  }
+}
 
 const VIDEO_EXT = /\.(mp4|mov|m4v|mkv|3gp|avi|wmv|mpg|mpeg)$/i
 
@@ -133,15 +161,21 @@ export async function createThread(deps: {
 }): Promise<ThreadStore> {
   const { db, keys, prefs, history, fetch, sleep, now } = deps
   const saved = await db.get<Partial<ThreadState>>('thread', CURRENT)
-  // A Message that was being heard when the page closed is heard again.
+  // A Message that was being heard when the page closed is heard again (after any wait Groq asked for).
   const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const } : m))
-  const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT })
+  const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
   const active = new Set<Promise<void>>()
   let writer: { key: string; model: string } | null = null
 
-  const persist = () => {
+  /** Saves the Thread. A failure doesn't stop anything, but is shown until a later save works. */
+  const persist = async () => {
     const { messages, result, draft } = state.get()
-    return db.put('thread', { messages, result, draft }, CURRENT)
+    try {
+      await db.put('thread', { messages, result, draft }, CURRENT)
+      if (state.get().unsaved) state.publish({ ...state.get(), unsaved: false })
+    } catch {
+      state.publish({ ...state.get(), unsaved: true })
+    }
   }
   async function commit(messages: Message[]) {
     state.publish({ ...state.get(), messages })
@@ -157,22 +191,21 @@ export async function createThread(deps: {
       await update(message.id, { state: 'hearing', failure: undefined })
       const audio = await db.get<Blob>('blobs', message.id)
       if (!audio) return await update(message.id, { state: 'failed', failure: 'unknown' })
-      for (let attempt = 1; ; attempt++) {
-        try {
-          const transcript = await transcribe(fetch, key, audio, message.name)
-          return await update(message.id, { state: 'heard', transcript, retryAt: undefined })
-        } catch (e) {
-          const err = e instanceof HearError ? e : new HearError('unknown')
-          if (err.failure === 'busy' && attempt < MAX_ATTEMPTS) {
-            // Wait exactly as long as Groq asks (its hourly audio limit can mean many minutes), and say so.
-            const wait = err.retryAfterMs ?? 2000 * attempt
-            await update(message.id, { retryAt: now() + wait })
-            await sleep(wait)
-            await update(message.id, { retryAt: undefined })
-            continue
-          }
-          return await update(message.id, { state: 'failed', failure: err.failure, retryAt: undefined })
-        }
+      // A wait Groq asked for before the page closed still holds.
+      const left = (message.retryAt ?? 0) - now()
+      if (left > 0) {
+        await sleep(left)
+        await update(message.id, { retryAt: undefined })
+      }
+      try {
+        const transcript = await withBusyRetries(
+          () => transcribe(fetch, key, audio, message.name),
+          e => (e instanceof HearError && e.failure === 'busy' ? e.retryAfterMs : undefined),
+          { sleep, now, onWait: retryAt => update(message.id, { retryAt }) },
+        )
+        return await update(message.id, { state: 'heard', transcript, retryAt: undefined })
+      } catch (e) {
+        return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined })
       }
     } catch {
       // Storage itself failed; never leave the Message looking as if it is still being heard.
@@ -257,7 +290,7 @@ export async function createThread(deps: {
     media: id => db.get<Blob>('blobs', id),
     async startOver() {
       const ids = state.get().messages.map(m => m.id)
-      state.publish({ messages: [], result: null, writing: { state: 'idle' }, draft: EMPTY_DRAFT })
+      state.publish({ ...state.get(), messages: [], result: null, writing: { state: 'idle' }, draft: EMPTY_DRAFT })
       await persist()
       for (const id of ids) await db.delete('blobs', id)
     },
@@ -275,41 +308,42 @@ export async function createThread(deps: {
       setWriting({ state: 'listening' })
       while (active.size) await Promise.allSettled([...active])
       const { messages } = state.get()
-      const usable = messages.some(m => (m.kind === 'text' ? m.text.trim() : m.state === 'heard'))
-      if (!usable) fail('empty')
+      // Every Voice note and Video failed and there is no Text: say so, rather than "add something".
+      if (!canWrite(messages)) fail(messages.some(m => m.kind !== 'text') ? 'nothing-heard' : 'empty')
 
       setWriting({ state: 'writing' })
       if (writer?.key !== key) writer = { key: key!, model: await chooseWriter(fetch, key!) }
-      const user = buildRequest(messages, options, prefs.get().uiLang)
-      let text = ''
-      for (let attempt = 1; !text; attempt++) {
-        try {
-          text = await write(fetch, key!, writer.model, user)
-        } catch (e) {
-          const err = e instanceof WriteError ? e : new WriteError('unknown')
-          if (err.failure === 'busy' && attempt < MAX_ATTEMPTS) {
-            const wait = err.retryAfterMs ?? 2000 * attempt
-            setWriting({ state: 'writing', retryAt: now() + wait })
-            await sleep(wait)
-            setWriting({ state: 'writing' })
-            continue
-          }
-          fail(err.failure)
-        }
+      const prompt = buildPrompt(messages, options, prefs.get().uiLang)
+      const model = writer.model
+      let written: Written
+      try {
+        written = await withBusyRetries(
+          () => write(fetch, key!, model, prompt),
+          e => (e instanceof WriteError && e.failure === 'busy' ? e.retryAfterMs : undefined),
+          { sleep, now, onWait: retryAt => setWriting({ state: 'writing', retryAt }) },
+        )
+      } catch (e) {
+        return fail(e instanceof WriteError ? e.failure : 'unknown')
       }
+      const { text, cutOff } = written
 
-      const result: ThreadResult = { id: crypto.randomUUID(), createdAt: now(), mode: options.mode, text, report: reliabilityReport(messages) }
+      const result: ThreadResult = { id: crypto.randomUUID(), createdAt: now(), mode: options.mode, text, cutOff, report: reliabilityReport(messages) }
       state.publish({ ...state.get(), result, writing: { state: 'idle' } })
       await persist()
-      await history.add({
-        id: result.id,
-        createdAt: result.createdAt,
-        mode: result.mode,
-        files: messages.flatMap(m => (m.kind === 'text' ? [] : [m.name])),
-        title: titleOf(text),
-        text,
-        report: result.report,
-      })
+      try {
+        await history.add({
+          id: result.id,
+          createdAt: result.createdAt,
+          mode: result.mode,
+          files: messages.flatMap(m => (m.kind === 'text' ? [] : [m.name])),
+          title: titleOf(text),
+          text,
+          cutOff,
+          report: result.report,
+        })
+      } catch {
+        state.publish({ ...state.get(), unsaved: true })
+      }
       return result
     },
     async idle() {

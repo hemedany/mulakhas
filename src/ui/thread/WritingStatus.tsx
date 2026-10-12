@@ -8,6 +8,7 @@ import type { Strings } from '@/i18n/strings'
 const failureText = (t: Strings): Record<WriteFailure, string> => ({
   'no-key': t.writeNoKey,
   empty: t.writeEmpty,
+  'nothing-heard': t.writeNothingHeard,
   rejected: t.failRejected,
   busy: t.failBusy,
   unreachable: t.failUnreachable,

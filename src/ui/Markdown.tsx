@@ -3,8 +3,9 @@
 import { Fragment, type ReactNode } from 'react'
 
 // "[unclear: maybe ½]" or "[غير واضح: ربما نصف]", and "[unclear]" on its own.
-const UNCLEAR = /(\[(?:unclear|غير واضح|peu clair|unklar|net değil|poco claro)[^\]]*\])/gi
-const IS_UNCLEAR = /^\[(?:unclear|غير واضح|peu clair|unklar|net değil|poco claro)/i
+const UNCLEAR_WORD = '(?:unclear|غير واضح|peu clair|unklar|net değil|poco claro)'
+const UNCLEAR = new RegExp(`(\\[${UNCLEAR_WORD}[^\\]]*\\])`, 'gi')
+const IS_UNCLEAR = new RegExp(`^\\[${UNCLEAR_WORD}`, 'i')
 
 function marks(text: string, key: string): ReactNode[] {
   return text.split(UNCLEAR).map((part, i) =>
@@ -41,7 +42,7 @@ export function Markdown({ source, titleClass = 'font-display text-2xl leading-t
     if (!list) return
     const items = list.items.map((it, i) => <li key={i} dir="auto" className="ps-1">{inline(it)}</li>)
     blocks.push(list.ordered
-      ? <ol key={key()} className="my-2 list-decimal space-y-1.5 ps-5 marker:font-semibold marker:text-accent [:lang(ar)_&]:list-[arabic-indic]">{items}</ol>
+      ? <ol key={key()} className="my-2 list-decimal space-y-1.5 ps-5 marker:font-semibold marker:text-fg-muted [:lang(ar)_&]:list-[arabic-indic]">{items}</ol>
       : <ul key={key()} className="my-2 list-disc space-y-1.5 ps-5 marker:text-fg-subtle">{items}</ul>)
     list = null
   }

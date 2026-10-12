@@ -2,12 +2,17 @@ import type { ReliabilityRow } from '@/engine'
 import type { Strings } from '@/i18n/strings'
 import { formatNumber } from '@/i18n/numbers'
 
+/** One Reliability report row in words, shared by the screen and by Copy / Share. */
+export function reliabilityRow(r: ReliabilityRow, t: Strings, lang: string) {
+  return { message: t.clarityOf(formatNumber(r.n, lang)), clarity: `${formatNumber(r.clarity, lang)}%`, unclear: r.unclear.join(' / ') }
+}
+
 /** The Result as plain Markdown for Copy and Share, with the Reliability report when it is shown. */
 export function resultMarkdown(text: string, report: ReliabilityRow[] | undefined, t: Strings, lang: string, withReport: boolean) {
   if (!withReport || !report?.length) return text
   const rows = report.map(r => {
-    const unclear = r.unclear.length ? `; ${t.unclearWords}: ${r.unclear.join(' / ')}` : ''
-    return `- ${t.clarityOf(formatNumber(r.n, lang))} (${r.name}): ${formatNumber(r.clarity, lang)}%${unclear}`
+    const row = reliabilityRow(r, t, lang)
+    return `- ${row.message} (${r.name}): ${row.clarity}${row.unclear ? `; ${t.unclearWords}: ${row.unclear}` : ''}`
   })
   return `${text}\n\n## ${t.reliability}\n${rows.join('\n')}`
 }
