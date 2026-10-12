@@ -49,6 +49,7 @@ export function freshDevice(overrides: Partial<EngineDeps> = {}): EngineDeps {
     languages: ['en-US'],
     prefersDarkScheme: false,
     fetch: fakeNetwork().fetch,
+    sleep: async () => {},
     ...overrides,
   }
 }

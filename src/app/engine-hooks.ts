@@ -18,3 +18,8 @@ export function useOwnKeys() {
   const { keys } = useEngine()
   return useSyncExternalStore(keys.subscribe, keys.get)
 }
+
+export function useThread() {
+  const { thread } = useEngine()
+  return useSyncExternalStore(thread.subscribe, thread.get)
+}

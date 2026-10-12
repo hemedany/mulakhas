@@ -3,9 +3,12 @@ import { createHistory, type History } from './history'
 import { createKeys, type KeysStore } from './keys'
 import { migrateFromV1 } from './migrate'
 import { createPrefs, type PrefsStore } from './prefs'
+import { createThread, type ThreadStore } from './thread'
 import type { Fetch } from './providers'
 
 export type { SavedResult, Mode } from './history'
+export type { Message, MediaMessage, TextMessage, ThreadState, HearState } from './thread'
+export type { Transcript, Segment, HearFailure } from './whisper'
 export type { ConnectOutcome, OwnKeys } from './keys'
 export { PROVIDERS, PROVIDER_INFO, type Fetch, type Provider } from './providers'
 export { THEMES, type Prefs, type Theme } from './prefs'
@@ -21,6 +24,8 @@ export interface EngineDeps {
   prefersDarkScheme: boolean
   /** The network. Only Groq and Google are ever called. */
   fetch: Fetch
+  /** Waiting before a retry; instant in tests. */
+  sleep: (ms: number) => Promise<void>
 }
 
 /** The Mulakhas core: everything below the screens. */
@@ -28,16 +33,19 @@ export interface Engine {
   prefs: PrefsStore
   keys: KeysStore
   history: History
+  thread: ThreadStore
 }
 
 export async function createEngine(deps: EngineDeps): Promise<Engine> {
   const db = await openDb(deps.indexedDB)
   await migrateFromV1(deps.localStorage, db, deps.prefersDarkScheme)
 
+  const keys = createKeys(deps.localStorage, deps.fetch)
   return {
     prefs: createPrefs(deps.localStorage, deps.languages),
-    keys: createKeys(deps.localStorage, deps.fetch),
+    keys,
     history: createHistory(db),
+    thread: await createThread({ db, keys, fetch: deps.fetch, sleep: deps.sleep }),
   }
 }
 
@@ -48,5 +56,6 @@ export function browserDeps(): EngineDeps {
     languages: navigator.languages,
     prefersDarkScheme: window.matchMedia('(prefers-color-scheme: dark)').matches,
     fetch: window.fetch.bind(window),
+    sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
   }
 }

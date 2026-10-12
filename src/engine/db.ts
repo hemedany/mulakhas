@@ -2,13 +2,22 @@
 // simulated device its own database.
 
 export const DB_NAME = 'mulakhas'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
-export type StoreName = 'history'
+/**
+ * history: saved Results (keyPath id)
+ * thread:  the current Thread, one record under the key "current"
+ * blobs:   the Voice note and Video files, keyed by Message id
+ */
+export type StoreName = 'history' | 'thread' | 'blobs'
 
 export interface Db {
+  get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined>
   getAll<T>(store: StoreName): Promise<T[]>
-  putMany<T>(store: StoreName, values: T[]): Promise<void>
+  /** `key` is for stores without a keyPath (thread, blobs). */
+  put(store: StoreName, value: unknown, key?: IDBValidKey): Promise<void>
+  putMany(store: StoreName, values: unknown[]): Promise<void>
+  delete(store: StoreName, key: IDBValidKey): Promise<void>
 }
 
 function done<T>(req: IDBRequest<T>): Promise<T> {
@@ -31,15 +40,22 @@ export async function openDb(factory: IDBFactory): Promise<Db> {
   open.onupgradeneeded = () => {
     const db = open.result
     if (!db.objectStoreNames.contains('history')) db.createObjectStore('history', { keyPath: 'id' })
+    if (!db.objectStoreNames.contains('thread')) db.createObjectStore('thread')
+    if (!db.objectStoreNames.contains('blobs')) db.createObjectStore('blobs')
   }
   const db = await done(open)
 
+  const write = async (store: StoreName, fn: (s: IDBObjectStore) => void) => {
+    const tx = db.transaction(store, 'readwrite')
+    fn(tx.objectStore(store))
+    await committed(tx)
+  }
+
   return {
-    getAll: (store) => done(db.transaction(store).objectStore(store).getAll()),
-    async putMany(store, values) {
-      const tx = db.transaction(store, 'readwrite')
-      for (const v of values) tx.objectStore(store).put(v)
-      await committed(tx)
-    },
+    get: (store, key) => done(db.transaction(store).objectStore(store).get(key)),
+    getAll: store => done(db.transaction(store).objectStore(store).getAll()),
+    put: (store, value, key) => write(store, s => { s.put(value, key) }),
+    putMany: (store, values) => write(store, s => { for (const v of values) s.put(v) }),
+    delete: (store, key) => write(store, s => { s.delete(key) }),
   }
 }
