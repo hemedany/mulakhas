@@ -11,6 +11,20 @@ export const PROVIDER_INFO: Record<Provider, { name: string; keyPage: string; ke
   gemini: { name: 'Google', keyPage: 'https://aistudio.google.com/apikey', keyHint: 'AIza…' },
 }
 
+/** A call to Groq or Google that failed, and why; `retryAfterMs` when the provider said how long to wait. */
+export class ProviderError<F extends string> extends Error {
+  readonly failure: F
+  readonly retryAfterMs: number | null
+  constructor(failure: F, retryAfterMs: number | null = null) {
+    super(failure)
+    this.failure = failure
+    this.retryAfterMs = retryAfterMs
+  }
+}
+
+/** For a provider that is busy: how long it asked us to wait (null if it didn't say). Undefined for any other failure. */
+export const busyFor = (e: unknown) => (e instanceof ProviderError && e.failure === 'busy' ? (e.retryAfterMs as number | null) : undefined)
+
 /** Seconds from a Retry-After header, as milliseconds; null when absent or unreadable. */
 export function retryAfterMs(res: Response) {
   const s = Number(res.headers.get('retry-after'))

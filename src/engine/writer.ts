@@ -2,7 +2,7 @@
 import type { Lang } from './langs'
 import type { Mode } from './history'
 import type { PresetId } from './presets'
-import { GROQ_API, retryAfterMs, type Fetch } from './providers'
+import { GROQ_API, ProviderError, retryAfterMs, type Fetch } from './providers'
 import type { Message } from './thread'
 
 export interface WriteOptions {
@@ -20,14 +20,10 @@ export interface TooLarge {
   requested: number
 }
 
-export class WriteError extends Error {
-  readonly failure: WriteFailure
-  readonly retryAfterMs: number | null
+export class WriteError extends ProviderError<WriteFailure> {
   readonly tooLarge: TooLarge | null
   constructor(failure: WriteFailure, retryAfterMs: number | null = null, tooLarge: TooLarge | null = null) {
-    super(failure)
-    this.failure = failure
-    this.retryAfterMs = retryAfterMs
+    super(failure, retryAfterMs)
     this.tooLarge = tooLarge
   }
 }
@@ -66,9 +62,9 @@ export function messageBlock(message: Message, n: number, total: number) {
   if (message.kind === 'text') return `${head}: TEXT MESSAGE =====\n${message.text.trim() || '(empty)'}`
   const what = message.kind === 'video' ? 'VIDEO' : 'VOICE NOTE'
   if (message.state !== 'heard' || !message.transcript) return `${head}: ${what} =====\n(this ${what.toLowerCase()} could not be heard)`
-  const { segments, text, watched, shown } = message.transcript
+  const { segments, text, heardBy, shown } = message.transcript
   const said = (segments.length ? segments.map(s => (s.unclear ? `⟦unclear: ${s.text}⟧` : s.text)).join(' ') : text) || '(no speech)'
-  if (!watched) return `${head}: ${what} (transcript) =====\n${said}`
+  if (heardBy !== 'gemini') return `${head}: ${what} (transcript) =====\n${said}`
   return `${head}: ${what} (what is said, then what it shows) =====\n${said}\n[What the video shows]: ${shown || '(nothing described)'}`
 }
 

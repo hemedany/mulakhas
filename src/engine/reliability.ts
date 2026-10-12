@@ -1,7 +1,8 @@
-// The Reliability report: measured from how confidently Whisper heard each passage, never
-// graded by a model. Gemini doesn't measure how sure it is, so a Video it watched has no clarity.
+// The Reliability report: clarity is measured from how confidently Whisper heard each passage,
+// never graded by a model. Gemini doesn't measure how sure it is, so a Video it watched has no
+// clarity, only the passages Gemini itself marked unsure. A silent recording has nothing to rate.
 import type { Message } from './thread'
-import type { Transcript } from './transcript'
+import { isSilent, type Transcript } from './transcript'
 
 export interface ReliabilityRow {
   /** The Message's position in the Thread. */
@@ -14,7 +15,7 @@ export interface ReliabilityRow {
 }
 
 export function clarity(transcript: Transcript): number | null {
-  if (transcript.watched) return null
+  if (transcript.heardBy === 'gemini') return null
   const parts = transcript.segments.map(s => ({ weight: Math.max(0.01, s.end - s.start), confidence: s.confidence }))
   const total = parts.reduce((sum, p) => sum + p.weight, 0)
   if (!total) return 0
@@ -23,7 +24,7 @@ export function clarity(transcript: Transcript): number | null {
 
 export function reliabilityReport(messages: Message[]): ReliabilityRow[] {
   return messages.flatMap((m, i) =>
-    m.kind !== 'text' && m.state === 'heard' && m.transcript
+    m.kind !== 'text' && m.state === 'heard' && m.transcript && !isSilent(m.transcript)
       ? [{ n: i + 1, name: m.name, clarity: clarity(m.transcript), unclear: m.transcript.segments.filter(s => s.unclear).map(s => s.text) }]
       : [],
   )

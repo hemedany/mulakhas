@@ -17,11 +17,14 @@ export interface Transcript {
   /** Seconds of sound. */
   duration: number
   segments: Segment[]
-  /** Gemini watched it (a Video). Absent: Whisper heard it, and its clarity is measured. */
-  watched?: true
+  /** Whisper heard it (its clarity is measured), or Gemini watched it (a Video; not measured). */
+  heardBy: 'whisper' | 'gemini'
   /** For a Video Gemini watched: what it shows, for someone who can't see it. */
   shown?: string
 }
 
-/** Nothing was said: no passages at all once Whisper's silence is left out. */
+/** Nothing was said in it. */
 export const isSilent = (transcript: Transcript) => transcript.text.trim() === ''
+
+/** Something to show behind "what it heard": words, or what a watched Video shows. */
+export const hasSomethingToShow = (transcript: Transcript) => !isSilent(transcript) || !!transcript.shown

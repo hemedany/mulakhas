@@ -3,13 +3,13 @@
 // background as soon as a Groq key is connected.
 import { oneAtATime, type DecodeAudio } from './audio'
 import type { Db } from './db'
-import { GEMINI_MAX_BYTES, WatchError, chooseWatcher, watchVideo, type WatchFailure } from './gemini'
+import { GEMINI_MAX_BYTES, WatchError, chooseWatcher, watchVideo, type GeminiUpload, type WatchFailure } from './gemini'
 import { hearFile, type PartsHeard } from './hearing'
 import type { History, Mode } from './history'
 import type { KeysStore } from './keys'
 import { observable, type Observable } from './observable'
 import type { PrefsStore } from './prefs'
-import type { Fetch } from './providers'
+import { busyFor, type Fetch, type Provider } from './providers'
 import { reliabilityReport, type ReliabilityRow } from './reliability'
 import type { Transcript } from './transcript'
 import { HearError, transcribe, type HearFailure } from './whisper'
@@ -36,6 +36,8 @@ export interface MediaMessage {
   decodeTries?: number
   /** A Video Gemini couldn't watch, so only its sound was heard: why. */
   watchFailure?: WatchFailure
+  /** A Video's upload to Gemini, kept until it is watched, so a reload carries on with it. */
+  geminiUpload?: GeminiUpload
   transcript?: Transcript
 }
 
@@ -106,14 +108,15 @@ export interface ThreadStore extends Observable<ThreadState> {
 }
 
 const CURRENT = 'current'
-const MAX_PARALLEL = 2
+/** At most this many Messages heard at once, per provider, so Voice notes keep moving while a long Video is watched. */
+const MOST_AT_ONCE: Record<Provider, number> = { groq: 2, gemini: 1 }
 const MAX_ATTEMPTS = 3
 
 const clampIndex = (at: number, length: number) => Math.max(0, Math.min(at, length))
 
 /**
- * Makes a call to Groq, and while Groq says it is busy waits exactly as long as it asks (its
- * hourly audio limit can mean many minutes) and tries again, up to MAX_ATTEMPTS times.
+ * Makes a call to Groq or Google, and while the provider says it is busy waits exactly as long as
+ * it asks (Groq's hourly audio limit can mean many minutes) and tries again, up to MAX_ATTEMPTS times.
  * `onWait` is told when the next try will happen, then `undefined` once it starts.
  */
 async function withBusyRetries<T>(
@@ -180,7 +183,7 @@ export async function createThread(deps: {
   // for), carrying on from the parts already heard.
   const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const } : m))
   const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
-  const active = new Set<Promise<void>>()
+  const active = new Map<Promise<void>, Provider>()
   let writer: { key: string; model: string; budget: Budget } | null = null
   let watcher: { key: string; model: Promise<string> } | null = null
 
@@ -203,36 +206,39 @@ export async function createThread(deps: {
     messages.map(m => (m.id === id && m.kind !== 'text' ? { ...m, ...patch } : m))
   const update = (id: string, patch: Partial<MediaMessage>) => commit(patchMedia(state.get().messages, id, patch))
 
+  /** Runs one call to Groq or Google for a Message, trying again while the provider is busy, and showing when. */
+  const retryingFor = (id: string) => <T>(call: () => Promise<T>) =>
+    withBusyRetries(call, busyFor, { sleep, now, onWait: retryAt => update(id, { retryAt }) })
+
   async function hear(message: MediaMessage, key: string) {
     try {
       await update(message.id, { state: 'hearing', failure: undefined })
       const audio = await db.get<Blob>('blobs', message.id)
       if (!audio) return await update(message.id, { state: 'failed', failure: 'unknown' })
-      // A wait Groq asked for before the page closed still holds.
+      // A wait asked for before the page closed still holds.
       const left = (message.retryAt ?? 0) - now()
       if (left > 0) {
         await sleep(left)
         await update(message.id, { retryAt: undefined })
       }
-      // With a Google key, Gemini watches a Video; if it can't, Whisper still hears its sound.
-      const google = message.kind === 'video' && audio.size <= GEMINI_MAX_BYTES ? keys.get().gemini : null
+      // With a Gemini key, Gemini watches a Video. If it can't, Whisper hears its sound, or what
+      // Whisper heard before stays (a Video heard before the Gemini key was connected).
       let watchFailure: WatchFailure | undefined
-      if (google) {
+      const geminiKey = message.kind === 'video' ? keys.get().gemini : null
+      if (geminiKey && audio.size > GEMINI_MAX_BYTES) watchFailure = 'too-big'
+      else if (geminiKey) {
         try {
-          const transcript = await watch(message, audio, google)
+          const transcript = await watch(message, audio, geminiKey)
           return await update(message.id, { state: 'heard', transcript, retryAt: undefined, watchFailure: undefined })
         } catch (e) {
           watchFailure = e instanceof WatchError ? e.failure : 'unknown'
         }
       }
+      if (message.transcript?.heardBy === 'whisper') return await update(message.id, { state: 'heard', retryAt: undefined, watchFailure })
       try {
         const transcript = await hearFile(audio, message.name, {
           decode,
-          send: upload => withBusyRetries(
-            () => transcribe(fetch, key, upload),
-            e => (e instanceof HearError && e.failure === 'busy' ? e.retryAfterMs : undefined),
-            { sleep, now, onWait: retryAt => update(message.id, { retryAt }) },
-          ),
+          send: upload => retryingFor(message.id)(() => transcribe(fetch, key, upload)),
           progress: message.parts,
           onProgress: parts => update(message.id, { parts }),
           decodeTries: message.decodeTries ?? 0,
@@ -241,7 +247,7 @@ export async function createThread(deps: {
         return await update(message.id, { state: 'heard', transcript, retryAt: undefined, parts: undefined, watchFailure })
       } catch (e) {
         // Parts already heard are kept, so Try again carries on from the next one.
-        return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined })
+        return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined, watchFailure })
       }
     } catch {
       // Storage itself failed; never leave the Message looking as if it is still being heard.
@@ -250,42 +256,56 @@ export async function createThread(deps: {
   }
 
   /** Gemini watching a Video, with the newest Flash model the key can use (looked up once per key). */
-  async function watch(message: MediaMessage, video: Blob, key: string) {
-    if (watcher?.key !== key) watcher = { key, model: chooseWatcher(fetch, key) }
+  async function watch(message: MediaMessage, blob: Blob, key: string) {
+    const retrying = retryingFor(message.id)
+    if (watcher?.key !== key) watcher = { key, model: retrying(() => chooseWatcher(fetch, key)) }
     const model = await watcher.model.catch(e => { watcher = null; throw e })
-    return watchVideo(fetch, key, model, video, message.name, message.type, {
+    return watchVideo(fetch, key, model, { blob, name: message.name, type: message.type }, {
       sleep,
-      retrying: call => withBusyRetries(
-        call,
-        e => (e instanceof WatchError && e.failure === 'busy' ? e.retryAfterMs : undefined),
-        { sleep, now, onWait: retryAt => update(message.id, { retryAt }) },
-      ),
+      retrying,
+      uploaded: message.geminiUpload,
+      onUpload: geminiUpload => update(message.id, { geminiUpload }),
     })
   }
 
-  /** Starts hearing waiting Messages, two at a time. */
+  /** Who hears a Message: Gemini watches Videos when there is a Gemini key; Groq hears the rest. */
+  const providerFor = (m: MediaMessage): Provider =>
+    m.kind === 'video' && keys.get().gemini && m.size <= GEMINI_MAX_BYTES ? 'gemini' : 'groq'
+  const busySlots = (provider: Provider) => [...active.values()].filter(p => p === provider).length
+
+  /** Starts hearing waiting Messages, a few at a time per provider. */
   function startHearing() {
     const key = keys.get().groq
     if (!key) return
     for (const m of state.get().messages) {
-      if (active.size >= MAX_PARALLEL) return
       if (m.kind === 'text' || m.state !== 'waiting') continue
+      const provider = providerFor(m)
+      if (busySlots(provider) >= MOST_AT_ONCE[provider]) continue
       // Claim it synchronously so the next call does not start it twice.
       state.publish({ ...state.get(), messages: patchMedia(state.get().messages, m.id, { state: 'hearing' }) })
       const job = hear(m, key).finally(() => { active.delete(job); startHearing() })
-      active.add(job)
+      active.set(job, provider)
     }
   }
 
-  let lastKey = keys.get().groq
-  keys.subscribe(({ groq }) => {
-    if (groq && groq !== lastKey) {
-      // A new key: Messages refused because of the old one get another chance.
-      const messages = state.get().messages.map(m => (m.kind !== 'text' && m.state === 'failed' && m.failure === 'rejected' ? { ...m, state: 'waiting' as const, failure: undefined } : m))
+  let lastKeys = keys.get()
+  keys.subscribe(({ groq, gemini }) => {
+    let messages = state.get().messages
+    // A new Groq key: Messages refused because of the old one get another chance.
+    if (groq && groq !== lastKeys.groq) {
+      messages = messages.map(m => (m.kind !== 'text' && m.state === 'failed' && m.failure === 'rejected' ? { ...m, state: 'waiting' as const, failure: undefined } : m))
+    }
+    // A new Gemini key: Videos so far only heard, or not heard at all, are watched now.
+    if (gemini && gemini !== lastKeys.gemini) {
+      messages = messages.map(m => (m.kind === 'video' && (m.state === 'failed' || (m.state === 'heard' && m.transcript?.heardBy !== 'gemini'))
+        ? { ...m, state: 'waiting' as const, failure: undefined, watchFailure: undefined }
+        : m))
+    }
+    if (messages !== state.get().messages) {
       state.publish({ ...state.get(), messages })
       void persist()
     }
-    lastKey = groq
+    lastKeys = { groq, gemini }
     startHearing()
   })
   startHearing()
@@ -388,7 +408,7 @@ export async function createThread(deps: {
       const key = keys.get().groq
       if (!key) fail('no-key')
       setWriting({ state: 'listening' })
-      while (active.size) await Promise.allSettled([...active])
+      while (active.size) await Promise.allSettled([...active.keys()])
       const { messages } = state.get()
       // Every Voice note and Video failed and there is no Text: say so, rather than "add something".
       if (!canWrite(messages)) fail(messages.some(m => m.kind !== 'text') ? 'nothing-heard' : 'empty')
@@ -411,7 +431,7 @@ export async function createThread(deps: {
           onPart: part => writingNow({ part }),
           send: (prompt, settings) => withBusyRetries(
             () => write(fetch, key!, model, prompt, settings),
-            e => (e instanceof WriteError && e.failure === 'busy' ? e.retryAfterMs : undefined),
+            busyFor,
             { sleep, now, onWait: retryAt => writingNow({ retryAt }) },
           ),
         })
@@ -431,7 +451,7 @@ export async function createThread(deps: {
       return result
     },
     async idle() {
-      while (active.size) await Promise.allSettled([...active])
+      while (active.size) await Promise.allSettled([...active.keys()])
     },
   }
   return store

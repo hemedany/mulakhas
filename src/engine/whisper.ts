@@ -1,18 +1,10 @@
 // Hearing: Groq Whisper turns one Voice note into a Transcript with per-segment confidence.
-import { GROQ_API, retryAfterMs, type Fetch } from './providers'
+import { GROQ_API, ProviderError, retryAfterMs, type Fetch } from './providers'
 import type { Transcript } from './transcript'
 
 export type HearFailure = 'rejected' | 'busy' | 'unreachable' | 'unsupported' | 'undecodable' | 'too-long' | 'too-big' | 'unknown'
 
-export class HearError extends Error {
-  readonly failure: HearFailure
-  readonly retryAfterMs: number | null
-  constructor(failure: HearFailure, retryAfterMs: number | null = null) {
-    super(failure)
-    this.failure = failure
-    this.retryAfterMs = retryAfterMs
-  }
-}
+export class HearError extends ProviderError<HearFailure> {}
 
 export const WHISPER_MODEL = 'whisper-large-v3'
 /** Groq's free tier takes files up to 25 MB; this leaves room for however it counts them. Bigger ones are converted. */
@@ -33,12 +25,16 @@ interface VerboseSegment {
   no_speech_prob: number
 }
 
-// Whisper's own test for a stretch with no speech in it (its "no speech" and log-probability
-// thresholds): what it writes there is invented, often "thanks for watching", so it is left out.
-const isSilence = (s: VerboseSegment) => s.no_speech_prob > 0.6 && s.avg_logprob < -1
+// Whisper's own test for a stretch with nothing said in it (its no-speech and log-probability
+// thresholds). A recording made only of such stretches is silent; anywhere else they stay, marked unclear.
+const soundsSilent = (s: VerboseSegment) => s.no_speech_prob > 0.6 && s.avg_logprob < -1
+// What Whisper is known to write over silence (sign-offs from the subtitles it learned from): left out wherever it hears little speech.
+const INVENTED = /thanks? for watching|amara\.org|اشتركوا في القناة|ترجمة نانسي قنقر|شكرا للمشاهدة/i
+const isInvented = (s: VerboseSegment) => s.no_speech_prob > 0.3 && INVENTED.test(s.text)
 
 export function toTranscript(body: { text?: string; language?: string; duration?: number; segments?: VerboseSegment[] }): Transcript {
-  const segments = (body.segments ?? []).filter(s => !isSilence(s)).map(s => ({
+  const heard = (body.segments ?? []).filter(s => !isInvented(s))
+  const segments = (heard.every(soundsSilent) ? [] : heard).map(s => ({
     start: s.start,
     end: s.end,
     text: s.text.trim(),
@@ -50,6 +46,7 @@ export function toTranscript(body: { text?: string; language?: string; duration?
     language: body.language ?? null,
     duration: body.duration ?? segments.at(-1)?.end ?? 0,
     segments,
+    heardBy: 'whisper',
   }
 }
 

@@ -73,6 +73,7 @@ function joined(heard: Transcript[], parts: Part[]): Transcript {
     text: heard.map(t => t.text).filter(Boolean).join(' '),
     language: heard.find(t => t.language)?.language ?? null,
     duration: secondsOf(parts.at(-1)!.to),
+    heardBy: 'whisper',
     segments: heard.flatMap((t, i) => {
       const startsAt = secondsOf(parts[i].from)
       return t.segments.map(s => ({ ...s, start: s.start + startsAt, end: s.end + startsAt }))

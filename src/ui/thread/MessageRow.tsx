@@ -5,7 +5,7 @@ import { KhatamMark } from '@/brand/Khatam'
 import { Pattern, StarBadge } from '@/brand/Ornament'
 import { useEngine, useOwnKeys, usePrefs } from '@/app/engine-hooks'
 import type { HearFailure, MediaMessage, Message, TextMessage, Transcript } from '@/engine'
-import { isSilent } from '@/engine/transcript'
+import { hasSomethingToShow, isSilent } from '@/engine/transcript'
 import { useT } from '@/i18n/i18n'
 import type { Strings } from '@/i18n/strings'
 import { Player } from './Player'
@@ -33,7 +33,7 @@ function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnect
     case 'heard':
       return (
         <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
-          <CheckIcon size={14} weight="bold" className="text-ornament" />{message.transcript?.watched ? t.stateWatched : t.stateHeard}
+          <CheckIcon size={14} weight="bold" className="text-ornament" />{message.transcript?.heardBy === 'gemini' ? t.stateWatched : t.stateHeard}
         </span>
       )
     case 'hearing':
@@ -100,13 +100,16 @@ function HeardNote({ message, onConnectKey }: { message: MediaMessage; onConnect
     )
   }
   if (watchFailure) return <p className="mt-1 text-xs text-fg-muted">{t.watchFailed}</p>
-  if (transcript.watched || !isSilent(transcript)) return null
-  return <p className="mt-1 text-xs text-caution">{message.kind === 'video' && !gemini ? t.noSpeechVideo : t.noSpeech}</p>
+  if (transcript.heardBy === 'gemini' || !isSilent(transcript)) return null
+  return <p className="mt-1 text-xs text-caution">{message.kind === 'voice' ? t.noSpeech : gemini ? t.noSpeechInVideo : t.noSpeechVideo}</p>
 }
 
-function FailureNote({ failure }: { failure: HearFailure }) {
+function FailureNote({ message, failure }: { message: MediaMessage; failure: HearFailure }) {
   const t = useT()
-  return <p role="alert" className="mt-1 text-xs text-danger">{FAILURES[failure].says(t)}</p>
+  const { gemini } = useOwnKeys()
+  // A Video whose sound can't be opened may simply have none: Gemini could still watch it.
+  const says = failure === 'undecodable' && message.kind === 'video' && !gemini ? t.videoNoSound : FAILURES[failure].says(t)
+  return <p role="alert" className="mt-1 text-xs text-danger">{says}</p>
 }
 
 function RetryNote({ at }: { at: number }) {
@@ -132,9 +135,9 @@ function MediaBubble({ message, n, onConnectKey }: { message: MediaMessage; n: n
         <StateLine message={message} onConnectKey={onConnectKey} />
       </div>
       {message.retryAt && <RetryNote at={message.retryAt} />}
-      {message.state === 'failed' && message.failure && <FailureNote failure={message.failure} />}
+      {message.state === 'failed' && message.failure && <FailureNote message={message} failure={message.failure} />}
       {message.state === 'heard' && <HeardNote message={message} onConnectKey={onConnectKey} />}
-      {message.state === 'heard' && message.transcript && (!isSilent(message.transcript) || message.transcript.shown) && <WhatItHeard transcript={message.transcript} />}
+      {message.state === 'heard' && message.transcript && hasSomethingToShow(message.transcript) && <WhatItHeard transcript={message.transcript} />}
     </div>
   )
 }

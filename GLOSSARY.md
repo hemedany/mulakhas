@@ -56,7 +56,7 @@ _Avoid_: output, answer, response
 The words Mulakhas heard in one Voice note or Video; for a Video Gemini watched, also what it shows. Users see it only behind "what it heard"; they never have to correct it.
 
 **Unclear passage**:
-A stretch of a Transcript that was heard with low confidence, flagged as `[unclear]` inside the Result.
+A stretch of a Transcript that Whisper heard with low confidence, or that Gemini marked unsure while watching a Video, flagged as `[unclear]` inside the Result.
 _Avoid_: low-confidence segment, uncertain word
 
 **Reliability report**:
