@@ -17,7 +17,7 @@ self.addEventListener("fetch", e => {
         const tx = db.transaction("files", "readwrite");
         for (const f of files) tx.objectStore("files").add({ name: f.name, type: f.type, blob: f, t: Date.now() });
         await new Promise(res => { tx.oncomplete = res; });
-      } catch (err) {}
+      } catch {}
       return Response.redirect("./?shared=1", 303);
     })());
   }

@@ -30,12 +30,22 @@ Everything runs in your browser. Files are sent directly to Google's Gemini API 
 - Living background: a non-overlapping field of layered khatam seals with depth, idle rotation, scroll-driven gearwork, and click-to-spin
 - Buttery inertia scrolling on desktop
 
+## Develop
+
+Needs Node.js 24 or newer.
+
+```bash
+npm install
+npm run dev        # http://localhost:5173/mulakhas/
+npm test           # engine tests (Vitest)
+npm run typecheck
+npm run lint
+npm run build      # static site in dist/
+```
+
 ## Deploy your own
 
-This is a single static file — host it anywhere:
-
-- **Vercel:** import this repo at [vercel.com/new](https://vercel.com/new), zero config
-- **GitHub Pages:** repo Settings → Pages → deploy from `main`
+The build is a static site. On GitHub, set **Settings → Pages → Source** to **GitHub Actions**; every push to `main` then builds and publishes it (see `.github/workflows/deploy.yml`). To host it somewhere other than `/mulakhas/`, change `base` in `vite.config.ts`.
 
 ## Honest limits
 

@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Placeholder neutrals for the foundation; ticket 02 replaces these with the chosen design's tokens. */
+@theme {
+  --color-bg: #f6f7f6;
+  --color-surface: #ffffff;
+  --color-fg: #17191a;
+  --color-fg-muted: #5c6366;
+  --color-line: #dfe3e2;
+}
+
+[data-theme="dark"] {
+  --color-bg: #111314;
+  --color-surface: #1a1d1e;
+  --color-fg: #e8ebea;
+  --color-fg-muted: #9aa3a2;
+  --color-line: #2b3031;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: system-ui, sans-serif;
+}
