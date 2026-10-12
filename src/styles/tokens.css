@@ -1,0 +1,98 @@
+/*
+ * Mulakhas design tokens, three layers:
+ *   1. Primitives  raw values (--p-*), never used by components directly
+ *   2. Semantic    purpose names (--bg, --fg, --accent...), switched per theme and accent
+ *   3. Tailwind    the semantic layer exposed as utilities via @theme inline (see index.css)
+ *
+ * Shape rule: interactive pills (chips, segmented controls) are fully round; controls and
+ * inputs use --radius-control; message bubbles and cards --radius-card; sheets --radius-sheet.
+ */
+
+:root {
+  /* ---- primitives: cool neutral ramp (hue 215, barely tinted) ---- */
+  --p-n-0: oklch(1 0 0);
+  --p-n-25: oklch(0.987 0.002 215);
+  --p-n-50: oklch(0.972 0.003 215);
+  --p-n-100: oklch(0.948 0.004 215);
+  --p-n-200: oklch(0.905 0.006 215);
+  --p-n-300: oklch(0.845 0.008 215);
+  --p-n-500: oklch(0.6 0.012 220);
+  --p-n-600: oklch(0.5 0.014 220);
+  --p-n-800: oklch(0.3 0.012 220);
+  --p-n-900: oklch(0.22 0.01 220);
+  --p-n-925: oklch(0.205 0.009 220);
+  --p-n-950: oklch(0.175 0.008 220);
+  --p-n-975: oklch(0.155 0.007 220);
+
+  /* Damascene tile accents */
+  --p-teal-300: oklch(0.78 0.09 185);
+  --p-teal-500: oklch(0.56 0.09 188);
+  --p-teal-600: oklch(0.5 0.085 190);
+  --p-teal-700: oklch(0.43 0.075 192);
+  --p-teal-wash: oklch(0.955 0.022 188);
+  --p-teal-night: oklch(0.29 0.04 190);
+
+  --p-lapis-300: oklch(0.76 0.11 262);
+  --p-lapis-500: oklch(0.53 0.15 262);
+  --p-lapis-600: oklch(0.47 0.15 263);
+  --p-lapis-700: oklch(0.4 0.14 264);
+  --p-lapis-wash: oklch(0.955 0.022 262);
+  --p-lapis-night: oklch(0.29 0.06 262);
+
+  --p-red-600: oklch(0.53 0.17 27);
+  --p-red-300: oklch(0.74 0.13 25);
+  --p-amber-600: oklch(0.62 0.13 70);
+  --p-amber-300: oklch(0.82 0.11 80);
+
+  /* ---- semantic: light ---- */
+  --bg: var(--p-n-25);
+  --surface: var(--p-n-0);
+  --sunken: var(--p-n-50);
+  --line: var(--p-n-200);
+  --line-strong: var(--p-n-300);
+  --fg: var(--p-n-900);
+  --fg-muted: var(--p-n-600);
+  --fg-subtle: var(--p-n-500);
+  --danger: var(--p-red-600);
+  --caution: var(--p-amber-600);
+  --shadow-tint: oklch(0.3 0.02 220 / 0.08);
+  --shadow-tint-strong: oklch(0.3 0.02 220 / 0.14);
+
+  --accent: var(--p-teal-600);
+  --accent-strong: var(--p-teal-700);
+  --accent-soft: var(--p-teal-wash);
+  --on-accent: var(--p-n-0);
+}
+
+:root[data-accent="lapis"] {
+  --accent: var(--p-lapis-600);
+  --accent-strong: var(--p-lapis-700);
+  --accent-soft: var(--p-lapis-wash);
+}
+
+/* ---- semantic: dark ---- */
+:root[data-theme="dark"] {
+  --bg: var(--p-n-975);
+  --surface: var(--p-n-925);
+  --sunken: var(--p-n-950);
+  --line: oklch(0.29 0.01 220);
+  --line-strong: oklch(0.36 0.012 220);
+  --fg: oklch(0.94 0.004 210);
+  --fg-muted: oklch(0.73 0.01 215);
+  --fg-subtle: oklch(0.6 0.01 215);
+  --danger: var(--p-red-300);
+  --caution: var(--p-amber-300);
+  --shadow-tint: oklch(0 0 0 / 0.35);
+  --shadow-tint-strong: oklch(0 0 0 / 0.5);
+
+  --accent: var(--p-teal-300);
+  --accent-strong: oklch(0.84 0.08 185);
+  --accent-soft: var(--p-teal-night);
+  --on-accent: var(--p-n-975);
+}
+
+:root[data-theme="dark"][data-accent="lapis"] {
+  --accent: var(--p-lapis-300);
+  --accent-strong: oklch(0.83 0.09 262);
+  --accent-soft: var(--p-lapis-night);
+}

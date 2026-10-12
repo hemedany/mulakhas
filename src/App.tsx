@@ -4,6 +4,7 @@ import { useEngine, usePrefs } from '@/app/engine-hooks'
 import { HistoryList } from '@/app/HistoryList'
 import { LANGS, LANG_NAMES, THEMES, type Lang, type Theme } from '@/engine'
 import { useT } from '@/i18n/i18n'
+import { MainScreenPrototype } from '@/prototype/main-screen/MainScreenPrototype'
 
 // Foundation shell (ticket 01). The real main screen is chosen in ticket 02.
 function Shell() {
@@ -49,7 +50,7 @@ export default function App() {
   return (
     <EngineProvider>
       <DocumentSync />
-      <Shell />
+      {import.meta.env.DEV ? <MainScreenPrototype /> : <Shell />}
     </EngineProvider>
   )
 }
