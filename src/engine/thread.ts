@@ -8,6 +8,8 @@ import { observable, type Observable } from './observable'
 import type { PrefsStore } from './prefs'
 import type { Fetch } from './providers'
 import { reliabilityReport, type ReliabilityRow } from './reliability'
+import type { DecodeAudio } from './audio'
+import { hearFile } from './hearing'
 import { HearError, transcribe, type HearFailure, type Transcript } from './whisper'
 import { WriteError, buildPrompt, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
 
@@ -25,6 +27,8 @@ export interface MediaMessage {
   failure?: HearFailure
   /** While Groq has asked us to wait: when the next try happens (ms since epoch). */
   retryAt?: number
+  /** While a long recording is heard in parts: the part being heard (from 1) and how many there are. */
+  part?: { n: number; of: number }
   transcript?: Transcript
 }
 
@@ -156,13 +160,14 @@ export async function createThread(deps: {
   prefs: PrefsStore
   history: History
   fetch: Fetch
+  decode: DecodeAudio
   sleep: (ms: number) => Promise<void>
   now: () => number
 }): Promise<ThreadStore> {
-  const { db, keys, prefs, history, fetch, sleep, now } = deps
+  const { db, keys, prefs, history, fetch, decode, sleep, now } = deps
   const saved = await db.get<Partial<ThreadState>>('thread', CURRENT)
   // A Message that was being heard when the page closed is heard again (after any wait Groq asked for).
-  const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const } : m))
+  const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const, part: undefined } : m))
   const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
   const active = new Set<Promise<void>>()
   let writer: { key: string; model: string } | null = null
@@ -198,14 +203,18 @@ export async function createThread(deps: {
         await update(message.id, { retryAt: undefined })
       }
       try {
-        const transcript = await withBusyRetries(
-          () => transcribe(fetch, key, audio, message.name),
-          e => (e instanceof HearError && e.failure === 'busy' ? e.retryAfterMs : undefined),
-          { sleep, now, onWait: retryAt => update(message.id, { retryAt }) },
-        )
-        return await update(message.id, { state: 'heard', transcript, retryAt: undefined })
+        const transcript = await hearFile(audio, message.name, {
+          decode,
+          send: upload => withBusyRetries(
+            () => transcribe(fetch, key, upload),
+            e => (e instanceof HearError && e.failure === 'busy' ? e.retryAfterMs : undefined),
+            { sleep, now, onWait: retryAt => update(message.id, { retryAt }) },
+          ),
+          onPart: (n, of) => update(message.id, { part: { n, of } }),
+        })
+        return await update(message.id, { state: 'heard', transcript, retryAt: undefined, part: undefined })
       } catch (e) {
-        return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined })
+        return await update(message.id, { state: 'failed', failure: e instanceof HearError ? e.failure : 'unknown', retryAt: undefined, part: undefined })
       }
     } catch {
       // Storage itself failed; never leave the Message looking as if it is still being heard.

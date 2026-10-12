@@ -1,3 +1,4 @@
+import { decodeInBrowser, type DecodeAudio } from './audio'
 import { openDb } from './db'
 import { createHistory, type History } from './history'
 import { createKeys, type KeysStore } from './keys'
@@ -27,6 +28,8 @@ export interface EngineDeps {
   prefersDarkScheme: boolean
   /** The network. Only Groq and Google are ever called. */
   fetch: Fetch
+  /** The browser's audio decoder, for files Groq can't take as they are. */
+  decodeAudio: DecodeAudio
   /** Waiting before a retry; instant in tests. */
   sleep: (ms: number) => Promise<void>
   /** The clock (ms since epoch). */
@@ -48,7 +51,7 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
   const keys = createKeys(deps.localStorage, deps.fetch)
   const prefs = createPrefs(deps.localStorage, deps.languages)
   const history = createHistory(db)
-  const thread = await createThread({ db, keys, prefs, history, fetch: deps.fetch, sleep: deps.sleep, now: deps.now })
+  const thread = await createThread({ db, keys, prefs, history, fetch: deps.fetch, decode: deps.decodeAudio, sleep: deps.sleep, now: deps.now })
 
   // Anything shared in from another app while the page was reloading joins the Thread now.
   const inbox = await readInbox(deps.indexedDB)
@@ -67,6 +70,7 @@ export function browserDeps(): EngineDeps {
     languages: navigator.languages,
     prefersDarkScheme: window.matchMedia('(prefers-color-scheme: dark)').matches,
     fetch: window.fetch.bind(window),
+    decodeAudio: decodeInBrowser,
     sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
     now: () => Date.now(),
   }

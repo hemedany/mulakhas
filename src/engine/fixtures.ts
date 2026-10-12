@@ -54,6 +54,17 @@ export function voiceNote(name: string, lastModified: number, type = 'audio/ogg'
   return new File([new Uint8Array([79, 103, 103, 83, 0, 2])], name, { type, lastModified })
 }
 
+/**
+ * A recording the fake decoder (testing.ts) can decode: `seconds` long, padded to `bytes`, so a
+ * test can make one over Groq's 25 MB, or in a format Whisper rejects, without real audio.
+ */
+export function recording(name: string, seconds: number, { bytes = 64, type = 'audio/ogg', lastModified = 1 } = {}) {
+  const head = new TextEncoder().encode(`FAKE-PCM ${seconds}\n`)
+  const body = new Uint8Array(Math.max(bytes, head.length))
+  body.set(head)
+  return new File([body], name, { type, lastModified })
+}
+
 /** Groq's model list as a free key sees it (October 2026), trimmed. */
 export const groqChatModels = (url: URL) =>
   url.host === 'api.groq.com' && url.pathname.endsWith('/models')

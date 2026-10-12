@@ -20,7 +20,7 @@ export interface Transcript {
   segments: Segment[]
 }
 
-export type HearFailure = 'rejected' | 'busy' | 'unreachable' | 'unsupported' | 'too-big' | 'unknown'
+export type HearFailure = 'rejected' | 'busy' | 'unreachable' | 'unsupported' | 'undecodable' | 'too-big' | 'unknown'
 
 export class HearError extends Error {
   readonly failure: HearFailure
@@ -67,16 +67,30 @@ export function toTranscript(body: { text?: string; language?: string; duration?
   }
 }
 
-/** WhatsApp names voice notes .opus (Ogg Opus); Groq accepts the same audio as an .ogg file of type audio/ogg. */
-export function asUpload(audio: Blob, name: string): File {
-  if (/\.(opus|oga)$/i.test(name)) return new File([audio], name.replace(/\.(opus|oga)$/i, '.ogg'), { type: 'audio/ogg' })
-  return new File([audio], name, { type: audio.type })
+// What Groq's Whisper takes as it is, by extension (October 2026).
+const ACCEPTED_NAME = /\.(flac|mp3|mp4|mpeg|mpga|m4a|ogg|wav|webm)$/i
+// For files whose name doesn't say (some Share-ins): the extension Groq expects for their type.
+const EXTENSION_OF_TYPE: Record<string, string> = {
+  'audio/ogg': 'ogg', 'audio/opus': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/wav': 'wav',
+  'audio/x-wav': 'wav', 'audio/flac': 'flac', 'audio/webm': 'webm', 'video/mp4': 'mp4', 'video/webm': 'webm',
 }
 
-export async function transcribe(fetch: Fetch, key: string, audio: Blob, name: string): Promise<Transcript> {
-  if (audio.size > WHISPER_MAX_BYTES) throw new HearError('too-big')
+/**
+ * The file as Groq will take it, or null when it has to be converted first. WhatsApp names voice
+ * notes .opus (Ogg Opus); Groq takes the same audio as an .ogg file of type audio/ogg.
+ */
+export function asUpload(audio: Blob, name: string): File | null {
+  if (/\.(opus|oga)$/i.test(name)) return new File([audio], name.replace(/\.(opus|oga)$/i, '.ogg'), { type: 'audio/ogg' })
+  if (ACCEPTED_NAME.test(name)) return new File([audio], name, { type: audio.type })
+  const extension = EXTENSION_OF_TYPE[audio.type.split(';')[0]]
+  return extension ? new File([audio], `${name.replace(/\.[^.]*$/, '') || 'audio'}.${extension}`, { type: audio.type }) : null
+}
+
+/** Sends one upload, already in a form Groq takes, to Whisper. */
+export async function transcribe(fetch: Fetch, key: string, upload: File): Promise<Transcript> {
+  if (upload.size > WHISPER_MAX_BYTES) throw new HearError('too-big')
   const form = new FormData()
-  form.append('file', asUpload(audio, name))
+  form.append('file', upload)
   form.append('model', WHISPER_MODEL)
   form.append('response_format', 'verbose_json')
   form.append('timestamp_granularities[]', 'segment')

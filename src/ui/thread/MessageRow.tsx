@@ -15,21 +15,29 @@ const failureText = (t: Strings): Record<HearFailure, string> => ({
   busy: t.failBusy,
   unreachable: t.failUnreachable,
   unsupported: t.failUnsupported,
+  undecodable: t.failUndecodable,
   'too-big': t.failTooBig,
   unknown: t.failUnknown,
 })
 
 function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnectKey: () => void }) {
   const t = useT()
+  const { uiLang } = usePrefs()
   const { thread } = useEngine()
   const { groq } = useOwnKeys()
   switch (message.state) {
     case 'heard':
       return <span className="inline-flex items-center gap-1 text-xs text-fg-muted"><CheckIcon size={14} weight="bold" className="text-ornament" />{t.stateHeard}</span>
     case 'hearing':
-      return <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg"><KhatamMark size={16} className="text-ornament" />{t.stateHearing}</span>
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg">
+          <KhatamMark size={16} className="text-ornament" />
+          {message.part ? t.hearingPart(formatNumber(message.part.n, uiLang), formatNumber(message.part.of, uiLang)) : t.stateHearing}
+        </span>
+      )
     case 'failed':
-      // A refused key cannot be fixed by trying again with the same key.
+      // A refused key cannot be fixed by trying again with the same key, nor a file the browser can't open.
+      if (message.failure === 'undecodable') return null
       return message.failure === 'rejected'
         ? <button type="button" onClick={onConnectKey} className="text-xs font-semibold text-accent">{t.changeKey}</button>
         : (

@@ -41,6 +41,16 @@ export function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 }
 
+/**
+ * Stands in for the browser's decoder: a file made by `recording()` decodes to that many seconds
+ * of silence; anything else can't be decoded, as with a damaged file.
+ */
+export async function fakeDecode(audio: Blob): Promise<Float32Array> {
+  const seconds = /^FAKE-PCM ([\d.]+)/.exec(await audio.slice(0, 32).text())?.[1]
+  if (!seconds) throw new DOMException('Unable to decode audio data', 'EncodingError')
+  return new Float32Array(Math.round(Number(seconds) * 16_000))
+}
+
 /** A fresh, isolated device: empty localStorage and IndexedDB, no network. Reuse the same object to simulate a reload. */
 export function freshDevice(overrides: Partial<EngineDeps> = {}): EngineDeps {
   return {
@@ -49,6 +59,7 @@ export function freshDevice(overrides: Partial<EngineDeps> = {}): EngineDeps {
     languages: ['en-US'],
     prefersDarkScheme: false,
     fetch: fakeNetwork().fetch,
+    decodeAudio: fakeDecode,
     sleep: async () => {},
     now: () => Date.now(),
     ...overrides,
