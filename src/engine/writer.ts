@@ -62,7 +62,7 @@ export interface Block {
   body: string
 }
 
-const asText = (block: Block) => `${block.label}\n${block.body}`
+export const asText = (block: Block) => `${block.label}\n${block.body}`
 
 export function messageBlock(message: Message, n: number, total: number): Block {
   const label = (kind: string) => `===== Message ${n} of ${total}: ${kind} =====`

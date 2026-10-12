@@ -3,6 +3,7 @@
 // background as soon as a Groq key is connected.
 import { oneAtATime, type DecodeAudio } from './audio'
 import type { Db } from './db'
+import { answerFollowUp, type FollowUp } from './follow-up'
 import { GEMINI_MAX_BYTES, WatchError, chooseWatcher, watchVideo, type GeminiUpload, type WatchFailure } from './gemini'
 import { hearFile, type PartsHeard } from './hearing'
 import type { History, Mode } from './history'
@@ -58,6 +59,8 @@ export interface ThreadResult {
   /** The writer ran out of room, so the end is missing. */
   cutOff?: boolean
   report: ReliabilityRow[]
+  /** Questions asked about it since, in order (absent on Results from before Follow-ups). */
+  followUps?: FollowUp[]
 }
 
 export type Writing =
@@ -103,6 +106,10 @@ export interface ThreadStore extends Observable<ThreadState> {
   setDraft(draft: WriteOptions): Promise<void>
   /** Waits for every Message to be heard, writes the Result, keeps it with the Thread and saves it to History. */
   summarize(options: WriteOptions): Promise<ThreadResult>
+  /** Asks a Follow-up about the Result; its answer appears under it, and is saved with it in History. */
+  askFollowUp(question: string): Promise<void>
+  /** Asks a failed Follow-up again. */
+  retryFollowUp(id: string): Promise<void>
   /** Resolves once nothing is being heard and nothing that can be heard is waiting. */
   idle(): Promise<void>
 }
@@ -312,6 +319,51 @@ export async function createThread(deps: {
   })
   startHearing()
 
+  /** The writer for this key: chosen from its live model list once, with what it may be sent per minute. */
+  async function writerFor(key: string) {
+    if (writer?.key !== key) {
+      const model = await chooseWriter(fetch, key)
+      writer = { key, model, budget: startingBudget(model) }
+      partsWritten.clear()
+    }
+    return writer
+  }
+
+  const patchFollowUp = (id: string, patch: Partial<FollowUp>) => {
+    const { result } = state.get()
+    if (result) state.publish({ ...state.get(), result: { ...result, followUps: (result.followUps ?? []).map(f => (f.id === id ? { ...f, ...patch } : f)) } })
+  }
+
+  /** Has Groq answer one Follow-up, then saves the Result with it, here and in History. */
+  async function answer(id: string) {
+    const { result, messages } = state.get()
+    const followUps = result?.followUps ?? []
+    const at = followUps.findIndex(f => f.id === id)
+    if (!result || at < 0) return
+    const key = keys.get().groq
+    if (!key) patchFollowUp(id, { state: 'failed', failure: 'no-key' })
+    else {
+      patchFollowUp(id, { state: 'asking', failure: undefined })
+      try {
+        const { model, budget } = await writerFor(key)
+        const text = await answerFollowUp(messages, result.text, followUps.slice(0, at), followUps[at].question, {
+          budget,
+          send: (prompt, settings) => withBusyRetries(
+            () => write(fetch, key, model, prompt, settings),
+            busyFor,
+            { sleep, now, onWait: retryAt => patchFollowUp(id, { retryAt }) },
+          ),
+        })
+        patchFollowUp(id, { state: 'answered', answer: text, retryAt: undefined })
+      } catch (e) {
+        patchFollowUp(id, { state: 'failed', failure: e instanceof WriteError ? e.failure : 'unknown', retryAt: undefined })
+      }
+    }
+    await persist()
+    const saved = state.get().result
+    if (saved) await keepInHistory(saved).catch(() => state.publish({ ...state.get(), unsaved: true }))
+  }
+
   /** Saves a Result to History. Saving it again replaces it, so this is safe to repeat. */
   const keepInHistory = (result: ThreadResult) => {
     const { messages } = state.get()
@@ -324,6 +376,7 @@ export async function createThread(deps: {
       text: result.text,
       cutOff: result.cutOff,
       report: result.report,
+      followUps: (result.followUps ?? []).filter(f => f.state === 'answered'),
     })
   }
 
@@ -417,12 +470,7 @@ export async function createThread(deps: {
       if (!canWrite(messages)) fail(messages.some(m => m.kind !== 'text') ? 'nothing-heard' : 'empty')
 
       setWriting({ state: 'writing' })
-      if (writer?.key !== key) {
-        const model = await chooseWriter(fetch, key!)
-        writer = { key: key!, model, budget: startingBudget(model) }
-        partsWritten.clear()
-      }
-      const { model, budget } = writer
+      const { model, budget } = await writerFor(key!)
       // Keeps the part being written while showing when Groq lets us try again, and the reverse.
       const patchWriting = (patch: { retryAt?: number; part?: WritingPart }) => {
         const current = state.get().writing
@@ -456,9 +504,22 @@ export async function createThread(deps: {
       }
       return result
     },
+    async askFollowUp(question) {
+      const { result } = state.get()
+      if (!result || !question.trim()) return
+      const followUp: FollowUp = { id: crypto.randomUUID(), question: question.trim(), state: 'asking' }
+      state.publish({ ...state.get(), result: { ...result, followUps: [...(result.followUps ?? []), followUp] } })
+      await persist()
+      await answer(followUp.id)
+    },
+    async retryFollowUp(id) {
+      if (state.get().result?.followUps?.find(f => f.id === id)?.state === 'failed') await answer(id)
+    },
     async idle() {
       while (active.size) await Promise.allSettled([...active.keys()])
     },
   }
+  // A Follow-up being answered when the page closed is asked again.
+  for (const f of state.get().result?.followUps ?? []) if (f.state === 'asking') void answer(f.id)
   return store
 }

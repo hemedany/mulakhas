@@ -7,10 +7,11 @@ import { titleOf } from '@/engine/writer'
 import { useT } from '@/i18n/i18n'
 import { scrollBehavior } from '../motion'
 import { Sheet } from '../Sheet'
+import { FollowUpBox, FollowUps } from './FollowUps'
 import { ResultBody } from './ResultBody'
 
 /** Desktop: the Result is the next item in the Thread. */
-export function ResultInThread({ result }: { result: ThreadResult }) {
+export function ResultInThread({ result, onConnectKey }: { result: ThreadResult; onConnectKey: () => void }) {
   const t = useT()
   const ref = useRef<HTMLElement>(null)
   useEffect(() => { ref.current?.scrollIntoView({ block: 'start', behavior: scrollBehavior() }) }, [result.id])
@@ -24,6 +25,7 @@ export function ResultInThread({ result }: { result: ThreadResult }) {
       </BrandBar>
       <div className="px-8 pt-7 pb-7">
         <ResultBody text={result.text} cutOff={result.cutOff} report={result.report} titleClass="font-display text-3xl font-semibold" />
+        <FollowUps followUps={result.followUps ?? []} live onConnectKey={onConnectKey} />
       </div>
     </article>
   )
@@ -45,12 +47,17 @@ export function ResultChip({ result, onOpen }: { result: ThreadResult; onOpen: (
   )
 }
 
-/** Phones: the Result rises as a sheet over the Thread. */
-export function ResultSheet({ result, open, onClose }: { result: ThreadResult | null; open: boolean; onClose: () => void }) {
+/** Phones: the Result rises as a sheet over the Thread, its Follow-ups under it and the box to ask one at its foot. */
+export function ResultSheet({ result, open, onClose, onConnectKey }: { result: ThreadResult | null; open: boolean; onClose: () => void; onConnectKey: () => void }) {
   const t = useT()
   return (
-    <Sheet open={open && !!result} onClose={onClose} title={t.resultHeading} closeLabel={t.close}>
-      {result && <ResultBody text={result.text} cutOff={result.cutOff} report={result.report} />}
+    <Sheet open={open && !!result} onClose={onClose} title={t.resultHeading} closeLabel={t.close} footer={<FollowUpBox />}>
+      {result && (
+        <>
+          <ResultBody text={result.text} cutOff={result.cutOff} report={result.report} />
+          <FollowUps followUps={result.followUps ?? []} live onConnectKey={onConnectKey} />
+        </>
+      )}
     </Sheet>
   )
 }

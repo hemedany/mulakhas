@@ -87,7 +87,7 @@ export function MainScreen() {
                   </ol>
                   <WritingStatus onRetry={summarize} onConnectKey={() => setSheet('keys')} />
                   {result && writing.state === 'idle' && (desktop
-                    ? <ResultInThread result={result} />
+                    ? <ResultInThread result={result} onConnectKey={() => setSheet('keys')} />
                     : <ResultChip result={result} onOpen={() => setSheet('result')} />)}
                 </div>
               </div>
@@ -95,7 +95,9 @@ export function MainScreen() {
           )}
         </main>
         {messages.length > 0 && (
-          <Composer onAdd={() => setSheet('add')} onSummarize={summarize} busy={writing.state === 'listening' || writing.state === 'writing'} />
+          <Composer onAdd={() => setSheet('add')} onSummarize={summarize} busy={writing.state === 'listening' || writing.state === 'writing'}
+            // On desktop the Result is in the Thread, so once there is one the composer asks Follow-ups about it.
+            askingFollowUps={desktop && !!result && writing.state === 'idle'} />
         )}
       </div>
 
@@ -105,7 +107,7 @@ export function MainScreen() {
         </div>
       )}
 
-      <ResultSheet result={result} open={sheet === 'result'} onClose={close} />
+      <ResultSheet result={result} open={sheet === 'result'} onClose={close} onConnectKey={() => setSheet('keys')} />
       <Sheet open={sheet === 'add'} onClose={close} title={t.addSheetTitle} closeLabel={t.close}>
         <div className="divide-y divide-line">
           <button type="button" onClick={() => { close(); choose() }} className="flex h-13 w-full items-center gap-3 text-start font-medium">

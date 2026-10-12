@@ -3,12 +3,29 @@ import { useEngine, useThread } from '@/app/engine-hooks'
 import { PRESETS } from '@/engine/presets'
 import { mayWrite } from '@/engine/writer'
 import { useT } from '@/i18n/i18n'
+import { FollowUpBox } from './result/FollowUps'
 
-/**
- * The Request bar docked under the Thread: Mode, presets, the Request itself, and Summarize.
- * What is typed is the Thread's draft, so a reload keeps it.
- */
-export function Composer({ onAdd, onSummarize, busy }: { onAdd: () => void; onSummarize: () => void; busy: boolean }) {
+interface ComposerProps {
+  onAdd: () => void
+  onSummarize: () => void
+  busy: boolean
+  /** Ask Follow-ups instead of a Request (desktop, once there is a Result). */
+  askingFollowUps?: boolean
+}
+
+/** The bar docked under the Thread: the Request, or once there is a Result on desktop, a Follow-up. */
+export function Composer({ askingFollowUps = false, ...request }: ComposerProps) {
+  return (
+    <footer className="relative shrink-0 border-t border-ornament/40 bg-surface pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto max-w-2xl px-3 pt-2.5 pb-3 lg:px-0">
+        {askingFollowUps ? <FollowUpBox onAdd={request.onAdd} /> : <RequestBar {...request} />}
+      </div>
+    </footer>
+  )
+}
+
+/** Mode, presets, the Request itself, and Summarize. What is typed is the Thread's draft, so a reload keeps it. */
+function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFollowUps'>) {
   const t = useT()
   const { thread } = useEngine()
   const { draft, messages } = useThread()
@@ -17,40 +34,38 @@ export function Composer({ onAdd, onSummarize, busy }: { onAdd: () => void; onSu
   const go = draft.mode === 'exact' ? t.extractWords : t.summarize
 
   return (
-    <footer className="relative shrink-0 border-t border-ornament/40 bg-surface pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto max-w-2xl px-3 pt-2.5 pb-3 lg:px-0">
-        <div className="-mx-3 mb-2.5 flex items-center gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
-          <div role="radiogroup" aria-label={t.mode} className="flex shrink-0 rounded-full bg-sunken p-0.5">
-            {(['summary', 'exact'] as const).map(m => (
-              <button key={m} type="button" role="radio" aria-checked={draft.mode === m} onClick={() => setDraft({ mode: m })}
-                className={`h-8 rounded-full px-3 text-sm font-medium transition-colors duration-(--duration-press) ${draft.mode === m ? 'bg-brand text-on-brand' : 'text-fg-muted'}`}>
-                {m === 'summary' ? t.modeSummary : t.modeExact}
-              </button>
-            ))}
-          </div>
-          {draft.mode === 'summary' && PRESETS.filter(p => p !== 'exact').map(p => (
-            <button key={p} type="button" aria-pressed={draft.preset === p} onClick={() => setDraft({ preset: draft.preset === p ? null : p })}
-              className={`h-9 shrink-0 rounded-full border px-3.5 text-sm transition-colors duration-(--duration-press) ${draft.preset === p ? 'border-accent bg-accent-soft font-medium text-accent' : 'border-line text-fg-muted'}`}>
-              {t.presets[p].label}
+    <>
+      <div className="-mx-3 mb-2.5 flex items-center gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
+        <div role="radiogroup" aria-label={t.mode} className="flex shrink-0 rounded-full bg-sunken p-0.5">
+          {(['summary', 'exact'] as const).map(m => (
+            <button key={m} type="button" role="radio" aria-checked={draft.mode === m} onClick={() => setDraft({ mode: m })}
+              className={`h-8 rounded-full px-3 text-sm font-medium transition-colors duration-(--duration-press) ${draft.mode === m ? 'bg-brand text-on-brand' : 'text-fg-muted'}`}>
+              {m === 'summary' ? t.modeSummary : t.modeExact}
             </button>
           ))}
         </div>
-        <form className="flex items-end gap-2" onSubmit={e => { e.preventDefault(); if (hasSomething && !busy) onSummarize() }}>
-          <button type="button" aria-label={t.addSheetTitle} title={t.addSheetTitle} onClick={onAdd}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) active:scale-[0.94]">
-            <PlusIcon size={20} />
+        {draft.mode === 'summary' && PRESETS.filter(p => p !== 'exact').map(p => (
+          <button key={p} type="button" aria-pressed={draft.preset === p} onClick={() => setDraft({ preset: draft.preset === p ? null : p })}
+            className={`h-9 shrink-0 rounded-full border px-3.5 text-sm transition-colors duration-(--duration-press) ${draft.preset === p ? 'border-accent bg-accent-soft font-medium text-accent' : 'border-line text-fg-muted'}`}>
+            {t.presets[p].label}
           </button>
-          <label className="relative min-w-0 flex-1">
-            <span className="sr-only">{t.requestLabel}</span>
-            <textarea rows={1} dir="auto" value={draft.request} onChange={e => setDraft({ request: e.target.value })} placeholder={t.requestLabel}
-              className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken px-4 py-2.5 leading-6 placeholder:text-fg-subtle focus:border-accent focus:outline-none [field-sizing:content]" />
-          </label>
-          <button type="submit" aria-label={go} title={go} disabled={!hasSomething || busy}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[transform,opacity] duration-(--duration-press) ease-snappy active:scale-[0.94] disabled:opacity-40">
-            <ArrowUpIcon size={20} weight="bold" />
-          </button>
-        </form>
+        ))}
       </div>
-    </footer>
+      <form className="flex items-end gap-2" onSubmit={e => { e.preventDefault(); if (hasSomething && !busy) onSummarize() }}>
+        <button type="button" aria-label={t.addSheetTitle} title={t.addSheetTitle} onClick={onAdd}
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) active:scale-[0.94]">
+          <PlusIcon size={20} />
+        </button>
+        <label className="relative min-w-0 flex-1">
+          <span className="sr-only">{t.requestLabel}</span>
+          <textarea rows={1} dir="auto" value={draft.request} onChange={e => setDraft({ request: e.target.value })} placeholder={t.requestLabel}
+            className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken px-4 py-2.5 leading-6 placeholder:text-fg-subtle focus:border-accent focus:outline-none [field-sizing:content]" />
+        </label>
+        <button type="submit" aria-label={go} title={go} disabled={!hasSomething || busy}
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[transform,opacity] duration-(--duration-press) ease-snappy active:scale-[0.94] disabled:opacity-40">
+          <ArrowUpIcon size={20} weight="bold" />
+        </button>
+      </form>
+    </>
   )
 }

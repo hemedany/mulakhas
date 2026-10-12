@@ -1,4 +1,5 @@
 import type { Db } from './db'
+import type { FollowUp } from './follow-up'
 import type { ReliabilityRow } from './reliability'
 
 export type Mode = 'summary' | 'exact'
@@ -17,6 +18,8 @@ export interface SavedResult {
   cutOff?: boolean
   /** Measured per-Message clarity (v2 Results only). */
   report?: ReliabilityRow[]
+  /** The Follow-ups answered about it. */
+  followUps?: FollowUp[]
 }
 
 export interface History {

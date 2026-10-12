@@ -5,13 +5,14 @@ import { BrandBar } from '@/brand/Ornament'
 
 // A modal sheet on the native <dialog> element (ADR-0005): the browser handles focus trapping,
 // Escape and the top layer, and nothing injects <style> elements, which the CSP forbids. It rises
-// from the bottom on phones and sits centred on wide screens.
-export function Sheet({ open, onClose, title, closeLabel, children }: {
+// from the bottom on phones and sits centred on wide screens. A footer stays put below what scrolls.
+export function Sheet({ open, onClose, title, closeLabel, children, footer }: {
   open: boolean
   onClose: () => void
   title: string
   closeLabel: string
   children: ReactNode
+  footer?: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -43,7 +44,8 @@ export function Sheet({ open, onClose, title, closeLabel, children }: {
             </button>
           </div>
         </BrandBar>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">{children}</div>
+        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 ${footer ? 'pb-5' : 'pb-[calc(1.25rem+env(safe-area-inset-bottom))]'}`}>{children}</div>
+        {footer && <div className="shrink-0 border-t border-ornament/40 px-3 pt-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
     </dialog>
   )

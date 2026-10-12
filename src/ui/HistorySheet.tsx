@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useEngine, usePrefs } from '@/app/engine-hooks'
 import type { SavedResult } from '@/engine'
 import { useT } from '@/i18n/i18n'
+import { FollowUps } from './result/FollowUps'
 import { ResultBody } from './result/ResultBody'
 import { Sheet } from './Sheet'
 
@@ -55,7 +56,12 @@ export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => 
         )}
       </Sheet>
       <Sheet open={open && !!opened} onClose={() => setOpened(null)} title={t.resultHeading} closeLabel={t.close}>
-        {opened && <ResultBody text={opened.text} cutOff={opened.cutOff} report={opened.report} />}
+        {opened && (
+          <>
+            <ResultBody text={opened.text} cutOff={opened.cutOff} report={opened.report} />
+            <FollowUps followUps={opened.followUps ?? []} />
+          </>
+        )}
       </Sheet>
     </>
   )

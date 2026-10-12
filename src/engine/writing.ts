@@ -235,3 +235,22 @@ function groupsOf(blocks: Block[], room: number, budget: Budget): Block[][] {
   }
   return groups
 }
+
+/**
+ * Sends the fullest of `prompts` (fullest first) that the key takes: one estimated not to fit is
+ * skipped, one Groq refuses as too large teaches the budget and gives way to the next.
+ */
+export async function sendFullestFitting(prompts: string[], settings: WriteSettings, { send, budget }: Pick<WritingDeps, 'send' | 'budget'>): Promise<Written> {
+  for (const [i, prompt] of prompts.entries()) {
+    const last = i === prompts.length - 1
+    if (!last && !fits(prompt, settings, budget)) continue
+    try {
+      return await send(prompt, settings)
+    } catch (e) {
+      const tooLarge = tooLargeIn(e)
+      if (!tooLarge || last) throw e
+      learn(budget, tooLarge, settings.system + prompt, settings.maxTokens)
+    }
+  }
+  throw new WriteError('too-big')
+}
