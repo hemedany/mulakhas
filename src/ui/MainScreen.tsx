@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Pattern } from '@/brand/Ornament'
 import { useEngine, useOwnKeys, usePrefs } from '@/app/engine-hooks'
-import { LANGS, LANG_NAMES, THEMES, type Theme } from '@/engine'
+import { LANGS, LANG_NAMES, PROVIDERS, THEMES, type Theme } from '@/engine'
 import type { PresetId } from '@/engine/presets'
 import { useT } from '@/i18n/i18n'
 import { AppHeader } from './AppHeader'
 import { ChoiceList } from './ChoiceList'
 import { EmptyState } from './EmptyState'
 import { HistoryList } from './HistoryList'
-import { KeySheet } from './KeySheet'
+import { OwnKeySheet } from './OwnKeySheet'
 import { Sheet } from './Sheet'
 
 type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | null
@@ -50,13 +50,15 @@ export function MainScreen() {
       <Sheet open={sheet === 'settings'} onClose={close} title={t.settings} closeLabel={t.close}>
         <h3 className="mb-1 text-sm font-semibold text-fg-muted">{t.keysTitle}</h3>
         <div className="divide-y divide-line">
-          {([['groq', t.groqKeyLabel], ['gemini', t.geminiKeyLabel]] as const).map(([provider, label]) => (
+          {PROVIDERS.map(provider => (
             <div key={provider} className="flex h-13 items-center justify-between gap-3">
               <span>
-                <span className="block">{label}</span>
+                <span className="block">{t.keyLabel[provider]}</span>
                 <span className="block text-xs text-fg-muted">{ownKeys[provider] ? t.connected : t.notConnected}</span>
               </span>
-              <button type="button" onClick={() => setSheet('keys')} className="h-9 rounded-full px-3 text-sm font-medium text-accent">{t.change}</button>
+              <button type="button" onClick={() => setSheet('keys')} className="h-9 rounded-full px-3 text-sm font-medium text-accent">
+                {ownKeys[provider] ? t.change : t.connect}
+              </button>
             </div>
           ))}
         </div>
@@ -64,7 +66,7 @@ export function MainScreen() {
         <ChoiceList label={t.theme} value={theme} onChange={th => prefs.set({ theme: th })}
           options={THEMES.map(th => ({ value: th, label: themeLabel[th] }))} />
       </Sheet>
-      <KeySheet open={sheet === 'keys'} onClose={close} />
+      <OwnKeySheet open={sheet === 'keys'} onClose={close} />
     </div>
   )
 }

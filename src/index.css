@@ -28,6 +28,8 @@
   --color-brand-soft: var(--brand-soft);
   --color-on-brand: var(--on-brand);
   --color-ornament: var(--ornament);
+  --color-ornament-on-brand: var(--ornament-on-brand);
+  --color-scrim: var(--scrim);
   --color-caution: var(--caution);
 
   --shadow-raised: 0 1px 2px var(--shadow-tint), 0 4px 16px -6px var(--shadow-tint);
@@ -52,14 +54,24 @@
   --text-xl--line-height: 1.8rem;
   --text-2xl: 1.75rem;
   --text-2xl--line-height: 2.15rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.6rem;
+  /* The wordmark in the header bar. */
+  --text-wordmark: 1.375rem;
+  --text-wordmark--line-height: 1;
 
   --radius-control: 0.75rem;
   --radius-card: 1.125rem;
   --radius-sheet: 1.5rem;
 
+  /* 4px spacing scale (Tailwind's default, stated here so it is part of the system). */
+  --spacing: 0.25rem;
+
   --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-press: 150ms;
+  --duration-ui: 200ms;
+  --duration-sheet: 280ms;
 }
 
 @layer base {
@@ -96,7 +108,7 @@
     -webkit-user-select: none;
   }
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
   /* Nothing behind an open sheet scrolls. */
@@ -110,11 +122,18 @@
 
 @layer components {
   .sheet::backdrop {
-    background: oklch(0.2 0.06 14 / 0.5);
+    background: var(--scrim);
+  }
+  /* The star tile is a mask, so the element's background colour is the pattern's colour. */
+  .pattern-tile {
+    -webkit-mask-image: var(--pattern);
+    mask-image: var(--pattern);
+    -webkit-mask-size: 56px 56px;
+    mask-size: 56px 56px;
   }
   @media (prefers-reduced-motion: no-preference) {
     .sheet[open] .sheet-panel {
-      transition: transform 320ms var(--ease-drawer), opacity 200ms var(--ease-snappy);
+      transition: transform var(--duration-sheet) var(--ease-drawer), opacity var(--duration-ui) var(--ease-snappy);
       @starting-style {
         transform: translateY(32px);
         opacity: 0;

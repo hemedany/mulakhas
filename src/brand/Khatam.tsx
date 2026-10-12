@@ -1,27 +1,16 @@
-// The khatam (eight-pointed star) is Mulakhas's mark. Geometry: two squares, one turned 45°.
-// Their union is a 16-vertex star; the 8 tips double as an honest progress indicator.
+// The khatam (eight-pointed star) is Mulakhas's mark. Its 8 tips double as an honest progress
+// indicator. Gold here is ornament, so the centre and the filled tips use --ornament.
+import { starPoints, starVertex, svgPoints } from './geometry'
 
-const TAU = Math.PI * 2
-const R = 11 // tip radius, inside a 24×24 box
-const r = R / (Math.SQRT2 * Math.cos(TAU / 16)) // where the two squares' edges cross
-
-function point(i: number, radius: number): [number, number] {
-  const a = (i * TAU) / 16 - TAU / 4
-  return [12 + radius * Math.cos(a), 12 + radius * Math.sin(a)]
-}
-const fmt = ([x, y]: [number, number]) => `${x.toFixed(3)},${y.toFixed(3)}`
-
-const STAR = Array.from({ length: 16 }, (_, i) => fmt(point(i, i % 2 ? r : R))).join(' ')
-const CORE = Array.from({ length: 8 }, (_, k) => fmt(point(2 * k + 1, r))).join(' ')
-const TIPS = Array.from({ length: 8 }, (_, k) =>
-  [point(2 * k - 1, r), point(2 * k, R), point(2 * k + 1, r)].map(fmt).join(' '),
-)
+const STAR = starPoints(12, 12, 11)
+const CORE = svgPoints(Array.from({ length: 8 }, (_, k) => starVertex(2 * k + 1, 12, 12, 11)))
+const TIPS = Array.from({ length: 8 }, (_, k) => svgPoints([starVertex(2 * k - 1, 12, 12, 11), starVertex(2 * k, 12, 12, 11), starVertex(2 * k + 1, 12, 12, 11)]))
 
 export function KhatamMark({ size = 24, className }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
       <polygon points={STAR} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="2.4" fill="var(--accent)" />
+      <circle cx="12" cy="12" r="2.4" fill="var(--ornament)" />
     </svg>
   )
 }
@@ -45,12 +34,12 @@ export function KhatamProgress({ value, size = 20, label }: { value: number; siz
         <polygon
           key={k}
           points={tip}
-          fill="var(--accent)"
+          fill="var(--ornament)"
           fillOpacity={k < filled ? 1 : 0}
-          stroke={k < filled ? 'var(--accent)' : 'var(--line-strong)'}
+          stroke={k < filled ? 'var(--ornament)' : 'var(--line-strong)'}
           strokeWidth="1.25"
           strokeLinejoin="round"
-          style={{ transition: 'fill-opacity 240ms var(--ease-snappy), stroke 240ms var(--ease-snappy)' }}
+          className="transition-[fill-opacity,stroke] duration-(--duration-ui) ease-snappy"
         />
       ))}
     </svg>

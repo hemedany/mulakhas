@@ -1,5 +1,5 @@
 import { IDBFactory } from 'fake-indexeddb'
-import type { EngineDeps } from './index'
+import type { EngineDeps, Fetch } from './index'
 
 /** A Storage backed by a Map, standing in for the browser's localStorage. */
 export class MemoryStorage implements Storage {
@@ -29,7 +29,7 @@ export function fakeNetwork() {
       if (res) return res
     }
     throw new TypeError('Failed to fetch')
-  }) as typeof globalThis.fetch
+  }) as Fetch
   return {
     fetch,
     requests,

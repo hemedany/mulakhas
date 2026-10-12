@@ -4,9 +4,10 @@ import { KhatamMark } from '@/brand/Khatam'
 import { ArchFrame, OrnamentRule } from '@/brand/Ornament'
 import { PRESETS, type PresetId } from '@/engine/presets'
 import { useT } from '@/i18n/i18n'
-import { MEDIA_ACCEPT, PRESET_ICON } from './vocabulary'
+import { MEDIA_ACCEPT } from './media'
+import { PRESET_ICON } from './preset-icons'
 
-/** The first screen: an arch to add Messages, and the Requests Mulakhas can make. */
+/** The first screen: an arch to add Messages, and the preset Requests to choose from. */
 export function EmptyState({ picked, onPick, onAddFiles, onAddText }: {
   picked: PresetId | null
   onPick: (preset: PresetId | null) => void
@@ -35,7 +36,7 @@ export function EmptyState({ picked, onPick, onAddFiles, onAddText }: {
           }}
         />
         <button type="button" onClick={() => input.current?.click()}
-          className="mt-4 inline-flex h-12 items-center gap-2 rounded-full bg-accent px-5 font-medium text-on-accent shadow-raised transition-transform duration-150 ease-snappy active:scale-[0.97]">
+          className="mt-4 inline-flex h-12 items-center gap-2 rounded-full bg-accent px-5 font-medium text-on-accent shadow-raised transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">
           <PlusIcon size={18} weight="bold" />
           {t.addMessages}
         </button>
@@ -46,8 +47,8 @@ export function EmptyState({ picked, onPick, onAddFiles, onAddText }: {
 
       <OrnamentRule className="my-7 lg:hidden" />
 
-      <section aria-labelledby="intents-title">
-        <h2 id="intents-title" className="font-display text-2xl font-semibold text-balance lg:text-[2.25rem] lg:leading-tight">{t.whatDoYouWant}</h2>
+      <section aria-labelledby="presets-title">
+        <h2 id="presets-title" className="font-display text-2xl font-semibold text-balance lg:text-3xl">{t.whatDoYouWant}</h2>
         <OrnamentRule className="my-5 hidden max-w-48 lg:flex" />
         <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-3 lg:gap-3">
           {PRESETS.map(id => {
@@ -55,7 +56,7 @@ export function EmptyState({ picked, onPick, onAddFiles, onAddText }: {
             const on = picked === id
             return (
               <button key={id} type="button" aria-pressed={on} onClick={() => onPick(on ? null : id)}
-                className={`flex min-h-[6.25rem] flex-col items-start justify-between rounded-card border p-3.5 text-start transition-[transform,border-color,background-color] duration-150 ease-snappy active:scale-[0.97] ${on ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:border-line-strong'}`}>
+                className={`flex min-h-[6.25rem] flex-col items-start justify-between rounded-card border p-3.5 text-start transition-[transform,border-color,background-color] duration-(--duration-press) ease-snappy active:scale-[0.97] ${on ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:border-line-strong'}`}>
                 <Icon size={26} className={on ? 'text-accent' : 'text-ornament'} />
                 <span>
                   <span className="block font-semibold">{t.presets[id].label}</span>

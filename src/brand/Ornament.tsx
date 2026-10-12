@@ -1,17 +1,9 @@
-// Ornament: the small Arabic geometric pieces the interface is dressed in. All static; the
-// pattern tile itself lives in tokens.css (--pattern, --pattern-on-brand).
+// Ornament: the small Arabic geometric pieces the interface is dressed in. All static. The
+// pattern tile itself is a mask (--pattern in tokens.css), coloured by the element's background.
 import { useId, type CSSProperties, type ReactNode } from 'react'
+import { formatNumber } from '@/i18n/numbers'
+import { starPoints } from './geometry'
 
-const TAU = Math.PI * 2
-
-function starPoints(cx: number, cy: number, R: number) {
-  const r = R / (Math.SQRT2 * Math.cos(TAU / 16))
-  return Array.from({ length: 16 }, (_, i) => {
-    const a = (i * TAU) / 16 - TAU / 4
-    const rad = i % 2 ? r : R
-    return `${(cx + rad * Math.cos(a)).toFixed(2)},${(cy + rad * Math.sin(a)).toFixed(2)}`
-  }).join(' ')
-}
 const BADGE_STAR = starPoints(16, 16, 15)
 
 /** A Message's position, set inside an eight-pointed star, in the reader's own digits. */
@@ -21,8 +13,7 @@ export function StarBadge({ n, lang, className = '' }: { n: number; lang: string
       <svg viewBox="0 0 32 32" className="absolute inset-0 size-full" aria-hidden="true">
         <polygon points={BADGE_STAR} fill="var(--surface)" stroke="var(--ornament)" strokeWidth="1.1" strokeLinejoin="round" />
       </svg>
-      {/* Arabic counts in Arabic-Indic digits, as in the Levant (CLDR now defaults Arabic to Latin digits). */}
-      <span className="tabular relative text-xs font-semibold text-fg">{new Intl.NumberFormat(lang, lang === 'ar' ? { numberingSystem: 'arab' } : {}).format(n)}</span>
+      <span className="tabular relative text-xs font-semibold text-fg">{formatNumber(n, lang)}</span>
     </span>
   )
 }
@@ -41,14 +32,26 @@ export function OrnamentRule({ className = '' }: { className?: string }) {
   )
 }
 
-/** The star-and-cross tile as a background layer. `onBrand` uses the variant drawn for burgundy grounds. */
+/**
+ * The star-and-cross tile as a background layer. The outer layer takes the caller's opacity and
+ * fades (masks); the inner one carries the tile mask, so the two never fight over mask-image.
+ */
 export function Pattern({ className = '', onBrand = false, style }: { className?: string; onBrand?: boolean; style?: CSSProperties }) {
   return (
-    <div
-      aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 ${className}`}
-      style={{ backgroundImage: onBrand ? 'var(--pattern-on-brand)' : 'var(--pattern)', backgroundSize: '56px 56px', ...style }}
-    />
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-0 ${className}`} style={style}>
+      <div className={`pattern-tile absolute inset-0 ${onBrand ? 'bg-ornament-on-brand' : 'bg-ornament'}`} />
+    </div>
+  )
+}
+
+/** A burgundy bar dressed with the pattern and closed by a gold hairline: the header and every sheet's title. */
+export function BrandBar({ children, className = '', patternClassName = 'opacity-[0.16]' }: { children: ReactNode; className?: string; patternClassName?: string }) {
+  return (
+    <div className={`on-brand relative shrink-0 overflow-hidden bg-brand text-on-brand ${className}`}>
+      <Pattern onBrand className={patternClassName} />
+      <div className="relative">{children}</div>
+      <div className="relative h-px bg-ornament/70" />
+    </div>
   )
 }
 
@@ -68,8 +71,10 @@ export function ArchFrame({ children, className = '' }: { children: ReactNode; c
         </defs>
         <path d={ARCH} fill="var(--brand-soft)" />
       </svg>
-      {/* The pattern stays at the arch's edges and fades out behind the words. */}
-      <div className="absolute inset-0 -z-10 opacity-35" style={{ clipPath: `url(#${clipId})`, backgroundImage: 'var(--pattern)', backgroundSize: '56px 56px', maskImage: 'radial-gradient(ellipse 62% 48% at 50% 64%, transparent 40%, black 100%)' }} aria-hidden="true" />
+      <div className="absolute inset-0 -z-10" style={{ clipPath: `url(#${clipId})` }} aria-hidden="true">
+        {/* The pattern stays at the arch's edges and fades out behind the words. */}
+        <Pattern className="opacity-35" style={{ maskImage: 'radial-gradient(ellipse 62% 48% at 50% 64%, transparent 40%, black 100%)' }} />
+      </div>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full overflow-visible" aria-hidden="true">
         <path d={ARCH} fill="none" stroke="var(--ornament)" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
       </svg>

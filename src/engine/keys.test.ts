@@ -16,6 +16,19 @@ describe('connecting an Own key', () => {
 
     expect(outcome).toEqual({ ok: true })
     expect(engine.keys.get().groq).toBe('gsk_live_key_pasted_with_spaces')
+    // Sent only to Groq, as a bearer token, never in the URL.
+    expect(net.requests.map(r => r.url.host)).toEqual(['api.groq.com'])
+    expect(net.requests[0].url.href).not.toContain('gsk_live')
+    expect(new Headers(net.requests[0].init?.headers).get('authorization')).toBe('Bearer gsk_live_key_pasted_with_spaces')
+  })
+
+  it('tells a busy provider apart from a bad key or a dropped connection', async () => {
+    const net = fakeNetwork()
+    net.on(url => (url.host === 'api.groq.com' ? json({ error: { message: 'Rate limit reached', type: 'tokens', code: 'rate_limit_exceeded' } }, 429) : undefined))
+    const engine = await createEngine(freshDevice({ fetch: net.fetch }))
+
+    expect(await engine.keys.connect('groq', 'gsk_fine_key')).toEqual({ ok: false, reason: 'busy' })
+    expect(engine.keys.get().groq).toBeNull()
   })
 
   it('refuses a Groq key that Groq rejects, and keeps the previous one', async () => {
@@ -42,7 +55,10 @@ describe('connecting an Own key', () => {
 
   it('sends a Gemini key only to Google, in a header and never in the URL', async () => {
     const net = fakeNetwork()
-    net.on(url => (url.host === 'generativelanguage.googleapis.com' ? json({ models: [{ name: 'models/gemini-flash-latest' }] }) : undefined))
+    // Shape per the Gemini API reference (models.list), trimmed.
+    net.on(url => (url.host === 'generativelanguage.googleapis.com'
+      ? json({ models: [{ name: 'models/gemini-flash-latest', displayName: 'Gemini Flash Latest', supportedGenerationMethods: ['generateContent', 'countTokens'] }], nextPageToken: 'Ch5tb2RlbHMv' })
+      : undefined))
     const engine = await createEngine(freshDevice({ fetch: net.fetch }))
 
     const outcome = await engine.keys.connect('gemini', 'AIza-video-key')

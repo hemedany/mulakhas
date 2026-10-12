@@ -1,5 +1,5 @@
 import { observable, type Observable } from './observable'
-import { checkKey, type Provider } from './providers'
+import { checkKey, type Fetch, type KeyCheck, type Provider } from './providers'
 import { KEYS } from './storage-keys'
 
 /** The user's Own keys. They never leave the device except in requests to Groq and Google. */
@@ -8,7 +8,7 @@ export interface OwnKeys {
   gemini: string | null
 }
 
-export type ConnectOutcome = { ok: true } | { ok: false; reason: 'empty' | 'rejected' | 'unreachable' }
+export type ConnectOutcome = { ok: true } | { ok: false; reason: 'empty' | Exclude<KeyCheck, 'ok'> }
 
 export interface KeysStore extends Observable<OwnKeys> {
   /** Checks the key with its provider and saves it only if the provider accepts it. */
@@ -18,7 +18,7 @@ export interface KeysStore extends Observable<OwnKeys> {
 
 const STORAGE: Record<Provider, string> = { groq: KEYS.groqKey, gemini: KEYS.geminiKey }
 
-export function createKeys(ls: Storage, fetch: typeof globalThis.fetch): KeysStore {
+export function createKeys(ls: Storage, fetch: Fetch): KeysStore {
   const state = observable<OwnKeys>({ groq: ls.getItem(KEYS.groqKey), gemini: ls.getItem(KEYS.geminiKey) })
 
   return {

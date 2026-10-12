@@ -3,10 +3,11 @@ import { createHistory, type History } from './history'
 import { createKeys, type KeysStore } from './keys'
 import { migrateFromV1 } from './migrate'
 import { createPrefs, type PrefsStore } from './prefs'
+import type { Fetch } from './providers'
 
 export type { SavedResult, Mode } from './history'
 export type { ConnectOutcome, OwnKeys } from './keys'
-export type { Provider } from './providers'
+export { PROVIDERS, PROVIDER_INFO, type Fetch, type Provider } from './providers'
 export { THEMES, type Prefs, type Theme } from './prefs'
 export { LANGS, LANG_NAMES, RTL_LANGS, pickLang, type Lang } from './langs'
 
@@ -19,7 +20,7 @@ export interface EngineDeps {
   /** Whether the device is currently set to a dark colour scheme. */
   prefersDarkScheme: boolean
   /** The network. Only Groq and Google are ever called. */
-  fetch: typeof globalThis.fetch
+  fetch: Fetch
 }
 
 /** The Mulakhas core: everything below the screens. */
