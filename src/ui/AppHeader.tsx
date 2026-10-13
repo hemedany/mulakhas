@@ -1,5 +1,5 @@
 import type { Icon } from '@phosphor-icons/react'
-import { ClockCounterClockwiseIcon, GearSixIcon, GlobeIcon } from '@phosphor-icons/react'
+import { ClockCounterClockwiseIcon, GearSixIcon, GlobeIcon, QuestionIcon } from '@phosphor-icons/react'
 import { KhatamMark } from '@/brand/Khatam'
 import { BrandBar } from '@/brand/Ornament'
 import { useEffect, useState } from 'react'
@@ -15,7 +15,7 @@ function HeaderButton({ icon: I, label, onClick }: { icon: Icon; label: string; 
   )
 }
 
-export function AppHeader({ onHistory, onLanguage, onSettings }: { onHistory: () => void; onLanguage: () => void; onSettings: () => void }) {
+export function AppHeader({ onHistory, onLanguage, onSettings, onHelp }: { onHistory: () => void; onLanguage: () => void; onSettings: () => void; onHelp: () => void }) {
   const t = useT()
   const { prefs } = useEngine()
   // The mark is drawn in on the very first visit, and is still from then on.
@@ -33,6 +33,7 @@ export function AppHeader({ onHistory, onLanguage, onSettings }: { onHistory: ()
             <HeaderButton icon={ClockCounterClockwiseIcon} label={t.history} onClick={onHistory} />
             <HeaderButton icon={GlobeIcon} label={t.language} onClick={onLanguage} />
             <HeaderButton icon={GearSixIcon} label={t.settings} onClick={onSettings} />
+            <HeaderButton icon={QuestionIcon} label={t.tutorial.help} onClick={onHelp} />
           </nav>
         </div>
       </BrandBar>

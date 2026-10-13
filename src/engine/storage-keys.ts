@@ -20,4 +20,6 @@ export const KEYS = {
   geminiKey: 'm2.geminiKey',
   showReliability: 'm2.showReliability',
   markDrawn: 'm2.markDrawn',
+  tutorialSeen: 'm2.tutorialSeen',
+  makeoverSeen: 'm2.makeoverSeen',
 } as const

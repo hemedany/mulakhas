@@ -18,10 +18,14 @@ export interface Prefs {
   showReliability: boolean
   /** The khatam in the header has been drawn in once (first visit); from then on it is still. */
   markDrawn: boolean
+  /** The first-visit tutorial has been shown (it can still be reopened from Help). */
+  tutorialSeen: boolean
+  /** A returning v1 user has seen the one-time makeover card. */
+  makeoverSeen: boolean
 }
 
 export interface PrefsStore extends Observable<Prefs> {
-  set(patch: Partial<Pick<Prefs, 'uiLang' | 'theme' | 'showReliability' | 'markDrawn'>>): void
+  set(patch: Partial<Omit<Prefs, 'wasV1User'>>): void
 }
 
 export function createPrefs(ls: Storage, browserLanguages: readonly string[]): PrefsStore {
@@ -33,6 +37,8 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
     wasV1User: ls.getItem(KEYS.wasV1User) === '1',
     showReliability: ls.getItem(KEYS.showReliability) !== '0',
     markDrawn: ls.getItem(KEYS.markDrawn) === '1',
+    tutorialSeen: ls.getItem(KEYS.tutorialSeen) === '1',
+    makeoverSeen: ls.getItem(KEYS.makeoverSeen) === '1',
   })
 
   return {
@@ -42,7 +48,10 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
       if (patch.uiLang) ls.setItem(KEYS.uiLang, patch.uiLang)
       if (patch.theme) ls.setItem(KEYS.theme, patch.theme)
       if (patch.showReliability !== undefined) ls.setItem(KEYS.showReliability, patch.showReliability ? '1' : '0')
+      // Once seen, always seen.
       if (patch.markDrawn) ls.setItem(KEYS.markDrawn, '1')
+      if (patch.tutorialSeen) ls.setItem(KEYS.tutorialSeen, '1')
+      if (patch.makeoverSeen) ls.setItem(KEYS.makeoverSeen, '1')
       state.publish({ ...state.get(), ...patch })
     },
   }

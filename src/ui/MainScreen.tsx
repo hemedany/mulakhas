@@ -17,12 +17,13 @@ import { Sheet } from './Sheet'
 import { MessageOptions } from './thread/MessageOptions'
 import { MessageRow } from './thread/MessageRow'
 import { WritingStatus } from './thread/WritingStatus'
+import { MakeoverCard, Tutorial } from './tutorial/Tutorial'
 import { useAddMessages } from './useAddMessages'
 
 /** How long a removed Message takes to fade out (--duration-press). */
 const LEAVE_MS = 150
 
-type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result' | 'start-over' | null
+type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result' | 'start-over' | 'tutorial' | 'makeover' | null
 
 export function MainScreen() {
   const { prefs, thread, sharedIn } = useEngine()
@@ -31,8 +32,15 @@ export function MainScreen() {
   const ownKeys = useOwnKeys()
   const desktop = useIsDesktop()
   const t = useT()
-  // A first Share-in with no Groq key yet: ask for the key straight away, as when adding files here.
-  const [sheet, setSheet] = useState<OpenSheet>(() => (sharedIn.count > 0 && !ownKeys.groq ? 'keys' : null))
+  const [sheet, setSheet] = useState<OpenSheet>(() => {
+    const seen = prefs.get()
+    // A first Share-in with no Groq key yet: ask for the key straight away, as when adding files here.
+    if (sharedIn.count > 0 && !ownKeys.groq) return 'keys'
+    // The first visit: the tutorial; for someone who used Mulakhas before, the makeover card instead.
+    if (seen.wasV1User && !seen.makeoverSeen) return 'makeover'
+    if (!seen.tutorialSeen && !seen.wasV1User) return 'tutorial'
+    return null
+  })
   // The service worker sends the app here with ?share-failed when it couldn't read a share.
   const [shareFailed] = useState(() => new URLSearchParams(location.search).has('share-failed'))
   useEffect(() => { if (shareFailed) history.replaceState(null, '', location.pathname) }, [shareFailed])
@@ -71,7 +79,7 @@ export function MainScreen() {
 
   return (
     <div className="relative flex h-dvh flex-col bg-bg" {...dropZone}>
-      <AppHeader onHistory={() => setSheet('history')} onLanguage={() => setSheet('language')} onSettings={() => setSheet('settings')} />
+      <AppHeader onHistory={() => setSheet('history')} onLanguage={() => setSheet('language')} onSettings={() => setSheet('settings')} onHelp={() => setSheet('tutorial')} />
       <input ref={picker} type="file" multiple accept={MEDIA_ACCEPT} hidden
         onChange={e => { onPicked(e.target.files); e.target.value = '' }} />
 
@@ -146,6 +154,8 @@ export function MainScreen() {
       </Sheet>
       <MessageOptions id={optionsFor} onClose={() => setOptionsFor(null)} onTextAdded={setNewTextId} onRemove={removeMessage} />
       <HistorySheet open={sheet === 'history'} onClose={close} />
+      <Tutorial open={sheet === 'tutorial'} onClose={() => { prefs.set({ tutorialSeen: true }); close() }} />
+      <MakeoverCard open={sheet === 'makeover'} onClose={() => { prefs.set({ makeoverSeen: true, tutorialSeen: true }); close() }} />
       <Sheet open={sheet === 'language'} onClose={close} title={t.language} closeLabel={t.close}>
         <ChoiceList label={t.language} value={uiLang} onChange={l => { prefs.set({ uiLang: l }); close() }}
           options={LANGS.map(l => ({ value: l, label: LANG_NAMES[l], lang: l }))} />
