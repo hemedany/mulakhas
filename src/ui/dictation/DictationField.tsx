@@ -53,7 +53,7 @@ export function DictatedTextarea({ dictation, value, onChange, label, placeholde
       <button type="button" aria-label={buttonLabel} title={buttonLabel} aria-disabled={dictation.state === 'writing'}
         onClick={() => { if (dictation.state === 'idle') dictation.start(); else if (dictation.state === 'listening') dictation.stop() }}
         onKeyDown={cancelOnEscape}
-        className={`absolute end-1 bottom-1 grid size-9 place-items-center rounded-full transition-[color,background-color,scale] duration-(--duration-press) ${
+        className={`absolute end-1 bottom-1 grid size-9 place-items-center rounded-full transition-[color,background-color,scale] duration-(--duration-press) ease-snappy ${
           dictation.state === 'listening' ? 'bg-accent text-on-accent motion-safe:active:scale-[0.94]' : dictation.state === 'writing' ? 'text-ornament' : 'text-fg-muted hover:text-accent motion-safe:active:scale-[0.94]'
         }`}>
         {dictation.state === 'listening' && <span className="absolute inset-0 rounded-full bg-accent/40 motion-safe:animate-listening" aria-hidden="true" />}

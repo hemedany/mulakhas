@@ -9,7 +9,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "oxlint",
+    "lint": "oxlint && node scripts/check-classes.mjs",
     "preview": "vite preview",
     "prepare": "git config core.hooksPath .githooks || true"
   },

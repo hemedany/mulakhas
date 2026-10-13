@@ -6,7 +6,7 @@ export function AddButton({ onAdd }: { onAdd: () => void }) {
   const t = useT()
   return (
     <button type="button" aria-label={t.addSheetTitle} title={t.addSheetTitle} onClick={onAdd}
-      className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) motion-safe:active:scale-[0.94]">
+      className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.94]">
       <PlusIcon size={20} />
     </button>
   )

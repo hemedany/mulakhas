@@ -30,7 +30,7 @@ export function ResultInThread({ result, arrives, onConnectKey, onWriteAgain }: 
       {onWriteAgain && (
         <div className="border-t border-ornament/40 px-8 py-3">
           <button type="button" onClick={onWriteAgain}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full px-2 text-sm font-semibold text-accent transition-transform duration-(--duration-press) motion-safe:active:scale-[0.97]">
+            className="inline-flex h-10 items-center gap-1.5 rounded-full px-2 text-sm font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
             <PencilSimpleIcon size={16} />{t.writeNewResult}
           </button>
         </div>
@@ -45,7 +45,7 @@ export function ResultChip({ result, arrives, onOpen }: { result: ThreadResult; 
   return (
     <div className={arrives ? 'arrives' : undefined}>
       <button type="button" onClick={onOpen}
-        className={`mt-5 flex w-full items-center gap-3 overflow-hidden rounded-card border border-ornament/40 bg-surface p-3.5 text-start shadow-raised transition-transform duration-(--duration-press) motion-safe:active:scale-[0.99]`}>
+        className={`mt-5 flex w-full items-center gap-3 overflow-hidden rounded-card border border-ornament/40 bg-surface p-3.5 text-start shadow-raised transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.99]`}>
         <span className="grid size-10 shrink-0 place-items-center rounded-control bg-brand text-on-brand"><KhatamMark size={22} className={arrives ? 'turns-once' : undefined} /></span>
         <span className="min-w-0 flex-1">
           <span className="block text-xs text-fg-muted">{t.openResult}</span>

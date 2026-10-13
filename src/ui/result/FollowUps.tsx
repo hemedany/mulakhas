@@ -21,7 +21,7 @@ function Answer({ text, cutOff }: { text: string; cutOff?: boolean }) {
       <Markdown source={text} titleClass="font-semibold" />
       {cutOff && <p className="mt-2 flex gap-2 text-sm text-caution"><ScissorsIcon size={16} className="mt-0.5 shrink-0" />{t.answerCutOff}</p>}
       <CopyButton text={text} label={t.copyAnswer} iconSize={16}
-        className="mt-1 inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-accent transition-transform duration-(--duration-press) motion-safe:active:scale-[0.97]" />
+        className="mt-1 inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]" />
     </div>
   )
 }
