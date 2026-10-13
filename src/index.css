@@ -151,8 +151,31 @@
 }
 
 @layer components {
+  /*
+   * A sheet rises in and leaves the way it came, a little faster than it came (Sheet.tsx closes it
+   * once it has gone). Occasional, so a standard drawer motion; with less motion it only fades.
+   */
   .sheet::backdrop {
     background: var(--scrim);
+    transition: opacity var(--duration-ui) var(--ease-snappy);
+  }
+  @starting-style {
+    .sheet[open]::backdrop {
+      opacity: 0;
+    }
+  }
+  .sheet[open] .sheet-panel {
+    transition: opacity var(--duration-ui) var(--ease-snappy);
+    @starting-style {
+      opacity: 0;
+    }
+  }
+  .sheet[data-leaving] {
+    pointer-events: none;
+  }
+  .sheet[data-leaving]::backdrop,
+  .sheet[data-leaving] .sheet-panel {
+    opacity: 0;
   }
   /* The star tile is a mask, so the element's background colour is the pattern's colour. */
   .pattern-tile {
@@ -261,6 +284,10 @@
         transform: translateY(32px);
         opacity: 0;
       }
+    }
+    .sheet[data-leaving] .sheet-panel {
+      transform: translateY(24px);
+      transition: transform var(--duration-ui) var(--ease-snappy), opacity var(--duration-ui) var(--ease-snappy);
     }
   }
 }

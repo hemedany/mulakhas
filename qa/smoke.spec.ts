@@ -30,6 +30,21 @@ test('asks for a Groq key with the first Message, then hears it', async ({ page 
   await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(1)
 })
 
+test('hands over from one sheet to the next without closing both', async ({ page }) => {
+  await stubGroq(page)
+  await openApp(page)
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Change' }).first().click()
+  await expect(page.getByRole('dialog', { name: 'Your key' })).toBeVisible()
+  await page.waitForTimeout(400) // past the time the first sheet takes to leave
+  await expect(page.getByRole('dialog', { name: 'Your key' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeHidden()
+
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
 test('switches to Arabic, right to left', async ({ page }) => {
   await openApp(page)
 

@@ -6,6 +6,9 @@ import { BrandBar } from '@/brand/Ornament'
 // A modal sheet on the native <dialog> element (ADR-0005): the browser handles focus trapping,
 // Escape and the top layer, and nothing injects <style> elements, which the CSP forbids. It rises
 // from the bottom on phones and sits centred on wide screens. A footer stays put below what scrolls.
+/** How long a sheet takes to leave: --duration-ui, as in index.css. */
+const LEAVE_MS = 200
+
 export function Sheet({ open, onClose, title, closeLabel, children, footer, markClassName }: {
   open: boolean
   onClose: () => void
@@ -18,19 +21,34 @@ export function Sheet({ open, onClose, title, closeLabel, children, footer, mark
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
+  // Whether the app wants the sheet open. A sheet the app closes to open another (Settings handing
+  // over to the key sheet) must not report that as the person closing it, or both would close.
+  const wanted = useRef(open)
 
   useEffect(() => {
+    wanted.current = open
     const dialog = ref.current
     if (!dialog) return
-    if (open && !dialog.open) dialog.showModal()
-    if (!open && dialog.open) dialog.close()
+    if (open) {
+      delete dialog.dataset.leaving
+      if (!dialog.open) dialog.showModal()
+      return
+    }
+    if (!dialog.open) return
+    // It leaves the way it came in (index.css), then closes; a sheet opening meanwhile rises over it.
+    dialog.dataset.leaving = ''
+    const timer = setTimeout(() => { delete dialog.dataset.leaving; dialog.close() }, LEAVE_MS)
+    return () => clearTimeout(timer)
   }, [open])
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // Escape: the sheet leaves like any other close.
+      onCancel={e => { e.preventDefault(); onClose() }}
+      // Closed by the browser itself while still wanted (a second Escape it won't hold back).
+      onClose={() => { if (wanted.current) onClose() }}
       // A click that lands on the dialog itself (not the panel) is a click on the dimmed area.
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
       className="sheet m-0 size-full max-h-none max-w-none bg-transparent p-0 open:flex open:items-end lg:open:items-center lg:open:justify-center"
