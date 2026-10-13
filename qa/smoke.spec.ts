@@ -41,15 +41,34 @@ test('switches to Arabic, right to left', async ({ page }) => {
 })
 
 test('takes dictation phrase by phrase where the browser has no speech engine', async ({ page, browserName }) => {
-  test.skip(browserName !== 'firefox', 'Firefox has no speech engine, so it dictates through Whisper; its fake microphone is set in the config')
+  test.skip(browserName !== 'firefox', 'Firefox has no speech engine, so it dictates through Whisper')
   await stubGroq(page)
+  // A microphone that hears the room, then a phrase, then a pause, as someone speaking would. A
+  // browser's own fake microphone plays one steady tone, which is only ever the room.
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      const context = new AudioContext()
+      await context.resume()
+      const voice = context.createOscillator()
+      const loudness = context.createGain()
+      const t = context.currentTime
+      loudness.gain.setValueAtTime(0.003, t)
+      loudness.gain.setValueAtTime(0.3, t + 0.6)
+      loudness.gain.setValueAtTime(0.003, t + 1.8)
+      const microphone = context.createMediaStreamDestination()
+      voice.connect(loudness).connect(microphone)
+      voice.start()
+      return microphone.stream
+    }
+  })
   await openApp(page)
   await page.getByRole('button', { name: 'Add a text message' }).click()
   await page.getByRole('main').getByRole('textbox').fill('Fry the vermicelli first')
 
   await page.locator('footer').getByRole('button', { name: 'Speak instead of typing' }).click()
   await expect(page.getByText('Listening. Your words appear after each pause.')).toBeVisible()
-  await page.waitForTimeout(1500) // a phrase's worth of the fake microphone
+  // The phrase is written down after its pause, while still listening.
+  await expect(page.locator('footer textarea')).toHaveValue(new RegExp(HEARD), { timeout: 10_000 })
   await page.locator('footer').getByRole('button', { name: 'Stop and keep what you said' }).click()
 
   await expect(page.locator('footer textarea')).toHaveValue(new RegExp(HEARD))

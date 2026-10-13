@@ -21,15 +21,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: desktop } },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        viewport: desktop,
-        // A fake microphone, allowed without asking, for dictation.
-        launchOptions: { firefoxUserPrefs: { 'media.navigator.streams.fake': true, 'media.navigator.permission.disabled': true } },
-      },
-    },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'], viewport: desktop } },
     { name: 'phone', use: devices['Pixel 7'] },
     ...(withWebKit
       ? [

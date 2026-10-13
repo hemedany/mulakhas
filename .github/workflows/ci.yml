@@ -46,7 +46,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium firefox webkit
       # Web Audio only runs with a sound device, and the runner has none: PulseAudio gives it a silent
-      # one, so dictation can hear the fake microphone.
+      # one, so dictation can measure the microphone.
       - run: sudo apt-get install -y --no-install-recommends pulseaudio && pulseaudio --start --exit-idle-time=-1
       - run: npm run test:browsers
       - if: failure()
