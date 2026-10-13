@@ -1,5 +1,6 @@
 import type { Icon } from '@phosphor-icons/react'
 import { ArrowDownIcon, ArrowUpIcon, ChatTextIcon, TrashIcon } from '@phosphor-icons/react'
+import { useState } from 'react'
 import { useEngine, usePrefs, useThread } from '@/app/engine-hooks'
 import { useT } from '@/i18n/i18n'
 import { formatNumber } from '@/i18n/numbers'
@@ -22,17 +23,20 @@ export function MessageOptions({ id, onClose, onTextAdded, onRemove }: { id: str
   const { thread } = useEngine()
   const { messages } = useThread()
   const index = messages.findIndex(m => m.id === id)
+  const [armed, setArmed] = useState(false)
   if (!id || index < 0) return <Sheet open={false} onClose={onClose} title="" closeLabel={t.close}>{null}</Sheet>
-  const closeThen = (fn: () => Promise<unknown>) => async () => { onClose(); await fn() }
+  const closeThen = (fn: () => Promise<unknown>) => async () => { setArmed(false); onClose(); await fn() }
 
   return (
-    <Sheet open onClose={onClose} title={t.messageOptionsFor(formatNumber(index + 1, uiLang))} closeLabel={t.close}>
+    <Sheet open onClose={() => { setArmed(false); onClose() }} title={t.messageOptionsFor(formatNumber(index + 1, uiLang))} closeLabel={t.close}>
       <div className="divide-y divide-line">
         <Action icon={ArrowUpIcon} label={t.moveUp} disabled={index === 0} onClick={closeThen(() => thread.moveBy(id, -1))} />
         <Action icon={ArrowDownIcon} label={t.moveDown} disabled={index === messages.length - 1} onClick={closeThen(() => thread.moveBy(id, 1))} />
         <Action icon={ChatTextIcon} label={t.addTextAbove} onClick={closeThen(async () => onTextAdded(await thread.addTextNear(id, 'above')))} />
         <Action icon={ChatTextIcon} label={t.addTextBelow} onClick={closeThen(async () => onTextAdded(await thread.addTextNear(id, 'below')))} />
-        <Action icon={TrashIcon} label={t.removeMessage} danger onClick={closeThen(async () => onRemove(id))} />
+        {/* Removing takes a second tap, so a slip of the finger loses nothing. */}
+        <Action icon={TrashIcon} label={armed ? t.confirmRemove : t.removeMessage} danger
+          onClick={armed ? closeThen(async () => onRemove(id)) : () => setArmed(true)} />
       </div>
     </Sheet>
   )

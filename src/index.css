@@ -93,6 +93,18 @@
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
     font-feature-settings: "kern";
+    /* The browser's own surfaces wear the palette too: scrollbars, checkboxes, the caret. */
+    scrollbar-color: color-mix(in oklch, var(--fg-subtle) 55%, transparent) transparent;
+    accent-color: var(--accent);
+    caret-color: var(--accent);
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--accent) 26%, transparent);
+    color: var(--fg);
+  }
+  .on-brand ::selection {
+    background: color-mix(in oklch, var(--ornament-on-brand) 40%, transparent);
+    color: var(--on-brand);
   }
   body {
     background: var(--bg);

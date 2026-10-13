@@ -150,13 +150,13 @@ function TextBubble({ message, autoFocus }: { message: TextMessage; autoFocus: b
   const save = (text: string) => { if (timer.current) clearTimeout(timer.current); void thread.setText(message.id, text) }
   const saveSoon = (text: string) => { if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => save(text), SAVE_DELAY_MS) }
   return (
-    <div className="rounded-card rounded-ss-md border border-brand/15 bg-brand-soft px-3.5 pt-2 pb-2.5">
+    <div className="rounded-card rounded-ss-md border border-brand/15 bg-brand-soft px-3.5 pt-2 pb-2.5 transition-colors duration-(--duration-ui) ease-snappy focus-within:border-accent">
       <label className="text-xs text-fg-muted">
         {t.textMessage}
-        <textarea ref={ref} rows={1} dir="auto" value={draft} placeholder={t.textMessagePlaceholder}
+        <textarea ref={ref} rows={1} dir={draft ? 'auto' : undefined} value={draft} placeholder={t.textMessagePlaceholder}
           onChange={e => { setDraft(e.target.value); saveSoon(e.target.value) }}
           onBlur={() => { if (draft !== message.text) save(draft) }}
-          className="mt-1 block w-full resize-none bg-transparent text-base text-fg placeholder:text-fg-subtle focus:outline-none [field-sizing:content]" />
+          className="mt-1 block w-full resize-none bg-transparent text-base [overflow-wrap:anywhere] text-fg placeholder:text-fg-subtle focus:outline-none [field-sizing:content]" />
       </label>
     </div>
   )

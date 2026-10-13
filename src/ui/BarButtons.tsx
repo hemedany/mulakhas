@@ -16,7 +16,7 @@ export function AddButton({ onAdd }: { onAdd: () => void }) {
 export function SendButton({ label, disabled }: { label: string; disabled: boolean }) {
   return (
     <button type="submit" aria-label={label} title={label} disabled={disabled}
-      className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[scale,opacity] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.94] disabled:opacity-40">
+      className="grid size-11 shrink-0 place-items-center rounded-full bg-accent hover:bg-accent-strong text-on-accent transition-[background-color,scale,opacity] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.94] disabled:opacity-40">
       <ArrowUpIcon size={20} weight="bold" />
     </button>
   )

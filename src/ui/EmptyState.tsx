@@ -20,10 +20,10 @@ export function EmptyState({ arrives, picked, onPick, onChooseFiles, onAddText }
     <div className={`mx-auto max-w-xl px-4 pt-5 pb-8 ${arrives ? 'arrives' : ''} lg:grid lg:max-w-6xl lg:grid-cols-[5fr_6fr] lg:items-center lg:gap-16 lg:px-8 lg:py-14`}>
       <ArchFrame className="flex min-h-64 flex-col items-center justify-end px-6 pt-20 pb-6 text-center lg:min-h-[30rem] lg:pb-10">
         <span className="text-ornament"><KhatamMark size={44} /></span>
-        <h1 className="mt-3 font-display text-xl font-semibold text-balance">{t.emptyTitle}</h1>
+        <h2 className="mt-3 font-display text-xl font-semibold text-balance">{t.emptyTitle}</h2>
         <p className="mt-1 max-w-[32ch] text-sm text-fg-muted text-pretty">{t.emptyBody}</p>
         <button type="button" onClick={onChooseFiles}
-          className="mt-4 inline-flex h-12 items-center gap-2 rounded-full bg-accent px-5 font-medium text-on-accent shadow-raised transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
+          className="mt-4 inline-flex h-12 items-center gap-2 rounded-full bg-accent hover:bg-accent-strong px-5 font-medium text-on-accent shadow-raised transition-[background-color,scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
           <PlusIcon size={18} weight="bold" />
           {t.addMessages}
         </button>

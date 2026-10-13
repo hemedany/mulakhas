@@ -7,7 +7,7 @@ import { KhatamMark } from '@/brand/Khatam'
 import { BrandBar, Pattern, StarBadge } from '@/brand/Ornament'
 import { usePrefs } from '@/app/engine-hooks'
 import { useT } from '@/i18n/i18n'
-import { formatNumber } from '@/i18n/numbers'
+import { formatNumber, formatPercent } from '@/i18n/numbers'
 import type { TutorialStep } from './steps'
 
 function Frame({ children }: { children: ReactNode }) {
@@ -39,7 +39,7 @@ export function Scene({ step }: { step: TutorialStep }) {
         <Frame>
           <span className="text-xs font-semibold text-fg-muted">{t.keyLabel.groq}</span>
           <div className="flex items-center gap-2">
-            <span className="flex h-10 flex-1 items-center rounded-control border border-line bg-surface px-3 font-mono text-sm text-fg-muted" dir="ltr">gsk_••••••••••••</span>
+            <span className="flex h-10 flex-1 items-center rounded-control border border-line bg-surface px-3 text-sm text-fg-muted" dir="ltr">gsk_••••••••••••</span>
             <span className="flex h-10 items-center rounded-control bg-accent px-3 text-sm font-medium text-on-accent">{t.connect}</span>
           </div>
         </Frame>
@@ -102,7 +102,7 @@ export function Scene({ step }: { step: TutorialStep }) {
               <span className="block h-2 w-4/5 rounded-full bg-sunken" />
               {[[1, 92], [2, 78]].map(([n, clarity]) => (
                 <span key={n} className="flex gap-2">
-                  <span className="tabular w-8 font-semibold">{formatNumber(clarity, uiLang)}%</span>
+                  <span className="tabular w-9 font-semibold">{formatPercent(clarity, uiLang)}</span>
                   <span className="text-fg-muted">{t.clarityOf(formatNumber(n, uiLang))}</span>
                 </span>
               ))}

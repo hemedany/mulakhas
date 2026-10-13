@@ -90,7 +90,7 @@ function KeyField({ provider }: { provider: Provider }) {
               className="h-12 min-w-0 flex-1 rounded-control border border-line bg-sunken px-3.5 placeholder:text-fg-subtle focus:border-accent focus:outline-none aria-invalid:border-danger"
             />
             <button type="submit" disabled={busy}
-              className="h-12 shrink-0 rounded-control bg-accent px-5 font-medium text-on-accent transition-[scale,opacity] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97] disabled:opacity-60">
+              className="h-12 shrink-0 rounded-control bg-accent hover:bg-accent-strong px-5 font-medium text-on-accent transition-[background-color,scale,opacity] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97] disabled:opacity-60">
               {busy ? t.checking : t.connect}
             </button>
           </div>

@@ -30,7 +30,7 @@ export function AppHeader({ onOpen }: { onOpen: (sheet: HeaderSheet) => void }) 
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-3 lg:px-6">
           <div className="flex items-center gap-2 ps-1">
             <KhatamMark size={28} className={drawIn ? 'drawn-in' : undefined} />
-            <span className="font-display text-wordmark font-semibold">{t.brand}</span>
+            <h1 className="font-display text-wordmark font-semibold" translate="no">{t.brand}</h1>
           </div>
           <nav className="flex items-center">
             <HeaderButton icon={ClockCounterClockwiseIcon} label={t.history} onClick={() => onOpen('history')} />

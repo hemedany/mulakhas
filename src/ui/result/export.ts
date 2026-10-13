@@ -1,12 +1,12 @@
 import type { ReliabilityRow } from '@/engine'
 import type { Strings } from '@/i18n/strings'
-import { formatNumber } from '@/i18n/numbers'
+import { formatNumber, formatPercent } from '@/i18n/numbers'
 
 /** One Reliability report row in words, shared by the screen and by Copy / Share. A Video Gemini watched has no measured clarity. */
 export function reliabilityRow(r: ReliabilityRow, t: Strings, lang: string) {
   return {
     message: t.clarityOf(formatNumber(r.n, lang)),
-    clarity: r.clarity === null ? '—' : `${formatNumber(r.clarity, lang)}%`,
+    clarity: r.clarity === null ? '—' : formatPercent(r.clarity, lang),
     note: r.clarity === null ? t.watchedNotMeasured : null,
     unclear: r.unclear.join(' / '),
   }

@@ -20,7 +20,7 @@ function Reliability({ report }: { report: ReliabilityRow[] }) {
           const row = reliabilityRow(r, t, uiLang)
           return (
             <li key={r.n} className="flex gap-3">
-              <span className="tabular w-11 shrink-0 font-semibold">{row.clarity}</span>
+              <span className="tabular w-12 shrink-0 font-semibold whitespace-nowrap">{row.clarity}</span>
               <span className="min-w-0">
                 <span className="block">{row.message} <span className="text-fg-subtle" dir="ltr">({r.name})</span></span>
                 {row.note && <span className="block text-fg-muted">{row.note}</span>}
@@ -42,7 +42,7 @@ export function ResultBody({ text, cutOff, report, titleClass }: { text: string;
 
   return (
     <div>
-      <div className="text-base"><Markdown source={text} titleClass={titleClass} /></div>
+      <div className="text-base [overflow-wrap:anywhere]"><Markdown source={text} titleClass={titleClass} /></div>
       {cutOff && (
         <p role="note" className="mt-4 flex gap-2 rounded-control border border-caution/50 bg-caution/10 px-3.5 py-2.5 text-sm">
           <ScissorsIcon size={18} className="mt-0.5 shrink-0 text-caution" />{t.resultCutOff}
@@ -51,7 +51,7 @@ export function ResultBody({ text, cutOff, report, titleClass }: { text: string;
       {showReliability && report && report.length > 0 && <Reliability report={report} />}
       <div className="mt-6 flex gap-2">
         <CopyButton text={plain}
-          className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-5 font-medium text-on-accent transition-transform duration-(--duration-press) motion-safe:active:scale-[0.98] lg:flex-none" />
+          className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent hover:bg-accent-strong px-5 font-medium text-on-accent transition-[background-color,scale] duration-(--duration-press) motion-safe:active:scale-[0.98] lg:flex-none" />
         {'share' in navigator && (
           <button type="button" onClick={() => navigator.share({ text: plain }).catch(() => {})}
             className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-line px-5 font-medium transition-transform duration-(--duration-press) motion-safe:active:scale-[0.98] lg:flex-none">

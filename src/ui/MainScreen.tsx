@@ -94,6 +94,7 @@ export function MainScreen() {
 
   return (
     <div className="relative flex h-dvh flex-col bg-bg" {...dropZone}>
+      <a href="#main" className="sr-only rounded-full bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-20">{t.skipToMain}</a>
       <AppHeader onOpen={setSheet} />
       <input ref={picker} type="file" multiple accept={MEDIA_ACCEPT} hidden
         onChange={e => { onPicked(e.target.files); e.target.value = '' }} />
@@ -101,7 +102,7 @@ export function MainScreen() {
       <div className="relative flex min-h-0 flex-1 flex-col">
         {/* Outside the scroller so it stays put. Phones: fades down the page. Desktop: fills the margins. */}
         <Pattern className="opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />
-        <main aria-label={t.mainLabel} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <main id="main" tabIndex={-1} aria-label={t.mainLabel} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain focus:outline-none">
           {problem && (
             <p role="alert" className="mx-auto mt-3 max-w-2xl rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger">{problem}</p>
           )}

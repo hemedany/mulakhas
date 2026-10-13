@@ -17,7 +17,7 @@ import { needsKey, writeFailureText } from '../write-failures'
 function Answer({ text, cutOff }: { text: string; cutOff?: boolean }) {
   const t = useT()
   return (
-    <div className="text-base">
+    <div className="text-base [overflow-wrap:anywhere]">
       <Markdown source={text} titleClass="font-semibold" />
       {cutOff && <p className="mt-2 flex gap-2 text-sm text-caution"><ScissorsIcon size={16} className="mt-0.5 shrink-0" />{t.answerCutOff}</p>}
       <CopyButton text={text} label={t.copyAnswer} iconSize={16}
@@ -47,7 +47,7 @@ export function FollowUps({ followUps, onConnectKey }: { followUps: FollowUp[]; 
     <section aria-label={t.followUpsTitle} aria-live="polite" className="mt-7 space-y-6 border-t border-ornament/40 pt-6">
       {followUps.map((f, i) => (
         <article key={f.id} ref={i === count - 1 ? last : undefined} className={`space-y-2.5 ${arrives(f.id) ? 'arrives' : ''}`}>
-          <p dir="auto" className="ms-auto w-fit max-w-[85%] rounded-card rounded-se-md bg-brand-soft px-3.5 py-2 text-sm">{f.question}</p>
+          <p dir="auto" className="ms-auto w-fit max-w-[85%] [overflow-wrap:anywhere] rounded-card rounded-se-md bg-brand-soft px-3.5 py-2 text-sm">{f.question}</p>
           {f.state === 'answered' && f.answer && <Answer text={f.answer} cutOff={f.cutOff} />}
           {f.state === 'asking' && (
             <div role="status" className="text-sm text-fg-muted">

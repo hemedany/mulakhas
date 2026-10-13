@@ -12,7 +12,7 @@ export function MakeoverSheet({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Sheet open={open} onClose={onClose} title={t.makeover.title} closeLabel={t.close} footer={
       <button type="button" onClick={onClose}
-        className="h-12 w-full rounded-full bg-accent px-5 font-medium text-on-accent transition-[scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.98]">{t.makeover.ok}</button>
+        className="h-12 w-full rounded-full bg-accent hover:bg-accent-strong px-5 font-medium text-on-accent transition-[background-color,scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.98]">{t.makeover.ok}</button>
     }>
       <ul className="space-y-3">
         {[look, groq, ...(sharing ? [share] : []), more].map(point => (

@@ -8,6 +8,9 @@ import { ResultBody } from './result/ResultBody'
 import { Sheet } from './Sheet'
 
 /** Saved Results: search, open, delete. */
+/** How long a delete waits for its second tap. */
+const CONFIRM_MS = 4000
+
 export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { history } = useEngine()
   const { uiLang } = usePrefs()
@@ -15,6 +18,14 @@ export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => 
   const [saved, setSaved] = useState<SavedResult[]>([])
   const [query, setQuery] = useState('')
   const [opened, setOpened] = useState<SavedResult | null>(null)
+  // The Result whose delete button is waiting for its second tap, for a few seconds.
+  const [armed, setArmed] = useState<string | null>(null)
+  useEffect(() => {
+    if (!armed) return
+    const timer = setTimeout(() => setArmed(null), CONFIRM_MS)
+    return () => clearTimeout(timer)
+  }, [armed])
+  const arm = (id: string) => setArmed(id)
 
   useEffect(() => { if (open) void history.list().then(setSaved) }, [history, open])
 
@@ -45,11 +56,18 @@ export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => 
                     {[date.format(r.createdAt), r.mode === 'exact' ? t.historyExact : t.historySummary, ...(r.files.length ? [t.filesCount(r.files.length)] : [])].join(t.listSeparator)}
                   </span>
                 </button>
-                <button type="button" aria-label={`${t.deleteSaved}: ${r.title}`} title={t.deleteSaved}
-                  onClick={async () => { await history.remove(r.id); setSaved(s => s.filter(x => x.id !== r.id)) }}
-                  className="grid size-10 shrink-0 place-items-center rounded-full text-fg-subtle transition-[color,background-color,scale] duration-(--duration-press) ease-snappy hover:bg-sunken hover:text-danger motion-safe:active:scale-[0.94]">
-                  <TrashIcon size={18} />
-                </button>
+                {/* Deleting takes a second tap, so a slip of the finger loses nothing. */}
+                {armed === r.id ? (
+                  <button type="button" onClick={async () => { setArmed(null); await history.remove(r.id); setSaved(s => s.filter(x => x.id !== r.id)) }}
+                    className="h-10 shrink-0 rounded-full bg-danger px-3 text-sm font-medium text-on-danger transition-[scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
+                    {t.confirmDelete}
+                  </button>
+                ) : (
+                  <button type="button" aria-label={`${t.deleteSaved}: ${r.title}`} title={t.deleteSaved} onClick={() => arm(r.id)}
+                    className="grid size-10 shrink-0 place-items-center rounded-full text-fg-subtle transition-[color,background-color,scale] duration-(--duration-press) ease-snappy hover:bg-sunken hover:text-danger motion-safe:active:scale-[0.94]">
+                    <TrashIcon size={18} />
+                  </button>
+                )}
               </li>
             ))}
           </ul>

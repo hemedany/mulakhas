@@ -72,7 +72,7 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
             className="h-11 rounded-full border border-line px-4 text-sm font-medium transition-[scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.tutorial.back}</button>
         )}
         <button ref={primary} type="button" onClick={last ? close : () => go(1)}
-          className="h-11 rounded-full bg-accent px-5 text-sm font-medium text-on-accent transition-[scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
+          className="h-11 rounded-full bg-accent hover:bg-accent-strong px-5 text-sm font-medium text-on-accent transition-[background-color,scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
           {last ? t.tutorial.start : t.tutorial.next}
         </button>
       </div>

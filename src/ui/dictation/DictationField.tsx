@@ -40,7 +40,7 @@ export function DictatedTextarea({ dictation, value, onChange, label, placeholde
     <div className="relative min-w-0 flex-1">
       <label>
         <span className="sr-only">{label}</span>
-        <textarea rows={1} dir="auto" value={value} readOnly={dictation.busy} aria-describedby={statusId} placeholder={placeholder}
+        <textarea rows={1} dir={value ? 'auto' : undefined} value={value} readOnly={dictation.busy} aria-describedby={statusId} placeholder={placeholder}
           enterKeyHint={onEnter ? 'send' : undefined}
           onChange={e => onChange(e.target.value)}
           onKeyDown={e => {
