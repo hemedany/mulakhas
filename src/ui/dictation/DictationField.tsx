@@ -1,5 +1,7 @@
-import { MicrophoneIcon, StopIcon } from '@phosphor-icons/react'
+import { CaretDownIcon, GlobeSimpleIcon, MicrophoneIcon, StopIcon } from '@phosphor-icons/react'
+import { useEngine, usePrefs } from '@/app/engine-hooks'
 import { KhatamMark } from '@/brand/Khatam'
+import { LANGS, LANG_NAMES, type DictationLang } from '@/engine'
 import { useT } from '@/i18n/i18n'
 import type { Strings } from '@/i18n/strings'
 import type { DictationProblem } from './sessions'
@@ -11,6 +13,30 @@ const problemText = (t: Strings): Record<DictationProblem, string> => ({
   'no-key': t.dictationNeedsKey,
   failed: t.dictationFailed,
 })
+
+/**
+ * The language dictation listens for, beside the mic: any interface language, or any language at
+ * all (Whisper tells which). The device's own picker, so it suits fingers and screen readers alike.
+ */
+function DictationLanguage({ disabled }: { disabled: boolean }) {
+  const t = useT()
+  const { prefs } = useEngine()
+  const { dictationLang } = usePrefs()
+  return (
+    <label className="absolute end-10 bottom-1.5 rounded-full has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-focus-ring">
+      <span className="sr-only">{t.dictationLanguage}</span>
+      <span aria-hidden="true" className={`flex h-8 items-center gap-0.5 rounded-full px-1.5 text-xs font-semibold uppercase transition-colors duration-(--duration-press) ease-snappy ${disabled ? 'text-fg-subtle' : 'text-fg-muted'}`}>
+        {dictationLang === 'any' ? <GlobeSimpleIcon size={15} /> : dictationLang}<CaretDownIcon size={10} weight="bold" />
+      </span>
+      <select value={dictationLang} disabled={disabled} title={t.dictationLanguage}
+        onChange={e => prefs.set({ dictationLang: e.target.value as DictationLang })}
+        className="absolute inset-0 cursor-pointer appearance-none opacity-0 disabled:cursor-default">
+        {LANGS.map(l => <option key={l} value={l} lang={l}>{LANG_NAMES[l]}</option>)}
+        <option value="any">{t.anyLanguage}</option>
+      </select>
+    </label>
+  )
+}
 
 /**
  * A text box with a mic in it, for the Request and Follow-ups. While listening the box can't be
@@ -47,8 +73,9 @@ export function DictatedTextarea({ dictation, value, onChange, label, placeholde
             cancelOnEscape(e)
             if (onEnter && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onEnter() }
           }}
-          className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken py-2.5 ps-4 pe-12 leading-6 placeholder:text-fg-subtle read-only:border-accent focus:border-accent focus:outline-none [field-sizing:content]" />
+          className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken py-2.5 ps-4 pe-[5.5rem] leading-6 placeholder:text-fg-subtle read-only:border-accent focus:border-accent focus:outline-none [field-sizing:content]" />
       </label>
+      <DictationLanguage disabled={dictation.busy} />
       {/* One button through every state, so keyboard focus stays on it. */}
       <button type="button" aria-label={buttonLabel} title={buttonLabel} aria-disabled={dictation.state === 'writing'}
         onClick={() => { if (dictation.state === 'idle') dictation.start(); else if (dictation.state === 'listening') dictation.stop() }}

@@ -13,6 +13,7 @@ export const V1_KEYS = {
 
 export const KEYS = {
   uiLang: 'm2.uiLang',
+  dictationLang: 'm2.dictationLang',
   theme: 'm2.theme',
   wasV1User: 'm2.wasV1User',
   migratedFromV1: 'm2.migratedFromV1',

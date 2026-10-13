@@ -19,7 +19,7 @@ export type { ConnectOutcome, OwnKeys } from './keys'
 export type { FollowUp } from './follow-up'
 export { DictationError, PauseDetector, withSpoken, type DictationFailure } from './dictation'
 export { PROVIDERS, PROVIDER_INFO, type Fetch, type Provider } from './providers'
-export { THEMES, type Prefs, type Theme } from './prefs'
+export { THEMES, type DictationLang, type Prefs, type Theme } from './prefs'
 export { LANGS, LANG_NAMES, RTL_LANGS, pickLang, type Lang } from './langs'
 
 /** Everything the engine touches on the device, injectable so tests can simulate devices and reloads. */

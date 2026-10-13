@@ -94,7 +94,7 @@ describe('first-time visitors', () => {
   it('start in the browser language when Mulakhas speaks it', async () => {
     const engine = await createEngine(freshDevice({ languages: ['fr-FR', 'en'] }))
 
-    expect(engine.prefs.get()).toEqual({ uiLang: 'fr', theme: 'system', wasV1User: false, showReliability: true, markSeen: false, tutorialSeen: false, makeoverSeen: false })
+    expect(engine.prefs.get()).toEqual({ uiLang: 'fr', dictationLang: 'fr', theme: 'system', wasV1User: false, showReliability: true, markSeen: false, tutorialSeen: false, makeoverSeen: false })
   })
 
   it('fall back to English for languages Mulakhas does not speak', async () => {

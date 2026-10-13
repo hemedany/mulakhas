@@ -215,10 +215,11 @@ const KEEP_ON_STOP_MS = 600
 /** A busy Whisper is waited for and asked again, this many times at most. */
 const MOST_TRIES = 3
 
-type WritePhrase = (audio: Blob, lang: Lang, before?: string) => Promise<string>
+/** `lang` null: whatever language Whisper hears. */
+type WritePhrase = (audio: Blob, lang: Lang | null, before?: string) => Promise<string>
 
 /** Phrase-by-phrase dictation: the microphone cut at each pause, each phrase written down by Whisper, in order. */
-export function phraseSession(lang: Lang, writePhrase: WritePhrase, events: SessionEvents, { microphone, every, now, sleep }: PhraseDeps): DictationSession {
+export function phraseSession(lang: Lang | null, writePhrase: WritePhrase, events: SessionEvents, { microphone, every, now, sleep }: PhraseDeps): DictationSession {
   let ending: 'stop' | 'cancel' | null = null
   let problem: DictationProblem | undefined
   let finished = false
