@@ -61,6 +61,9 @@
   --text-wordmark: 1.375rem;
   --text-wordmark--line-height: 1;
 
+  /* Big desktop screens (1920px and up), where the first screen grows to fill them. */
+  --breakpoint-3xl: 120rem;
+
   --radius-control: 0.75rem;
   --radius-card: 1.125rem;
   --radius-sheet: 1.5rem;
@@ -70,6 +73,8 @@
 
   --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Movement across the screen, start to end (the wide first screen's opening). */
+  --ease-glide: cubic-bezier(0.77, 0, 0.175, 1);
   --duration-press: 150ms;
   --duration-ui: 200ms;
   --duration-sheet: 280ms;
@@ -174,6 +179,33 @@
   @keyframes fade-in {
     from { opacity: 0; }
   }
+  /*
+   * The wide first screen opens in two beats: the arch alone in the middle, then the presets fan
+   * out from behind it and the arch moves aside, until the two settle centred together. Seen when
+   * the app opens empty and after Start over, so it takes a little longer than a UI transition
+   * (under a second); nothing waits for it. The empty state measures where each piece starts and
+   * sets --from (and --delay, --stack) on the piece itself (opening.ts). With less motion, the arch
+   * fades in and the presets just after.
+   */
+  .opening {
+    --alone: 300ms;
+    --parting: 560ms;
+    /* The arch moves aside just after the presets start to come out of it. */
+    --arch-lag: 100ms;
+  }
+  .opening [data-opening] {
+    animation: fade-in var(--duration-ui) var(--ease-snappy) backwards;
+  }
+  .opening [data-opening='preset'] {
+    animation-delay: 120ms;
+  }
+  /* Above the presets, which start behind it, the nearest column on top. */
+  .opening [data-opening='arch'] {
+    z-index: 4;
+  }
+  .opening [data-opening='preset'][aria-pressed] {
+    z-index: var(--stack, 1);
+  }
   /* The header's khatam is drawn in on the first visit (a fade without motion). */
   .drawn-in {
     animation: fade-in var(--duration-ui) var(--ease-snappy);
@@ -196,6 +228,24 @@
     }
     .drawn-in {
       animation: drawn-in var(--duration-sheet) var(--ease-snappy);
+    }
+    .opening [data-opening='arch'] {
+      animation:
+        arch-alone var(--duration-ui) var(--ease-snappy) backwards,
+        parting var(--parting) var(--ease-glide) calc(var(--alone) + var(--arch-lag)) backwards;
+    }
+    .opening [data-opening='preset'] {
+      animation: out-of-arch var(--parting) var(--ease-glide) calc(var(--alone) + var(--delay, 0ms)) backwards;
+    }
+    @keyframes arch-alone {
+      from { opacity: 0; scale: 0.97; }
+    }
+    @keyframes parting {
+      from { translate: var(--from) 0; }
+    }
+    @keyframes out-of-arch {
+      from { opacity: 0; translate: var(--from) 0; }
+      70% { opacity: 1; }
     }
     @keyframes turn-once {
       from { transform: rotate(-45deg); }
