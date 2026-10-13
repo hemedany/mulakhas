@@ -50,7 +50,7 @@ export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => 
           <ul className="divide-y divide-line">
             {shown.map(r => (
               <li key={r.id} className="flex items-center gap-2">
-                <button type="button" onClick={() => setOpened(r)} className="min-w-0 flex-1 py-3 text-start transition-opacity duration-(--duration-press) ease-snappy active:opacity-60">
+                <button type="button" onClick={() => setOpened(r)} className="-ms-2 min-w-0 flex-1 py-3 ps-2 text-start rounded-control transition-[background-color] duration-(--duration-press) ease-snappy hover:bg-sunken/60 active:bg-sunken">
                   <span className="block truncate font-medium" dir="auto">{r.title}</span>
                   <span className="mt-0.5 block text-xs text-fg-muted">
                     {[date.format(r.createdAt), r.mode === 'exact' ? t.historyExact : t.historySummary, ...(r.files.length ? [t.filesCount(r.files.length)] : [])].join(t.listSeparator)}

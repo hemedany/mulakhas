@@ -29,7 +29,8 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
   const panel = useRef<HTMLDivElement>(null)
   const primary = useRef<HTMLButtonElement>(null)
   const swipe = useRef<{ id: number; x: number } | null>(null)
-  const go = (delta: number) => setAt(i => Math.min(steps.length - 1, Math.max(0, i + delta)))
+  const [from, setFrom] = useState<'next' | 'back'>('next')
+  const go = (delta: number) => { setFrom(delta > 0 ? 'next' : 'back'); setAt(i => Math.min(steps.length - 1, Math.max(0, i + delta))) }
   const close = () => {
     onClose()
     setAt(0)
@@ -97,7 +98,7 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
           // Swiping towards where the reading starts brings the next step.
           if (Math.abs(dx) >= SWIPE_PX) go((dx < 0) !== rtl ? 1 : -1)
         }}>
-        <div key={step} className="arrives" aria-live="polite">
+        <div key={step} className="step-in" data-from={from} aria-live="polite">
           <p className="sr-only">{counter}</p>
           <Scene step={step} />
           <h3 className="mt-5 flex items-center gap-2 font-display text-xl font-semibold text-balance">

@@ -16,7 +16,7 @@ export function WritingStatus({ onRetry, onConnectKey }: { onRetry: () => void; 
   if (writing.state === 'failed') {
     const keyProblem = needsKey(writing.failure)
     return (
-      <div role="alert" className="mt-5 rounded-card border border-danger/40 bg-surface p-4">
+      <div role="alert" className="arrives mt-5 rounded-card border border-danger/40 bg-surface p-4">
         <p className="text-sm text-danger">{writeFailureText(t)[writing.failure]}</p>
         <button type="button" onClick={keyProblem ? onConnectKey : onRetry}
           className="mt-2 inline-flex h-10 items-center gap-1.5 rounded-full px-1 text-sm font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">

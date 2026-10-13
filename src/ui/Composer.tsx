@@ -14,12 +14,14 @@ interface ComposerProps {
   busy: boolean
   /** Ask Follow-ups instead of a Request (desktop, once there is a Result). */
   askingFollowUps?: boolean
+  /** Shown as a Thread starts: it rises from the bottom edge. */
+  rises?: boolean
 }
 
 /** The bar docked under the Thread: the Request, or once there is a Result on desktop, a Follow-up. */
-export function Composer({ askingFollowUps = false, ...request }: ComposerProps) {
+export function Composer({ askingFollowUps = false, rises = false, ...request }: ComposerProps) {
   return (
-    <footer className="relative shrink-0 border-t border-ornament/40 bg-surface pb-[env(safe-area-inset-bottom)]">
+    <footer className={`relative shrink-0 border-t border-ornament/40 bg-surface pb-[env(safe-area-inset-bottom)] ${rises ? 'rises' : ''}`}>
       <div className="mx-auto max-w-2xl px-3 pt-2.5 pb-3 lg:px-0">
         {askingFollowUps ? <FollowUpBox onAdd={request.onAdd} /> : <RequestBar {...request} />}
       </div>
@@ -28,7 +30,7 @@ export function Composer({ askingFollowUps = false, ...request }: ComposerProps)
 }
 
 /** Mode, presets, the Request itself, and Summarize. What is typed is the Thread's draft, so a reload keeps it. */
-function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFollowUps'>) {
+function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFollowUps' | 'rises'>) {
   const t = useT()
   const { thread } = useEngine()
   const { draft, messages } = useThread()
