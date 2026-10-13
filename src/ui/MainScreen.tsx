@@ -1,5 +1,6 @@
 import { ArrowCounterClockwiseIcon, ChatTextIcon, MicrophoneIcon, UploadSimpleIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
+import { PageBackdrop } from '@/brand/backdrops'
 import { Pattern } from '@/brand/Ornament'
 import { useEngine, useIsDesktop, useOwnKeys, usePrefs, useThread } from '@/app/engine-hooks'
 import { LANGS, LANG_NAMES, PROVIDERS, THEMES, type Theme } from '@/engine'
@@ -101,7 +102,7 @@ export function MainScreen() {
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         {/* Outside the scroller so it stays put. Phones: fades down the page. Desktop: fills the margins. */}
-        <Pattern className="opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />
+        <PageBackdrop tile={<Pattern className="opacity-[0.07] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] lg:opacity-[0.09] lg:[mask-image:none]" />} />
         <main id="main" tabIndex={-1} aria-label={t.mainLabel} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain focus:outline-none">
           {problem && (
             <p role="alert" className="mx-auto mt-3 max-w-2xl rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger">{problem}</p>

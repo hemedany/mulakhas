@@ -2,6 +2,7 @@
 // pattern tile itself is a mask (--pattern in tokens.css), coloured by the element's background.
 import { useId, type CSSProperties, type ReactNode, type Ref } from 'react'
 import { formatNumber } from '@/i18n/numbers'
+import { ArchFill, ArchRim, BarBackdrop } from './backdrops'
 import { starPoints } from './geometry'
 
 const BADGE_STAR = starPoints(16, 16, 15)
@@ -48,7 +49,7 @@ export function Pattern({ className = '', onBrand = false, style }: { className?
 export function BrandBar({ children, className = '', patternClassName = 'opacity-[0.16]' }: { children: ReactNode; className?: string; patternClassName?: string }) {
   return (
     <div className={`on-brand relative shrink-0 overflow-hidden bg-brand text-on-brand ${className}`}>
-      <Pattern onBrand className={patternClassName} />
+      <BarBackdrop tile={<Pattern onBrand className={patternClassName} />} />
       <div className="relative">{children}</div>
       <div className="relative h-px bg-ornament/70" />
     </div>
@@ -73,11 +74,12 @@ export function ArchFrame({ children, className = '', ref, ...rest }: { children
       </svg>
       <div className="absolute inset-0 -z-10" style={{ clipPath: `url(#${clipId})` }} aria-hidden="true">
         {/* The pattern stays at the arch's edges and fades out behind the words. */}
-        <Pattern className="opacity-35" style={{ maskImage: 'radial-gradient(ellipse 62% 48% at 50% 64%, transparent 40%, black 100%)' }} />
+        <ArchFill tile={<Pattern className="opacity-35" style={{ maskImage: 'radial-gradient(ellipse 62% 48% at 50% 64%, transparent 40%, black 100%)' }} />} />
       </div>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full overflow-visible" aria-hidden="true">
         <path d={ARCH} fill="none" stroke="var(--ornament)" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
       </svg>
+      <ArchRim />
       {children}
     </div>
   )
