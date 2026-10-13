@@ -3,7 +3,8 @@ import { KhatamProgress } from '@/brand/Khatam'
 import { usePrefs, useThread } from '@/app/engine-hooks'
 import { useT } from '@/i18n/i18n'
 import { formatNumber } from '@/i18n/numbers'
-import { writeFailureText } from '../write-failures'
+import { RetryNote } from '../RetryNote'
+import { needsKey, writeFailureText } from '../write-failures'
 
 /** Where the Result will appear: what Mulakhas is doing now, or why it stopped. */
 export function WritingStatus({ onRetry, onConnectKey }: { onRetry: () => void; onConnectKey: () => void }) {
@@ -13,7 +14,7 @@ export function WritingStatus({ onRetry, onConnectKey }: { onRetry: () => void; 
   if (writing.state === 'idle') return null
 
   if (writing.state === 'failed') {
-    const keyProblem = writing.failure === 'no-key' || writing.failure === 'rejected'
+    const keyProblem = needsKey(writing.failure)
     return (
       <div role="alert" className="mt-5 rounded-card border border-danger/40 bg-surface p-4">
         <p className="text-sm text-danger">{writeFailureText(t)[writing.failure]}</p>
@@ -35,15 +36,12 @@ export function WritingStatus({ onRetry, onConnectKey }: { onRetry: () => void; 
     : writing.part
       ? t.writingPart(formatNumber(writing.part.n, uiLang), formatNumber(writing.part.of, uiLang))
       : t.writingNow
-  const retryTime = writing.state === 'writing' && writing.retryAt
-    ? new Intl.DateTimeFormat(uiLang, { timeStyle: 'short' }).format(writing.retryAt)
-    : null
   return (
     <div role="status" className="mt-5 flex items-center gap-3 rounded-card border border-ornament/40 bg-surface p-4 shadow-raised">
       <KhatamProgress value={progress} size={36} label={label} />
       <div>
         <p className="font-medium">{label}</p>
-        {retryTime && <p className="text-sm text-fg-muted">{t.retryingAt(retryTime)}</p>}
+        {writing.state === 'writing' && writing.retryAt && <RetryNote at={writing.retryAt} className="text-sm text-fg-muted" />}
       </div>
     </div>
   )

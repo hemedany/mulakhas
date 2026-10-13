@@ -14,7 +14,7 @@ import { busyFor, type Fetch, type Provider } from './providers'
 import { reliabilityReport, type ReliabilityRow } from './reliability'
 import type { Transcript } from './transcript'
 import { HearError, transcribe, type HearFailure } from './whisper'
-import { WriteError, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type Written } from './writer'
+import { WriteError, canWrite, chooseWriter, titleOf, write, type WriteFailure, type WriteOptions, type WriteSettings, type Written } from './writer'
 import { startingBudget, writeThread, type Budget, type WritingPart } from './writing'
 
 export type MediaKind = 'voice' | 'video'
@@ -59,8 +59,12 @@ export interface ThreadResult {
   /** The writer ran out of room, so the end is missing. */
   cutOff?: boolean
   report: ReliabilityRow[]
-  /** Questions asked about it since, in order (absent on Results from before Follow-ups). */
-  followUps?: FollowUp[]
+  /** The Voice notes and Videos it was written from, as they were then. */
+  files: string[]
+  /** Questions asked about it since, in order. */
+  followUps: FollowUp[]
+  /** Saved in History once; after that, History is only updated (a Result the user deleted there stays deleted). */
+  inHistory?: boolean
 }
 
 export type Writing =
@@ -189,7 +193,10 @@ export async function createThread(deps: {
   // A Message that was being heard when the page closed is heard again (after any wait Groq asked
   // for), carrying on from the parts already heard.
   const restored = (saved?.messages ?? []).map(m => (m.kind !== 'text' && m.state === 'hearing' ? { ...m, state: 'waiting' as const } : m))
-  const state = observable<ThreadState>({ messages: restored, result: saved?.result ?? null, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
+  const fileNames = (messages: Message[]) => messages.flatMap(m => (m.kind === 'text' ? [] : [m.name]))
+  // Results saved before Follow-ups, or before the files were kept with them.
+  const result = saved?.result ? { ...saved.result, followUps: saved.result.followUps ?? [], files: saved.result.files ?? fileNames(restored) } : null
+  const state = observable<ThreadState>({ messages: restored, result, writing: { state: 'idle' }, draft: saved?.draft ?? EMPTY_DRAFT, unsaved: false })
   const active = new Map<Promise<void>, Provider>()
   let writer: { key: string; model: string; budget: Budget } | null = null
   /** Parts of a big Result already written, by prompt, so Try again carries on (see writing.ts). */
@@ -300,9 +307,10 @@ export async function createThread(deps: {
   let lastKeys = keys.get()
   keys.subscribe(({ groq, gemini }) => {
     let messages = state.get().messages
-    // A new Groq key: Messages refused because of the old one get another chance.
+    // A new Groq key: Messages and Follow-ups refused for want of a key get another chance.
     if (groq && groq !== lastKeys.groq) {
       messages = messages.map(m => (m.kind !== 'text' && m.state === 'failed' && m.failure === 'rejected' ? { ...m, state: 'waiting' as const, failure: undefined } : m))
+      for (const f of state.get().result?.followUps ?? []) if (f.state === 'failed' && (f.failure === 'rejected' || f.failure === 'no-key')) queueAnswer(f.id)
     }
     // A new Gemini key: Videos so far only heard, or not heard at all, are watched now.
     if (gemini && gemini !== lastKeys.gemini) {
@@ -329,55 +337,74 @@ export async function createThread(deps: {
     return writer
   }
 
+  /** One request to the writer, waiting while Groq is busy and telling `onWait` until when. */
+  const writerSend = (key: string, model: string, onWait: (retryAt: number | undefined) => unknown) =>
+    (prompt: string, settings: WriteSettings) => withBusyRetries(() => write(fetch, key, model, prompt, settings), busyFor, { sleep, now, onWait })
+
   const patchFollowUp = (id: string, patch: Partial<FollowUp>) => {
     const { result } = state.get()
-    if (result) state.publish({ ...state.get(), result: { ...result, followUps: (result.followUps ?? []).map(f => (f.id === id ? { ...f, ...patch } : f)) } })
+    if (result) state.publish({ ...state.get(), result: { ...result, followUps: result.followUps.map(f => (f.id === id ? { ...f, ...patch } : f)) } })
+  }
+
+  // One Follow-up answered at a time, in order, so each has the ones before it as context.
+  let answering = Promise.resolve()
+  const queueAnswer = (id: string) => {
+    patchFollowUp(id, { state: 'asking', failure: undefined })
+    answering = answering.then(() => answerFollowUpWithId(id))
+    return answering
   }
 
   /** Has Groq answer one Follow-up, then saves the Result with it, here and in History. */
-  async function answer(id: string) {
+  async function answerFollowUpWithId(id: string) {
     const { result, messages } = state.get()
-    const followUps = result?.followUps ?? []
-    const at = followUps.findIndex(f => f.id === id)
+    const at = result?.followUps.findIndex(f => f.id === id) ?? -1
     if (!result || at < 0) return
+    const followUp = result.followUps[at]
     const key = keys.get().groq
     if (!key) patchFollowUp(id, { state: 'failed', failure: 'no-key' })
     else {
-      patchFollowUp(id, { state: 'asking', failure: undefined })
       try {
+        // A wait Groq asked for before the page closed still holds.
+        const left = (followUp.retryAt ?? 0) - now()
+        if (left > 0) await sleep(left)
         const { model, budget } = await writerFor(key)
-        const text = await answerFollowUp(messages, result.text, followUps.slice(0, at), followUps[at].question, {
-          budget,
-          send: (prompt, settings) => withBusyRetries(
-            () => write(fetch, key, model, prompt, settings),
-            busyFor,
-            { sleep, now, onWait: retryAt => patchFollowUp(id, { retryAt }) },
-          ),
-        })
-        patchFollowUp(id, { state: 'answered', answer: text, retryAt: undefined })
+        const written = await answerFollowUp(
+          { messages, result: result.text, earlier: result.followUps.slice(0, at), question: followUp.question, lang: prefs.get().uiLang },
+          { budget, send: writerSend(key, model, retryAt => { patchFollowUp(id, { retryAt }); return persist() }) },
+        )
+        patchFollowUp(id, { state: 'answered', answer: written.text, cutOff: written.cutOff || undefined, retryAt: undefined })
       } catch (e) {
         patchFollowUp(id, { state: 'failed', failure: e instanceof WriteError ? e.failure : 'unknown', retryAt: undefined })
       }
     }
     await persist()
     const saved = state.get().result
-    if (saved) await keepInHistory(saved).catch(() => state.publish({ ...state.get(), unsaved: true }))
+    if (saved) await saveToHistory(saved).catch(() => state.publish({ ...state.get(), unsaved: true }))
   }
 
-  /** Saves a Result to History. Saving it again replaces it, so this is safe to repeat. */
-  const keepInHistory = (result: ThreadResult) => {
-    const { messages } = state.get()
-    return history.add({
+  /**
+   * Saves a Result to History: added the first time, only updated after that, so one the user
+   * deleted there isn't brought back by a Follow-up or a fresh Thread.
+   */
+  async function saveToHistory(result: ThreadResult) {
+    const entry = {
       id: result.id,
       createdAt: result.createdAt,
       mode: result.mode,
-      files: messages.flatMap(m => (m.kind === 'text' ? [] : [m.name])),
+      files: result.files,
       title: titleOf(result.text),
       text: result.text,
       cutOff: result.cutOff,
       report: result.report,
-      followUps: (result.followUps ?? []).filter(f => f.state === 'answered'),
-    })
+      followUps: result.followUps.flatMap(f => (f.state === 'answered' && f.answer ? [{ question: f.question, answer: f.answer }] : [])),
+    }
+    if (result.inHistory) return history.update(entry)
+    await history.add(entry)
+    const current = state.get().result
+    if (current?.id === result.id) {
+      state.publish({ ...state.get(), result: { ...current, inHistory: true } })
+      await persist()
+    }
   }
 
   /**
@@ -387,7 +414,7 @@ export async function createThread(deps: {
   async function freshAfterResult() {
     const { result } = state.get()
     if (!result) return false
-    await keepInHistory(result)
+    await saveToHistory(result)
     await store.startOver()
     return true
   }
@@ -482,11 +509,7 @@ export async function createThread(deps: {
           budget,
           written: partsWritten,
           onPart: part => patchWriting({ part }),
-          send: (prompt, settings) => withBusyRetries(
-            () => write(fetch, key!, model, prompt, settings),
-            busyFor,
-            { sleep, now, onWait: retryAt => patchWriting({ retryAt }) },
-          ),
+          send: writerSend(key!, model, retryAt => patchWriting({ retryAt })),
         })
       } catch (e) {
         return fail(e instanceof WriteError ? e.failure : 'unknown')
@@ -494,11 +517,13 @@ export async function createThread(deps: {
       const { text, cutOff } = written
 
       partsWritten.clear()
-      const result: ThreadResult = { id: crypto.randomUUID(), createdAt: now(), mode: options.mode, text, cutOff, report: reliabilityReport(messages) }
+      const result: ThreadResult = {
+        id: crypto.randomUUID(), createdAt: now(), mode: options.mode, text, cutOff, report: reliabilityReport(messages), files: fileNames(messages), followUps: [],
+      }
       state.publish({ ...state.get(), result, writing: { state: 'idle' } })
       await persist()
       try {
-        await keepInHistory(result)
+        await saveToHistory(result)
       } catch {
         state.publish({ ...state.get(), unsaved: true })
       }
@@ -508,18 +533,18 @@ export async function createThread(deps: {
       const { result } = state.get()
       if (!result || !question.trim()) return
       const followUp: FollowUp = { id: crypto.randomUUID(), question: question.trim(), state: 'asking' }
-      state.publish({ ...state.get(), result: { ...result, followUps: [...(result.followUps ?? []), followUp] } })
+      state.publish({ ...state.get(), result: { ...result, followUps: [...result.followUps, followUp] } })
       await persist()
-      await answer(followUp.id)
+      await queueAnswer(followUp.id)
     },
     async retryFollowUp(id) {
-      if (state.get().result?.followUps?.find(f => f.id === id)?.state === 'failed') await answer(id)
+      if (state.get().result?.followUps.find(f => f.id === id)?.state === 'failed') await queueAnswer(id)
     },
     async idle() {
       while (active.size) await Promise.allSettled([...active.keys()])
     },
   }
   // A Follow-up being answered when the page closed is asked again.
-  for (const f of state.get().result?.followUps ?? []) if (f.state === 'asking') void answer(f.id)
+  for (const f of state.get().result?.followUps ?? []) if (f.state === 'asking') void queueAnswer(f.id)
   return store
 }

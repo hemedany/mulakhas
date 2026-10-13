@@ -8,6 +8,7 @@ import type { HearFailure, MediaMessage, Message, TextMessage, Transcript } from
 import { hasSomethingToShow, isSilent } from '@/engine/transcript'
 import { useT } from '@/i18n/i18n'
 import type { Strings } from '@/i18n/strings'
+import { RetryNote } from '../RetryNote'
 import { Player } from './Player'
 import { formatDuration } from './time'
 
@@ -112,12 +113,6 @@ function FailureNote({ message, failure }: { message: MediaMessage; failure: Hea
   return <p role="alert" className="mt-1 text-xs text-danger">{says}</p>
 }
 
-function RetryNote({ at }: { at: number }) {
-  const t = useT()
-  const { uiLang } = usePrefs()
-  return <p className="mt-1 text-xs text-fg-muted">{t.retryingAt(new Intl.DateTimeFormat(uiLang, { timeStyle: 'short' }).format(at))}</p>
-}
-
 function MediaBubble({ message, n, onConnectKey }: { message: MediaMessage; n: number; onConnectKey: () => void }) {
   return (
     <div className="rounded-card rounded-ss-md border border-line bg-surface px-3 py-2.5 shadow-raised">
@@ -134,7 +129,7 @@ function MediaBubble({ message, n, onConnectKey }: { message: MediaMessage; n: n
         <span className="truncate text-xs text-fg-subtle" dir="ltr">{message.name}</span>
         <StateLine message={message} onConnectKey={onConnectKey} />
       </div>
-      {message.retryAt && <RetryNote at={message.retryAt} />}
+      {message.retryAt && <RetryNote at={message.retryAt} className="mt-1 text-xs text-fg-muted" />}
       {message.state === 'failed' && message.failure && <FailureNote message={message} failure={message.failure} />}
       {message.state === 'heard' && <HeardNote message={message} onConnectKey={onConnectKey} />}
       {message.state === 'heard' && message.transcript && hasSomethingToShow(message.transcript) && <WhatItHeard transcript={message.transcript} />}

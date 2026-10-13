@@ -1,5 +1,5 @@
 import type { Db } from './db'
-import type { FollowUp } from './follow-up'
+import type { SavedFollowUp } from './follow-up'
 import type { ReliabilityRow } from './reliability'
 
 export type Mode = 'summary' | 'exact'
@@ -19,12 +19,14 @@ export interface SavedResult {
   /** Measured per-Message clarity (v2 Results only). */
   report?: ReliabilityRow[]
   /** The Follow-ups answered about it. */
-  followUps?: FollowUp[]
+  followUps?: SavedFollowUp[]
 }
 
 export interface History {
   list(): Promise<SavedResult[]>
   add(result: SavedResult): Promise<void>
+  /** Replaces a saved Result, but only if it is still there: one the user deleted stays deleted. */
+  update(result: SavedResult): Promise<void>
   remove(id: string): Promise<void>
 }
 
@@ -35,6 +37,9 @@ export function createHistory(db: Db): History {
       return all.sort((a, b) => b.createdAt - a.createdAt)
     },
     add: result => db.put('history', result),
+    async update(result) {
+      if (await db.get('history', result.id)) await db.put('history', result)
+    },
     remove: id => db.delete('history', id),
   }
 }

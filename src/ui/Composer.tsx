@@ -1,9 +1,9 @@
-import { ArrowUpIcon, PlusIcon } from '@phosphor-icons/react'
 import { useId } from 'react'
 import { useEngine, useThread } from '@/app/engine-hooks'
 import { PRESETS } from '@/engine/presets'
 import { mayWrite } from '@/engine/writer'
 import { useT } from '@/i18n/i18n'
+import { AddButton, SendButton } from './BarButtons'
 import { DictatedTextarea, DictationStatus } from './dictation/Dictation'
 import { useDictation } from './dictation/useDictation'
 import { FollowUpBox } from './result/FollowUps'
@@ -57,16 +57,10 @@ function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFol
         ))}
       </div>
       <form className="flex items-end gap-2" onSubmit={e => { e.preventDefault(); if (hasSomething && !busy) onSummarize() }}>
-        <button type="button" aria-label={t.addSheetTitle} title={t.addSheetTitle} onClick={onAdd}
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) active:scale-[0.94]">
-          <PlusIcon size={20} />
-        </button>
+        <AddButton onAdd={onAdd} />
         <DictatedTextarea dictation={dictation} value={draft.request} onChange={request => setDraft({ request })}
           label={t.requestLabel} placeholder={t.requestLabel} statusId={statusId} />
-        <button type="submit" aria-label={go} title={go} disabled={!hasSomething || busy || dictation.state !== 'idle'}
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[transform,opacity] duration-(--duration-press) ease-snappy active:scale-[0.94] disabled:opacity-40">
-          <ArrowUpIcon size={20} weight="bold" />
-        </button>
+        <SendButton label={go} disabled={!hasSomething || busy || dictation.state !== 'idle'} />
       </form>
       <DictationStatus dictation={dictation} id={statusId} />
     </>

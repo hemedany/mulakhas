@@ -2,7 +2,8 @@
 // free one says, when it refuses, its real limit and what the prompt cost. Too big for the key, it
 // is written in parts: a Summary condenses groups of Messages into notes (their numbers kept by
 // Mulakhas, not left to the model) and is written from the notes; Exact words, which must not be
-// shortened, writes each group word for word and joins them in order. See ADR-0006.
+// shortened, writes each group word for word and joins them in order. Follow-ups use
+// sendFullestFitting: the fullest of a few prompts that the key takes. See ADR-0006.
 import type { Lang } from './langs'
 import type { Message } from './thread'
 import {

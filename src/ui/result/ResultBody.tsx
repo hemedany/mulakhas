@@ -1,9 +1,9 @@
-import { CheckIcon, CopyIcon, ScissorsIcon, ShareNetworkIcon } from '@phosphor-icons/react'
-import { useState } from 'react'
+import { ScissorsIcon, ShareNetworkIcon } from '@phosphor-icons/react'
 import { OrnamentRule } from '@/brand/Ornament'
 import { usePrefs } from '@/app/engine-hooks'
 import type { ReliabilityRow } from '@/engine'
 import { useT } from '@/i18n/i18n'
+import { CopyButton } from '../CopyButton'
 import { Markdown } from '../Markdown'
 import { reliabilityRow, resultMarkdown } from './export'
 
@@ -38,7 +38,6 @@ function Reliability({ report }: { report: ReliabilityRow[] }) {
 export function ResultBody({ text, cutOff, report, titleClass }: { text: string; cutOff?: boolean; report?: ReliabilityRow[]; titleClass?: string }) {
   const t = useT()
   const { uiLang, showReliability } = usePrefs()
-  const [copied, setCopied] = useState(false)
   const plain = resultMarkdown(text, report, t, uiLang, showReliability)
 
   return (
@@ -51,12 +50,8 @@ export function ResultBody({ text, cutOff, report, titleClass }: { text: string;
       )}
       {showReliability && report && report.length > 0 && <Reliability report={report} />}
       <div className="mt-6 flex gap-2">
-        <button type="button"
-          onClick={async () => { await navigator.clipboard.writeText(plain); setCopied(true); setTimeout(() => setCopied(false), 1600) }}
-          className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-5 font-medium text-on-accent transition-transform duration-(--duration-press) active:scale-[0.98] lg:flex-none">
-          {copied ? <CheckIcon size={18} weight="bold" /> : <CopyIcon size={18} />}
-          <span aria-live="polite">{copied ? t.copied : t.copy}</span>
-        </button>
+        <CopyButton text={plain}
+          className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-5 font-medium text-on-accent transition-transform duration-(--duration-press) active:scale-[0.98] lg:flex-none" />
         {'share' in navigator && (
           <button type="button" onClick={() => navigator.share({ text: plain }).catch(() => {})}
             className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-line px-5 font-medium transition-transform duration-(--duration-press) active:scale-[0.98] lg:flex-none">

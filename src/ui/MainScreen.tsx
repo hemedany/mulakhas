@@ -34,6 +34,8 @@ export function MainScreen() {
   const [shareFailed] = useState(() => new URLSearchParams(location.search).has('share-failed'))
   useEffect(() => { if (shareFailed) history.replaceState(null, '', location.pathname) }, [shareFailed])
   const [optionsFor, setOptionsFor] = useState<string | null>(null)
+  // Desktop: the Result whose bar was switched back to a Request, to write a new one. A new Result asks Follow-ups again.
+  const [rewritingFrom, setRewritingFrom] = useState<string | null>(null)
   const close = () => setSheet(null)
   const { picker, choose, onPicked, addText, newTextId, setNewTextId, dropZone, dragging, storageFailed } = useAddMessages({ onNeedKey: () => setSheet('keys') })
   const themeLabel: Record<Theme, string> = { system: t.themeSystem, light: t.themeLight, dark: t.themeDark }
@@ -87,7 +89,8 @@ export function MainScreen() {
                   </ol>
                   <WritingStatus onRetry={summarize} onConnectKey={() => setSheet('keys')} />
                   {result && writing.state === 'idle' && (desktop
-                    ? <ResultInThread result={result} onConnectKey={() => setSheet('keys')} />
+                    ? <ResultInThread result={result} onConnectKey={() => setSheet('keys')}
+                        onWriteAgain={rewritingFrom === result.id ? undefined : () => setRewritingFrom(result.id)} />
                     : <ResultChip result={result} onOpen={() => setSheet('result')} />)}
                 </div>
               </div>
@@ -97,7 +100,7 @@ export function MainScreen() {
         {messages.length > 0 && (
           <Composer onAdd={() => setSheet('add')} onSummarize={summarize} busy={writing.state === 'listening' || writing.state === 'writing'}
             // On desktop the Result is in the Thread, so once there is one the composer asks Follow-ups about it.
-            askingFollowUps={desktop && !!result && writing.state === 'idle'} />
+            askingFollowUps={desktop && !!result && writing.state === 'idle' && rewritingFrom !== result.id} />
         )}
       </div>
 

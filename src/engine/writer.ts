@@ -28,7 +28,7 @@ export class WriteError extends ProviderError<WriteFailure> {
   }
 }
 
-const LANGUAGE_NAME: Record<Lang, string> = { en: 'English', ar: 'Arabic', fr: 'French', de: 'German', tr: 'Turkish', es: 'Spanish' }
+export const LANGUAGE_NAME: Record<Lang, string> = { en: 'English', ar: 'Arabic', fr: 'French', de: 'German', tr: 'Turkish', es: 'Spanish' }
 
 /** Instructions behind each preset. The Result language is set separately, so none of them names one. */
 export const PRESET_PROMPT: Record<Exclude<PresetId, 'exact'>, string> = {

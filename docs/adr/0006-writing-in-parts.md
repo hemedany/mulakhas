@@ -7,6 +7,8 @@ Groq's free tier caps each writer at a few thousand tokens per minute, and count
 
 Parts already written are kept until the Result is, so Try again carries on. A part Groq still refuses as too large means planning the parts again with what it said.
 
+A Follow-up is sent with the Thread when the key takes it, otherwise with the Result alone, otherwise with the Result's first page: never refused for good, at the cost of answering from less.
+
 ## Considered Options
 
 - **Pace requests with Groq's `x-ratelimit-*` headers**: fewer 429s between parts, but `retry-after` already says how long to wait, so it was left for later.

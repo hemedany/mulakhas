@@ -1,4 +1,4 @@
-import { CaretRightIcon } from '@phosphor-icons/react'
+import { CaretRightIcon, PencilSimpleIcon } from '@phosphor-icons/react'
 import { useEffect, useRef } from 'react'
 import { KhatamMark } from '@/brand/Khatam'
 import { BrandBar } from '@/brand/Ornament'
@@ -11,7 +11,7 @@ import { FollowUpBox, FollowUps } from './FollowUps'
 import { ResultBody } from './ResultBody'
 
 /** Desktop: the Result is the next item in the Thread. */
-export function ResultInThread({ result, onConnectKey }: { result: ThreadResult; onConnectKey: () => void }) {
+export function ResultInThread({ result, onConnectKey, onWriteAgain }: { result: ThreadResult; onConnectKey: () => void; onWriteAgain?: () => void }) {
   const t = useT()
   const ref = useRef<HTMLElement>(null)
   useEffect(() => { ref.current?.scrollIntoView({ block: 'start', behavior: scrollBehavior() }) }, [result.id])
@@ -25,8 +25,16 @@ export function ResultInThread({ result, onConnectKey }: { result: ThreadResult;
       </BrandBar>
       <div className="px-8 pt-7 pb-7">
         <ResultBody text={result.text} cutOff={result.cutOff} report={result.report} titleClass="font-display text-3xl font-semibold" />
-        <FollowUps followUps={result.followUps ?? []} live onConnectKey={onConnectKey} />
+        <FollowUps followUps={result.followUps} onConnectKey={onConnectKey} />
       </div>
+      {onWriteAgain && (
+        <div className="border-t border-ornament/40 px-8 py-3">
+          <button type="button" onClick={onWriteAgain}
+            className="inline-flex h-10 items-center gap-1.5 rounded-full px-2 text-sm font-semibold text-accent transition-transform duration-(--duration-press) active:scale-[0.97]">
+            <PencilSimpleIcon size={16} />{t.writeNewResult}
+          </button>
+        </div>
+      )}
     </article>
   )
 }
@@ -55,7 +63,7 @@ export function ResultSheet({ result, open, onClose, onConnectKey }: { result: T
       {result && (
         <>
           <ResultBody text={result.text} cutOff={result.cutOff} report={result.report} />
-          <FollowUps followUps={result.followUps ?? []} live onConnectKey={onConnectKey} />
+          <FollowUps followUps={result.followUps} onConnectKey={onConnectKey} />
         </>
       )}
     </Sheet>

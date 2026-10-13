@@ -64,7 +64,7 @@ The optional section at the end of a Result listing each Message's clarity and i
 _Avoid_: accuracy report, noise report, confidence score
 
 **Follow-up**:
-A question the user asks about a Result after it is made.
+A question the user asks about a Result after it is made. Mulakhas answers it under the Result, from the Thread and the Result.
 
 **History**:
 The Results saved on the user's device.

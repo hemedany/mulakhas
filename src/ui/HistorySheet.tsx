@@ -59,7 +59,7 @@ export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => 
         {opened && (
           <>
             <ResultBody text={opened.text} cutOff={opened.cutOff} report={opened.report} />
-            <FollowUps followUps={opened.followUps ?? []} />
+            <FollowUps followUps={(opened.followUps ?? []).map((f, i) => ({ id: `${opened.id}-${i}`, question: f.question, state: 'answered', answer: f.answer }))} />
           </>
         )}
       </Sheet>
