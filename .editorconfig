@@ -1,0 +1,10 @@
+# What the code already does, for every editor: two-space indents, LF, a final newline, no trailing spaces.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
