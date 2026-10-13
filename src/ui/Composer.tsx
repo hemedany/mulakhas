@@ -1,8 +1,11 @@
 import { ArrowUpIcon, PlusIcon } from '@phosphor-icons/react'
+import { useId } from 'react'
 import { useEngine, useThread } from '@/app/engine-hooks'
 import { PRESETS } from '@/engine/presets'
 import { mayWrite } from '@/engine/writer'
 import { useT } from '@/i18n/i18n'
+import { DictatedTextarea, DictationStatus } from './dictation/Dictation'
+import { useDictation } from './dictation/useDictation'
 import { FollowUpBox } from './result/FollowUps'
 
 interface ComposerProps {
@@ -31,6 +34,8 @@ function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFol
   const { draft, messages } = useThread()
   const setDraft = (patch: Partial<typeof draft>) => void thread.setDraft({ ...draft, ...patch })
   const hasSomething = mayWrite(messages)
+  const dictation = useDictation(draft.request, request => setDraft({ request }))
+  const statusId = useId()
   const go = draft.mode === 'exact' ? t.extractWords : t.summarize
 
   return (
@@ -56,16 +61,14 @@ function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFol
           className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) active:scale-[0.94]">
           <PlusIcon size={20} />
         </button>
-        <label className="relative min-w-0 flex-1">
-          <span className="sr-only">{t.requestLabel}</span>
-          <textarea rows={1} dir="auto" value={draft.request} onChange={e => setDraft({ request: e.target.value })} placeholder={t.requestLabel}
-            className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken px-4 py-2.5 leading-6 placeholder:text-fg-subtle focus:border-accent focus:outline-none [field-sizing:content]" />
-        </label>
-        <button type="submit" aria-label={go} title={go} disabled={!hasSomething || busy}
+        <DictatedTextarea dictation={dictation} value={draft.request} onChange={request => setDraft({ request })}
+          label={t.requestLabel} placeholder={t.requestLabel} statusId={statusId} />
+        <button type="submit" aria-label={go} title={go} disabled={!hasSomething || busy || dictation.state !== 'idle'}
           className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[transform,opacity] duration-(--duration-press) ease-snappy active:scale-[0.94] disabled:opacity-40">
           <ArrowUpIcon size={20} weight="bold" />
         </button>
       </form>
+      <DictationStatus dictation={dictation} id={statusId} />
     </>
   )
 }

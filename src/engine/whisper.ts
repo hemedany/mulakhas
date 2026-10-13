@@ -42,7 +42,8 @@ export function toTranscript(body: { text?: string; language?: string; duration?
     unclear: s.avg_logprob < UNCLEAR_LOGPROB || s.compression_ratio > UNCLEAR_COMPRESSION || (s.no_speech_prob > UNCLEAR_NO_SPEECH && s.text.trim() !== ''),
   }))
   return {
-    text: (body.segments ? segments.map(s => s.text).join(' ') : body.text ?? '').trim(),
+    // Whisper's own text unless it came in segments (some of which may have been left out above).
+    text: (body.segments?.length ? segments.map(s => s.text).join(' ') : body.text ?? '').trim(),
     language: body.language ?? null,
     duration: body.duration ?? segments.at(-1)?.end ?? 0,
     segments,
@@ -72,11 +73,16 @@ export function asUpload(audio: Blob, name: string): File | null {
   return extension ? new File([audio], `${stemOf(name)}.${extension}`, { type: audio.type }) : null
 }
 
-/** Sends one upload, already in a form Groq takes, to Whisper. */
-export async function transcribe(fetch: Fetch, key: string, upload: File): Promise<Transcript> {
+/**
+ * Sends one upload, already in a form Groq takes, to Whisper. `language` (ISO 639-1) says what is
+ * spoken when it is known; `prompt` is text that came just before, for continuity.
+ */
+export async function transcribe(fetch: Fetch, key: string, upload: File, { language, prompt }: { language?: string; prompt?: string } = {}): Promise<Transcript> {
   if (upload.size > WHISPER_MAX_BYTES) throw new HearError('too-big')
   const form = new FormData()
   form.append('file', upload)
+  if (language) form.append('language', language)
+  if (prompt) form.append('prompt', prompt.slice(-400))
   form.append('model', WHISPER_MODEL)
   form.append('response_format', 'verbose_json')
   form.append('timestamp_granularities[]', 'segment')

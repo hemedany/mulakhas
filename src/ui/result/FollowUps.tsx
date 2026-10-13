@@ -1,9 +1,11 @@
 import { ArrowClockwiseIcon, ArrowUpIcon, CheckIcon, CopyIcon, PlusIcon } from '@phosphor-icons/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { KhatamMark } from '@/brand/Khatam'
 import { useEngine, usePrefs } from '@/app/engine-hooks'
 import type { FollowUp } from '@/engine'
 import { useT } from '@/i18n/i18n'
+import { DictatedTextarea, DictationStatus } from '../dictation/Dictation'
+import { useDictation } from '../dictation/useDictation'
 import { Markdown } from '../Markdown'
 import { scrollBehavior } from '../motion'
 import { writeFailureText } from '../write-failures'
@@ -77,29 +79,31 @@ export function FollowUpBox({ onAdd }: { onAdd?: () => void }) {
   const t = useT()
   const { thread } = useEngine()
   const [question, setQuestion] = useState('')
+  const dictation = useDictation(question, setQuestion)
+  const statusId = useId()
   const ask = () => {
     const q = question.trim()
-    if (!q) return
+    if (!q || dictation.state !== 'idle') return
     setQuestion('')
     void thread.askFollowUp(q)
   }
   return (
-    <form className="flex items-end gap-2" onSubmit={e => { e.preventDefault(); ask() }}>
-      {onAdd && (
-        <button type="button" aria-label={t.addSheetTitle} title={t.addSheetTitle} onClick={onAdd}
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) active:scale-[0.94]">
-          <PlusIcon size={20} />
+    <div>
+      <form className="flex items-end gap-2" onSubmit={e => { e.preventDefault(); ask() }}>
+        {onAdd && (
+          <button type="button" aria-label={t.addSheetTitle} title={t.addSheetTitle} onClick={onAdd}
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-sunken text-fg transition-transform duration-(--duration-press) active:scale-[0.94]">
+            <PlusIcon size={20} />
+          </button>
+        )}
+        <DictatedTextarea dictation={dictation} value={question} onChange={setQuestion}
+          label={t.followUpLabel} placeholder={t.followUpPlaceholder} statusId={statusId} onEnter={ask} />
+        <button type="submit" aria-label={t.askFollowUp} title={t.askFollowUp} disabled={!question.trim() || dictation.state !== 'idle'}
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[transform,opacity] duration-(--duration-press) ease-snappy active:scale-[0.94] disabled:opacity-40">
+          <ArrowUpIcon size={20} weight="bold" />
         </button>
-      )}
-      <label className="relative min-w-0 flex-1">
-        <span className="sr-only">{t.followUpLabel}</span>
-        <textarea rows={1} dir="auto" value={question} onChange={e => setQuestion(e.target.value)} placeholder={t.followUpPlaceholder} enterKeyHint="send"
-          className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken px-4 py-2.5 leading-6 placeholder:text-fg-subtle focus:border-accent focus:outline-none [field-sizing:content]" />
-      </label>
-      <button type="submit" aria-label={t.askFollowUp} title={t.askFollowUp} disabled={!question.trim()}
-        className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-on-accent transition-[transform,opacity] duration-(--duration-press) ease-snappy active:scale-[0.94] disabled:opacity-40">
-        <ArrowUpIcon size={20} weight="bold" />
-      </button>
-    </form>
+      </form>
+      <DictationStatus dictation={dictation} id={statusId} />
+    </div>
   )
 }
