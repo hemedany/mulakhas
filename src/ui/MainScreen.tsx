@@ -164,9 +164,9 @@ export function MainScreen() {
         <p className="text-fg-muted">{t.startOverConfirm}</p>
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={() => { close(); void thread.startOver() }}
-            className="h-12 flex-1 rounded-full bg-danger px-4 font-medium text-on-danger transition-transform duration-(--duration-press) motion-safe:active:scale-[0.98]">{t.confirmStartOver}</button>
+            className="h-12 flex-1 rounded-full bg-danger px-4 font-medium text-on-danger transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.98]">{t.confirmStartOver}</button>
           <button type="button" onClick={close}
-            className="h-12 flex-1 rounded-full border border-line px-4 font-medium transition-transform duration-(--duration-press) motion-safe:active:scale-[0.98]">{t.cancel}</button>
+            className="h-12 flex-1 rounded-full border border-line px-4 font-medium transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.98]">{t.cancel}</button>
         </div>
       </Sheet>
       <MessageOptions id={optionsFor} onClose={() => setOptionsFor(null)} onTextAdded={setNewTextId} onRemove={removeMessage} />

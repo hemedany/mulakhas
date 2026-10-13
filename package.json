@@ -9,8 +9,10 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "oxlint",
-    "preview": "vite preview"
+    "test:browsers": "playwright test",
+    "lint": "oxlint && node scripts/check-classes.mjs",
+    "preview": "vite preview",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@fontsource-variable/ibm-plex-sans": "^5.3.0",
@@ -21,6 +23,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

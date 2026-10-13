@@ -63,5 +63,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // qa/ holds the browser smoke tests, which Playwright runs.
+    include: ['src/**/*.test.ts'],
   },
 })

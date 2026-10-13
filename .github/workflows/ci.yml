@@ -3,12 +3,15 @@ name: CI
 on:
   push:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: lts/*
@@ -18,3 +21,37 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: No assistant attribution in commits or the pull request
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          PR_TEXT: ${{ format('{0}\n{1}', github.event.pull_request.title, github.event.pull_request.body) }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            node scripts/check-attribution.mjs --range "origin/$BASE_REF..HEAD"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            PR_TEXT= node scripts/check-attribution.mjs --range "$BEFORE..$SHA"
+          fi
+
+  browsers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      # Web Audio only runs with a sound device, and the runner has none: PulseAudio gives it a silent
+      # one, so dictation can measure the microphone.
+      - run: sudo apt-get install -y --no-install-recommends pulseaudio && pulseaudio --start --exit-idle-time=-1
+      - run: npm run test:browsers
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
