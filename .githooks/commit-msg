@@ -1,0 +1,3 @@
+#!/bin/sh
+# Keeps assistant attribution and tool names out of commit messages (AGENTS.md, House rules).
+exec node "$(git rev-parse --show-toplevel)/scripts/check-attribution.mjs" "$1"
