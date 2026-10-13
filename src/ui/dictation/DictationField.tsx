@@ -54,7 +54,7 @@ export function DictatedTextarea({ dictation, value, onChange, label, placeholde
         onClick={() => { if (dictation.state === 'idle') dictation.start(); else if (dictation.state === 'listening') dictation.stop() }}
         onKeyDown={cancelOnEscape}
         className={`absolute end-1 bottom-1 grid size-9 place-items-center rounded-full transition-[color,background-color,transform] duration-(--duration-press) ${
-          dictation.state === 'listening' ? 'bg-accent text-on-accent active:scale-[0.94]' : dictation.state === 'writing' ? 'text-ornament' : 'text-fg-muted hover:text-accent'
+          dictation.state === 'listening' ? 'bg-accent text-on-accent active:scale-[0.94]' : dictation.state === 'writing' ? 'text-ornament' : 'text-fg-muted hover:text-accent active:scale-[0.94]'
         }`}>
         {dictation.state === 'listening' && <span className="absolute inset-0 rounded-full bg-accent/40 motion-safe:animate-listening" aria-hidden="true" />}
         {dictation.state === 'idle' && <MicrophoneIcon size={20} />}
@@ -73,7 +73,7 @@ export function DictationStatus({ dictation, id }: { dictation: DictationControl
       <p id={id} role="status" className="mt-1.5 flex items-center gap-2 text-xs text-fg-muted">
         <span className="size-1.5 shrink-0 rounded-full bg-accent motion-safe:animate-listening-dot" aria-hidden="true" />
         {dictation.way === 'live' ? t.dictatingLive : t.dictatingPhrases}
-        <button type="button" onClick={dictation.cancel} className="ms-auto h-8 shrink-0 rounded-full px-2.5 font-semibold text-accent">{t.cancel}</button>
+        <button type="button" onClick={dictation.cancel} className="ms-auto h-8 shrink-0 rounded-full px-2.5 font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.cancel}</button>
       </p>
     )
   }

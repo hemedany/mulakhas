@@ -39,7 +39,7 @@ export function Sheet({ open, onClose, title, closeLabel, children, footer }: {
           <div className="flex h-12 items-center justify-between px-4 lg:h-13">
             <h2 id={titleId} className="flex items-center gap-2 text-sm font-medium"><KhatamMark size={18} />{title}</h2>
             <button type="button" aria-label={closeLabel} onClick={onClose}
-              className="grid size-10 place-items-center rounded-full transition-colors duration-(--duration-press) hover:bg-on-brand/10">
+              className="grid size-10 place-items-center rounded-full transition-[background-color,transform] duration-(--duration-press) ease-snappy hover:bg-on-brand/10 active:scale-[0.94]">
               <XIcon size={20} />
             </button>
           </div>

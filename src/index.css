@@ -144,6 +144,58 @@
     -webkit-mask-size: 56px 56px;
     mask-size: 56px 56px;
   }
+  /*
+   * What arrives in the Thread after it is open (a Message, the Result, a Follow-up) rises into
+   * place rather than appearing; a removed Message fades out first. Occasional, so a standard
+   * entrance: transform and opacity, under 300 ms. With reduced motion, a fade only.
+   */
+  .arrives {
+    transition: opacity var(--duration-ui) var(--ease-snappy), transform var(--duration-ui) var(--ease-snappy);
+    @starting-style {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  .arrives.leaving,
+  .leaving {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity var(--duration-press) var(--ease-snappy), transform var(--duration-press) var(--ease-snappy);
+  }
+  /* The Result's khatam turns one point when the Result is ready; the header's is drawn in on the first visit. */
+  .turns-once {
+    animation: turn-once var(--duration-sheet) var(--ease-snappy);
+  }
+  .drawn-in {
+    animation: drawn-in var(--duration-sheet) var(--ease-snappy);
+  }
+  @keyframes turn-once {
+    from { transform: rotate(-45deg); }
+  }
+  @keyframes drawn-in {
+    from { transform: rotate(-45deg) scale(0.9); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .arrives {
+      transition: opacity var(--duration-ui) ease;
+      @starting-style {
+        transform: none;
+      }
+    }
+    .arrives.leaving,
+    .leaving {
+      transform: none;
+    }
+    .turns-once {
+      animation: none;
+    }
+    .drawn-in {
+      animation: fade-in var(--duration-ui) ease;
+    }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
   @media (prefers-reduced-motion: no-preference) {
     .sheet[open] .sheet-panel {
       transition: transform var(--duration-sheet) var(--ease-drawer), opacity var(--duration-ui) var(--ease-snappy);

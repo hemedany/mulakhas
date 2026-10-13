@@ -19,6 +19,9 @@ import { MessageRow } from './thread/MessageRow'
 import { WritingStatus } from './thread/WritingStatus'
 import { useAddMessages } from './useAddMessages'
 
+/** How long a removed Message takes to fade out (--duration-press). */
+const LEAVE_MS = 150
+
 type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result' | 'start-over' | null
 
 export function MainScreen() {
@@ -54,6 +57,13 @@ export function MainScreen() {
   const summarize = () => { void thread.summarize(draft).catch(() => {}) }
   // On phones a fresh Result rises as a sheet; on desktop it appears in the Thread.
   const lastResult = useRef(result?.id)
+  // What was already there when the app opened appears as it is; what arrives later rises into place.
+  const [openedWith] = useState(() => ({ messages: new Set(messages.map(m => m.id)), result: result?.id }))
+  const [leaving, setLeaving] = useState<string | null>(null)
+  const removeMessage = (id: string) => {
+    setLeaving(id)
+    setTimeout(() => { void thread.remove(id); setLeaving(null) }, LEAVE_MS)
+  }
   useEffect(() => {
     if (result && result.id !== lastResult.current && !desktop) setSheet('result')
     lastResult.current = result?.id
@@ -84,14 +94,15 @@ export function MainScreen() {
                   <ol ref={list} className="space-y-3">
                     {messages.map((m, i) => (
                       <MessageRow key={m.id} message={m} n={i + 1} isNewText={m.id === newTextId}
+                        arrives={!openedWith.messages.has(m.id)} leaving={m.id === leaving}
                         onOptions={() => setOptionsFor(m.id)} onConnectKey={() => setSheet('keys')} />
                     ))}
                   </ol>
                   <WritingStatus onRetry={summarize} onConnectKey={() => setSheet('keys')} />
                   {result && writing.state === 'idle' && (desktop
-                    ? <ResultInThread result={result} onConnectKey={() => setSheet('keys')}
+                    ? <ResultInThread result={result} fresh={result.id !== openedWith.result} onConnectKey={() => setSheet('keys')}
                         onWriteAgain={rewritingFrom === result.id ? undefined : () => setRewritingFrom(result.id)} />
-                    : <ResultChip result={result} onOpen={() => setSheet('result')} />)}
+                    : <ResultChip result={result} fresh={result.id !== openedWith.result} onOpen={() => setSheet('result')} />)}
                 </div>
               </div>
             </div>
@@ -113,13 +124,13 @@ export function MainScreen() {
       <ResultSheet result={result} open={sheet === 'result'} onClose={close} onConnectKey={() => setSheet('keys')} />
       <Sheet open={sheet === 'add'} onClose={close} title={t.addSheetTitle} closeLabel={t.close}>
         <div className="divide-y divide-line">
-          <button type="button" onClick={() => { close(); choose() }} className="flex h-13 w-full items-center gap-3 text-start font-medium">
+          <button type="button" onClick={() => { close(); choose() }} className="flex h-13 w-full items-center gap-3 text-start font-medium transition-opacity duration-(--duration-press) active:opacity-60">
             <MicrophoneIcon size={22} className="text-accent" />{t.addMessages}
           </button>
-          <button type="button" onClick={() => { close(); void addText() }} className="flex h-13 w-full items-center gap-3 text-start font-medium">
+          <button type="button" onClick={() => { close(); void addText() }} className="flex h-13 w-full items-center gap-3 text-start font-medium transition-opacity duration-(--duration-press) active:opacity-60">
             <ChatTextIcon size={22} className="text-accent" />{t.addTextMessage}
           </button>
-          <button type="button" onClick={() => setSheet('start-over')} className="flex h-13 w-full items-center gap-3 text-start font-medium text-danger">
+          <button type="button" onClick={() => setSheet('start-over')} className="flex h-13 w-full items-center gap-3 text-start font-medium text-danger transition-opacity duration-(--duration-press) active:opacity-60">
             <ArrowCounterClockwiseIcon size={22} />{t.startOver}
           </button>
         </div>
@@ -133,7 +144,7 @@ export function MainScreen() {
             className="h-12 flex-1 rounded-full border border-line px-4 font-medium transition-transform duration-(--duration-press) active:scale-[0.98]">{t.cancel}</button>
         </div>
       </Sheet>
-      <MessageOptions id={optionsFor} onClose={() => setOptionsFor(null)} onTextAdded={setNewTextId} />
+      <MessageOptions id={optionsFor} onClose={() => setOptionsFor(null)} onTextAdded={setNewTextId} onRemove={removeMessage} />
       <HistorySheet open={sheet === 'history'} onClose={close} />
       <Sheet open={sheet === 'language'} onClose={close} title={t.language} closeLabel={t.close}>
         <ChoiceList label={t.language} value={uiLang} onChange={l => { prefs.set({ uiLang: l }); close() }}
@@ -148,7 +159,7 @@ export function MainScreen() {
                 <span className="block">{t.keyLabel[provider]}</span>
                 <span className="block text-xs text-fg-muted">{ownKeys[provider] ? t.connected : t.notConnected}</span>
               </span>
-              <button type="button" onClick={() => setSheet('keys')} className="h-9 rounded-full px-3 text-sm font-medium text-accent">
+              <button type="button" onClick={() => setSheet('keys')} className="h-9 rounded-full px-3 text-sm font-medium text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">
                 {ownKeys[provider] ? t.change : t.connect}
               </button>
             </div>

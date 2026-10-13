@@ -25,7 +25,7 @@ export function EmptyState({ picked, onPick, onChooseFiles, onAddText }: {
           <PlusIcon size={18} weight="bold" />
           {t.addMessages}
         </button>
-        <button type="button" onClick={onAddText} className="mt-1.5 h-10 px-3 text-sm font-medium text-fg-muted transition-colors hover:text-fg">
+        <button type="button" onClick={onAddText} className="mt-1.5 h-10 rounded-full px-3 text-sm font-medium text-fg-muted transition-[color,transform] duration-(--duration-press) ease-snappy hover:text-fg active:scale-[0.97]">
           {t.addTextMessage}
         </button>
       </ArchFrame>

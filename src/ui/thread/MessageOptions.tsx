@@ -8,7 +8,7 @@ import { Sheet } from '../Sheet'
 function Action({ icon: I, label, onClick, disabled = false, danger = false }: { icon: Icon; label: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className={`flex h-13 w-full items-center gap-3 text-start transition-opacity duration-(--duration-press) disabled:opacity-35 ${danger ? 'text-danger' : ''}`}>
+      className={`flex h-13 w-full items-center gap-3 text-start transition-opacity duration-(--duration-press) active:opacity-60 disabled:opacity-35 ${danger ? 'text-danger' : ''}`}>
       <I size={20} className={`shrink-0 ${danger ? '' : 'text-accent'}`} />
       {label}
     </button>
@@ -16,7 +16,7 @@ function Action({ icon: I, label, onClick, disabled = false, danger = false }: {
 }
 
 /** Move, insert around, or remove one Message. */
-export function MessageOptions({ id, onClose, onTextAdded }: { id: string | null; onClose: () => void; onTextAdded: (id: string) => void }) {
+export function MessageOptions({ id, onClose, onTextAdded, onRemove }: { id: string | null; onClose: () => void; onTextAdded: (id: string) => void; onRemove: (id: string) => void }) {
   const t = useT()
   const { uiLang } = usePrefs()
   const { thread } = useEngine()
@@ -32,7 +32,7 @@ export function MessageOptions({ id, onClose, onTextAdded }: { id: string | null
         <Action icon={ArrowDownIcon} label={t.moveDown} disabled={index === messages.length - 1} onClick={closeThen(() => thread.moveBy(id, 1))} />
         <Action icon={ChatTextIcon} label={t.addTextAbove} onClick={closeThen(async () => onTextAdded(await thread.addTextNear(id, 'above')))} />
         <Action icon={ChatTextIcon} label={t.addTextBelow} onClick={closeThen(async () => onTextAdded(await thread.addTextNear(id, 'below')))} />
-        <Action icon={TrashIcon} label={t.removeMessage} danger onClick={closeThen(() => thread.remove(id))} />
+        <Action icon={TrashIcon} label={t.removeMessage} danger onClick={closeThen(async () => onRemove(id))} />
       </div>
     </Sheet>
   )

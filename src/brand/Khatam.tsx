@@ -15,7 +15,7 @@ export function KhatamMark({ size = 24, className }: { size?: number; className?
   )
 }
 
-/** The star fills one tip per eighth of progress. `value` is 0..1. */
+/** The star fills one tip per eighth of real progress (Messages heard, parts written): never a loop. `value` is 0..1. */
 export function KhatamProgress({ value, size = 20, label }: { value: number; size?: number; label: string }) {
   const filled = Math.round(Math.min(1, Math.max(0, value)) * 8)
   return (
@@ -39,7 +39,7 @@ export function KhatamProgress({ value, size = 20, label }: { value: number; siz
           stroke={k < filled ? 'var(--ornament)' : 'var(--line-strong)'}
           strokeWidth="1.25"
           strokeLinejoin="round"
-          className="transition-[fill-opacity,stroke] duration-(--duration-ui) ease-snappy"
+          className="transition-[fill-opacity] duration-(--duration-ui) ease-snappy"
         />
       ))}
     </svg>

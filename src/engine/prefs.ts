@@ -16,10 +16,12 @@ export interface Prefs {
   wasV1User: boolean
   /** Show the Reliability report under Results. */
   showReliability: boolean
+  /** The khatam in the header has been drawn in once (first visit); from then on it is still. */
+  markDrawn: boolean
 }
 
 export interface PrefsStore extends Observable<Prefs> {
-  set(patch: Partial<Pick<Prefs, 'uiLang' | 'theme' | 'showReliability'>>): void
+  set(patch: Partial<Pick<Prefs, 'uiLang' | 'theme' | 'showReliability' | 'markDrawn'>>): void
 }
 
 export function createPrefs(ls: Storage, browserLanguages: readonly string[]): PrefsStore {
@@ -30,6 +32,7 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
     theme: isTheme(storedTheme) ? storedTheme : 'system',
     wasV1User: ls.getItem(KEYS.wasV1User) === '1',
     showReliability: ls.getItem(KEYS.showReliability) !== '0',
+    markDrawn: ls.getItem(KEYS.markDrawn) === '1',
   })
 
   return {
@@ -39,6 +42,7 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
       if (patch.uiLang) ls.setItem(KEYS.uiLang, patch.uiLang)
       if (patch.theme) ls.setItem(KEYS.theme, patch.theme)
       if (patch.showReliability !== undefined) ls.setItem(KEYS.showReliability, patch.showReliability ? '1' : '0')
+      if (patch.markDrawn) ls.setItem(KEYS.markDrawn, '1')
       state.publish({ ...state.get(), ...patch })
     },
   }

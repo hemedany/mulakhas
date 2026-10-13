@@ -105,8 +105,8 @@ function KeyField({ provider }: { provider: Provider }) {
             </span>
           </span>
           <span className="flex shrink-0 gap-1">
-            <button type="button" onClick={() => { setEditing(true); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-accent">{t.change}</button>
-            <button type="button" onClick={() => { keys.remove(provider); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-fg-muted">{t.remove}</button>
+            <button type="button" onClick={() => { setEditing(true); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.change}</button>
+            <button type="button" onClick={() => { keys.remove(provider); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-fg-muted transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.remove}</button>
           </span>
         </div>
       )}
