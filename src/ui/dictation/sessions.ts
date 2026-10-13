@@ -153,7 +153,7 @@ export interface Microphone {
  */
 export function browserMicrophone(): Microphone {
   const context = typeof AudioContext === 'undefined' ? null : new AudioContext()
-  void context?.resume()
+  context?.resume().catch(() => {}) // rejects if the context is closed first, as when the microphone is denied
   return {
     async open() {
       if (!context || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') throw new DOMException('no recorder', 'NotSupportedError')
