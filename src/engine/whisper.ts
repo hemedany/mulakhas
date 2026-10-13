@@ -7,6 +7,8 @@ export type HearFailure = 'rejected' | 'busy' | 'unreachable' | 'unsupported' | 
 export class HearError extends ProviderError<HearFailure> {}
 
 export const WHISPER_MODEL = 'whisper-large-v3'
+/** Whisper reads at most 224 tokens of prompt; the end of what came before is what matters. */
+const WHISPER_PROMPT_CHARS = 400
 /** Groq's free tier takes files up to 25 MB; this leaves room for however it counts them. Bigger ones are converted. */
 export const WHISPER_MAX_BYTES = 24_000_000
 
@@ -82,7 +84,7 @@ export async function transcribe(fetch: Fetch, key: string, upload: File, { lang
   const form = new FormData()
   form.append('file', upload)
   if (language) form.append('language', language)
-  if (prompt) form.append('prompt', prompt.slice(-400))
+  if (prompt) form.append('prompt', prompt.slice(-WHISPER_PROMPT_CHARS))
   form.append('model', WHISPER_MODEL)
   form.append('response_format', 'verbose_json')
   form.append('timestamp_granularities[]', 'segment')

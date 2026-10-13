@@ -6,7 +6,7 @@ import type { FollowUp } from '@/engine'
 import { useT } from '@/i18n/i18n'
 import { AddButton, SendButton } from '../BarButtons'
 import { CopyButton } from '../CopyButton'
-import { DictatedTextarea, DictationStatus } from '../dictation/Dictation'
+import { DictatedTextarea, DictationStatus } from '../dictation/DictationField'
 import { useDictation } from '../dictation/useDictation'
 import { Markdown } from '../Markdown'
 import { scrollBehavior } from '../motion'
@@ -80,7 +80,7 @@ export function FollowUpBox({ onAdd }: { onAdd?: () => void }) {
   const statusId = useId()
   const ask = () => {
     const q = question.trim()
-    if (!q || dictation.state !== 'idle') return
+    if (!q || dictation.busy) return
     setQuestion('')
     void thread.askFollowUp(q)
   }
@@ -90,7 +90,7 @@ export function FollowUpBox({ onAdd }: { onAdd?: () => void }) {
         {onAdd && <AddButton onAdd={onAdd} />}
         <DictatedTextarea dictation={dictation} value={question} onChange={setQuestion}
           label={t.followUpLabel} placeholder={t.followUpPlaceholder} statusId={statusId} onEnter={ask} />
-        <SendButton label={t.askFollowUp} disabled={!question.trim() || dictation.state !== 'idle'} />
+        <SendButton label={t.askFollowUp} disabled={!question.trim() || dictation.busy} />
       </form>
       <DictationStatus dictation={dictation} id={statusId} />
     </div>

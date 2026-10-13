@@ -1,6 +1,6 @@
 import { decodeInBrowser, type DecodeAudio } from './audio'
 import { openDb } from './db'
-import { createDictation, type Dictation } from './dictation'
+import { createDictation, type DictationService } from './dictation'
 import { createHistory, type History } from './history'
 import { createKeys, type KeysStore } from './keys'
 import { migrateFromV1 } from './migrate'
@@ -17,7 +17,7 @@ export type { Transcript, Segment } from './transcript'
 export type { HearFailure } from './whisper'
 export type { ConnectOutcome, OwnKeys } from './keys'
 export type { FollowUp } from './follow-up'
-export { SPEECH_LANG, DictationError, PauseDetector, withSpoken, type DictationFailure } from './dictation'
+export { DictationError, PauseDetector, withSpoken, type DictationFailure } from './dictation'
 export { PROVIDERS, PROVIDER_INFO, type Fetch, type Provider } from './providers'
 export { THEMES, type Prefs, type Theme } from './prefs'
 export { LANGS, LANG_NAMES, RTL_LANGS, pickLang, type Lang } from './langs'
@@ -48,7 +48,7 @@ export interface Engine {
   thread: ThreadStore
   /** Share-ins moved into the Thread as the app started, and whether the device couldn't keep them. */
   sharedIn: { count: number; failed: boolean }
-  dictation: Dictation
+  dictation: DictationService
 }
 
 export async function createEngine(deps: EngineDeps): Promise<Engine> {

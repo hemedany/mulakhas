@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { uploadedFile, verboseJson, voiceNote, whisperBy } from './fixtures'
 import { createEngine, type Engine } from './index'
 import { deviceWithKey, fakeNetwork, json, soundFile } from './testing'
+import { toTranscript } from './whisper'
 
 const uploads = (net: ReturnType<typeof fakeNetwork>) =>
   net.requests.filter(r => r.url.pathname.endsWith('/audio/transcriptions')).map(r => uploadedFile(r.init)!)
@@ -186,5 +187,9 @@ describe('big and unusual files', () => {
     await engine.thread.idle()
 
     expect(uploads(net).map(f => f.name)).toEqual(['shared.ogg'])
+  })
+
+  it('keeps Whisper’s text when it comes without segments', () => {
+    expect(toTranscript({ text: ' with the steps', segments: [] }).text).toBe('with the steps')
   })
 })

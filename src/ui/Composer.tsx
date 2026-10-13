@@ -4,7 +4,7 @@ import { PRESETS } from '@/engine/presets'
 import { mayWrite } from '@/engine/writer'
 import { useT } from '@/i18n/i18n'
 import { AddButton, SendButton } from './BarButtons'
-import { DictatedTextarea, DictationStatus } from './dictation/Dictation'
+import { DictatedTextarea, DictationStatus } from './dictation/DictationField'
 import { useDictation } from './dictation/useDictation'
 import { FollowUpBox } from './result/FollowUps'
 
@@ -60,7 +60,7 @@ function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFol
         <AddButton onAdd={onAdd} />
         <DictatedTextarea dictation={dictation} value={draft.request} onChange={request => setDraft({ request })}
           label={t.requestLabel} placeholder={t.requestLabel} statusId={statusId} />
-        <SendButton label={go} disabled={!hasSomething || busy || dictation.state !== 'idle'} />
+        <SendButton label={go} disabled={!hasSomething || busy || dictation.busy} />
       </form>
       <DictationStatus dictation={dictation} id={statusId} />
     </>

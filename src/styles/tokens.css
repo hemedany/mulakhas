@@ -16,7 +16,8 @@
  * highlights inside text (unclear words, code) Tailwind's rounded-sm.
  *
  * Spacing is Tailwind's 4px scale (--spacing in index.css); motion durations and curves are
- * the --duration-* and --ease-* tokens there.
+ * the --duration-* and --ease-* tokens there, and the one looping motion (dictation listening) is
+ * its --animate-listening* tokens.
  */
 
 :root {

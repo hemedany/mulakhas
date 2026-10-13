@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { uploadedFile, verboseJson, voiceNote, whisperBy } from './fixtures'
 import { PauseDetector, withSpoken } from './dictation'
-import { toTranscript } from './whisper'
+import { uploadedFile, verboseJson, voiceNote, whisperBy } from './fixtures'
 import { createEngine } from './index'
 import { deviceWithKey, fakeNetwork, freshDevice, names } from './testing'
 
@@ -62,9 +61,5 @@ describe('dictating with Whisper', () => {
     const engine = await createEngine(freshDevice())
 
     await expect(engine.dictation.transcribe(new Blob([new Uint8Array(8)], { type: 'audio/ogg' }), 'en')).rejects.toMatchObject({ failure: 'no-key' })
-  })
-
-  it('keeps Whisper’s text when it comes without segments', () => {
-    expect(toTranscript({ text: ' with the steps', segments: [] }).text).toBe('with the steps')
   })
 })

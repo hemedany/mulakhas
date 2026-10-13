@@ -73,6 +73,18 @@
   --duration-press: 150ms;
   --duration-ui: 200ms;
   --duration-sheet: 280ms;
+
+  /* The one looping motion: dictation listening. Slow, so it reads as calm rather than urgent; off with reduced motion (motion-safe:). */
+  --duration-listening: 1600ms;
+  --animate-listening: listening var(--duration-listening) var(--ease-snappy) infinite;
+  --animate-listening-dot: listening-dot var(--duration-listening) ease-in-out infinite;
+  @keyframes listening {
+    from { transform: scale(1); opacity: 0.6; }
+    to { transform: scale(1.6); opacity: 0; }
+  }
+  @keyframes listening-dot {
+    50% { opacity: 0.3; }
+  }
 }
 
 @layer base {
