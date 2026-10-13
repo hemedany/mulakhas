@@ -1,34 +1,48 @@
-# Mulakhas ملخص
+# Mulakhas ملخّص
 
-Drop a pile of voice notes, videos & texts — Arabic, English, or any language — and get exactly the summary you asked for. Turn 15 rambling voice messages into one clean recipe/directions/summary.
+Turn a pile of WhatsApp voice notes, videos and text messages (in Arabic dialects, English or a mix) into one clear result: a summary, a recipe, numbered steps, a to-do list, a translation, or every word written out.
 
 **Live app:** https://hemedany.github.io/mulakhas/
 
 ## How it works
 
-Everything runs in your browser. Files are sent directly to Google's Gemini API using **your own free API key** — there is no server, no database, and nothing is stored anywhere except on your device.
+1. **Add the messages** in the order they were sent: pick files, drag them in on a computer, or on Android share them straight from WhatsApp into the installed app, a few at a time. Text messages can go anywhere in between.
+2. **Mulakhas hears each one as it arrives.**
+   - Voice notes go to Groq's Whisper (`whisper-large-v3`), which returns a transcript with a confidence for every passage. Passages it heard poorly are marked as unclear rather than guessed.
+   - Videos, when you've connected a Gemini key, are watched by the newest Gemini Flash model your key can use. It reports what is said and what the video shows. Without a Gemini key, Whisper hears the soundtrack.
+   - Files over Groq's size limit, or in formats Whisper rejects (`.mov`, `.3gp`, `.aac`…), are converted in your browser to mono 16 kHz audio and heard in parts of about ten minutes, cut at a pause.
+3. **Say what you want**: pick a preset or type, or speak, your own Request. *Exact words* writes everything out as it was said instead of summarising.
+4. **A Groq text model writes the Result** (`gpt-oss-120b` when your key has it) from the transcripts, in order, so later messages can correct earlier ones. A Thread too big for your key's per-minute limit is written in parts.
+5. **The Reliability report** under the Result shows how clearly each voice note was heard, measured from Whisper's confidence and not graded by a model. Then ask Follow-up questions about the Result.
 
-1. Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (Google account, no credit card)
-2. Open the app, paste the key once — it's saved on your device
-3. Drop your voice notes / videos in order, slot text messages between them, say how you want it summarized
-4. Get the result in English (or any language you ask for), with a per-message accuracy & noise report
+## Your own keys
+
+Mulakhas has no server and no shared key: everyone uses their own.
+
+- **Groq key**, required and free: [console.groq.com/keys](https://console.groq.com/keys). Mulakhas asks for it the first time you add a message.
+- **Gemini key**, optional and free: [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Add it in Settings so videos are watched as well as heard.
+
+## Privacy
+
+- **No server, no account, no analytics.** The page talks only to Groq and Google, straight from your browser, with your keys. Its Content Security Policy allows nothing else.
+- **What goes where:**
+  - Voice notes go to Groq.
+  - Videos go to Google when a Gemini key is connected, otherwise to Groq. Mulakhas deletes the upload as soon as it has been watched; Google would otherwise keep it for two days.
+  - Transcripts, your Request and Follow-ups go to Groq to be written up.
+- **Dictation:** where your browser has a speech engine (Chrome, Edge, Safari, Samsung Internet), live dictation uses it, and your voice goes to that browser maker's speech service under your browser's terms. Elsewhere, each phrase goes to Groq. Dictation only fills the Request and Follow-up boxes.
+- **On your device:** keys and settings live in the browser's local storage; the Thread, its files and your saved Results live in its IndexedDB. *Start over*, deleting a saved Result, and removing a key clear them.
+- Groq's and Google's own terms apply to what you send them.
 
 ## Features
 
-- Ordered message timeline with insert-anywhere text messages
-- Auto-sorts batched files by date (WhatsApp exports land in the right order)
-- Understands Arabic dialects, English, and 100+ languages — no training needed
-- Custom summary instructions + presets (recipe, action items, translation…)
-- Reliability report: per-file clarity %, noise notes, uncertain words flagged as [unclear]
-- Auto-retry when Google's servers are busy (503)
-- Dark mode, RTL Arabic output, installable on your phone (Add to Home Screen)
-- Summarize ↔ Exact-words (cleaned transcript) mode slider
-- On-device, searchable history of past results
-- Android: share voice notes & videos from WhatsApp straight into Mulakhas (installed PWA)
-- Speak your request instead of typing (multi-language)
-- Interface in English, العربية, Français, Deutsch, Türkçe, Español — everything translated, tutorial included, with RTL Arabic layout
-- Living background: a non-overlapping field of layered khatam seals with depth, idle rotation, scroll-driven gearwork, and click-to-spin
-- Buttery inertia scrolling on desktop
+- Six interface languages (العربية, English, Français, Deutsch, Türkçe, Español), right to left in Arabic, with the Result in your language unless you ask for another.
+- Messages ordered by when they were sent (WhatsApp file names first), and movable, with text messages placed anywhere.
+- Presets: recipe, step by step, to-do list, key points, translation, and Exact words.
+- Busy services are waited out automatically, as long as they ask.
+- Searchable History of Results and their Follow-ups, on your device.
+- Installable on your phone; on Android, share voice notes from WhatsApp in as many goes as you like and they all stay together.
+- Light and dark themes that follow your device, with a manual choice.
+- A short tour on the first visit, and again from the ? button.
 
 ## Develop
 
@@ -37,11 +51,13 @@ Needs Node.js 24 or newer.
 ```bash
 npm install
 npm run dev        # http://localhost:5173/mulakhas/
-npm test           # engine tests (Vitest)
+npm test           # engine and dictation tests (Vitest)
 npm run typecheck
 npm run lint
 npm run build      # static site in dist/
 ```
+
+The engine (`src/engine`) holds everything below the screens and is tested with Groq and Google faked at the network boundary. The words the code and copy use are in `GLOSSARY.md`; decisions and their reasons are in `docs/adr/`.
 
 ## Deploy your own
 
@@ -49,8 +65,11 @@ The build is a static site. On GitHub, set **Settings → Pages → Source** to 
 
 ## Honest limits
 
-Speech recognition on dialectal Arabic is genuinely hard — never trust the output 100%. Double-check quantities, names, and anything actionable. The reliability report flags what to re-listen to.
+- Speech recognition on dialectal Arabic is hard. Never trust a Result completely: double-check quantities, names and anything you'll act on. The Reliability report and the unclear marks show what to listen to again.
+- Sharing from WhatsApp into the app works on Android only, in an installed browser that supports it (not Firefox, not iPhone). Elsewhere, save the voice notes and pick them as files.
+- Some old phones record in AMR, which browsers can't open. Mulakhas says so; with a Gemini key, Videos in that format can still be watched.
+- Very long recordings are decoded in the browser, which can run out of memory on older phones. Mulakhas notices and says the file is too long for the device.
 
 ## License
 
-MIT — do whatever you like with it.
+MIT. Do whatever you like with it.
