@@ -24,8 +24,15 @@ export interface Prefs {
   makeoverSeen: boolean
 }
 
+/** What the first visit opens with: the tutorial, or for someone who used Mulakhas before, the makeover card. */
+export type Welcome = 'tutorial' | 'makeover'
+
 export interface PrefsStore extends Observable<Prefs> {
   set(patch: Partial<Omit<Prefs, 'wasV1User'>>): void
+  /** The welcome still to show, if any. */
+  welcome(): Welcome | null
+  /** The welcome has been seen: it doesn't open by itself again (the tutorial reopens from Help). */
+  welcomed(): void
 }
 
 export function createPrefs(ls: Storage, browserLanguages: readonly string[]): PrefsStore {
@@ -53,6 +60,14 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
       if (patch.tutorialSeen) ls.setItem(KEYS.tutorialSeen, '1')
       if (patch.makeoverSeen) ls.setItem(KEYS.makeoverSeen, '1')
       state.publish({ ...state.get(), ...patch })
+    },
+    welcome() {
+      const { wasV1User, makeoverSeen, tutorialSeen } = state.get()
+      if (wasV1User) return makeoverSeen ? null : 'makeover'
+      return tutorialSeen ? null : 'tutorial'
+    },
+    welcomed() {
+      this.set({ tutorialSeen: true, makeoverSeen: true })
     },
   }
 }

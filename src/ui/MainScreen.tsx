@@ -17,7 +17,8 @@ import { Sheet } from './Sheet'
 import { MessageOptions } from './thread/MessageOptions'
 import { MessageRow } from './thread/MessageRow'
 import { WritingStatus } from './thread/WritingStatus'
-import { MakeoverCard, Tutorial } from './tutorial/Tutorial'
+import { MakeoverSheet } from './tutorial/Makeover'
+import { Tutorial } from './tutorial/Tutorial'
 import { useAddMessages } from './useAddMessages'
 import { useArrivals } from './arrivals'
 
@@ -33,15 +34,19 @@ export function MainScreen() {
   const ownKeys = useOwnKeys()
   const desktop = useIsDesktop()
   const t = useT()
+  // A first Share-in with no Groq key yet asks for the key straight away, as adding files here does;
+  // someone who used Mulakhas before is told what changed first, and asked for the key after.
+  const needKeyFirst = sharedIn.count > 0 && !ownKeys.groq
   const [sheet, setSheet] = useState<OpenSheet>(() => {
-    const seen = prefs.get()
-    // A first Share-in with no Groq key yet: ask for the key straight away, as when adding files here.
-    if (sharedIn.count > 0 && !ownKeys.groq) return 'keys'
-    // The first visit: the tutorial; for someone who used Mulakhas before, the makeover card instead.
-    if (seen.wasV1User && !seen.makeoverSeen) return 'makeover'
-    if (!seen.tutorialSeen && !seen.wasV1User) return 'tutorial'
-    return null
+    const welcome = prefs.welcome()
+    if (welcome === 'makeover') return 'makeover'
+    if (needKeyFirst) return 'keys'
+    return welcome
   })
+  const welcomed = () => {
+    prefs.welcomed()
+    setSheet(sheet === 'makeover' && needKeyFirst && !ownKeys.groq ? 'keys' : null)
+  }
   // The service worker sends the app here with ?share-failed when it couldn't read a share.
   const [shareFailed] = useState(() => new URLSearchParams(location.search).has('share-failed'))
   useEffect(() => { if (shareFailed) history.replaceState(null, '', location.pathname) }, [shareFailed])
@@ -89,7 +94,7 @@ export function MainScreen() {
 
   return (
     <div className="relative flex h-dvh flex-col bg-bg" {...dropZone}>
-      <AppHeader onHistory={() => setSheet('history')} onLanguage={() => setSheet('language')} onSettings={() => setSheet('settings')} onHelp={() => setSheet('tutorial')} />
+      <AppHeader onOpen={setSheet} />
       <input ref={picker} type="file" multiple accept={MEDIA_ACCEPT} hidden
         onChange={e => { onPicked(e.target.files); e.target.value = '' }} />
 
@@ -165,8 +170,8 @@ export function MainScreen() {
       </Sheet>
       <MessageOptions id={optionsFor} onClose={() => setOptionsFor(null)} onTextAdded={setNewTextId} onRemove={removeMessage} />
       <HistorySheet open={sheet === 'history'} onClose={close} />
-      <Tutorial open={sheet === 'tutorial'} onClose={() => { prefs.set({ tutorialSeen: true }); close() }} />
-      <MakeoverCard open={sheet === 'makeover'} onClose={() => { prefs.set({ makeoverSeen: true, tutorialSeen: true }); close() }} />
+      <Tutorial open={sheet === 'tutorial'} onClose={welcomed} />
+      <MakeoverSheet open={sheet === 'makeover'} onClose={welcomed} />
       <Sheet open={sheet === 'language'} onClose={close} title={t.language} closeLabel={t.close}>
         <ChoiceList label={t.language} value={uiLang} onChange={l => { prefs.set({ uiLang: l }); close() }}
           options={LANGS.map(l => ({ value: l, label: LANG_NAMES[l], lang: l }))} />

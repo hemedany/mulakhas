@@ -15,7 +15,10 @@ function HeaderButton({ icon: I, label, onClick }: { icon: Icon; label: string; 
   )
 }
 
-export function AppHeader({ onHistory, onLanguage, onSettings, onHelp }: { onHistory: () => void; onLanguage: () => void; onSettings: () => void; onHelp: () => void }) {
+/** What the header's buttons open. */
+export type HeaderSheet = 'history' | 'language' | 'settings' | 'tutorial'
+
+export function AppHeader({ onOpen }: { onOpen: (sheet: HeaderSheet) => void }) {
   const t = useT()
   const { prefs } = useEngine()
   // The mark is drawn in on the very first visit, and is still from then on.
@@ -30,10 +33,10 @@ export function AppHeader({ onHistory, onLanguage, onSettings, onHelp }: { onHis
             <span className="font-display text-wordmark font-semibold">{t.brand}</span>
           </div>
           <nav className="flex items-center">
-            <HeaderButton icon={ClockCounterClockwiseIcon} label={t.history} onClick={onHistory} />
-            <HeaderButton icon={GlobeIcon} label={t.language} onClick={onLanguage} />
-            <HeaderButton icon={GearSixIcon} label={t.settings} onClick={onSettings} />
-            <HeaderButton icon={QuestionIcon} label={t.tutorial.help} onClick={onHelp} />
+            <HeaderButton icon={ClockCounterClockwiseIcon} label={t.history} onClick={() => onOpen('history')} />
+            <HeaderButton icon={GlobeIcon} label={t.language} onClick={() => onOpen('language')} />
+            <HeaderButton icon={GearSixIcon} label={t.settings} onClick={() => onOpen('settings')} />
+            <HeaderButton icon={QuestionIcon} label={t.tutorial.help} onClick={() => onOpen('tutorial')} />
           </nav>
         </div>
       </BrandBar>

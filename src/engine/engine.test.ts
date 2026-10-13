@@ -132,3 +132,27 @@ describe('preferences', () => {
     expect(seen).toEqual(['de'])
   })
 })
+
+describe('the first-visit welcome', () => {
+  it('is the tutorial for someone new, once', async () => {
+    const device = freshDevice()
+    const engine = await createEngine(device)
+    expect(engine.prefs.welcome()).toBe('tutorial')
+
+    engine.prefs.welcomed()
+
+    expect((await createEngine(device)).prefs.welcome()).toBeNull()
+  })
+
+  it('is the makeover card instead for someone who used Mulakhas before, once', async () => {
+    const device = freshDevice()
+    device.localStorage.setItem('gemKey', 'AIza_old_v1_key') // v1's data
+    const engine = await createEngine(device)
+    expect(engine.prefs.welcome()).toBe('makeover')
+
+    engine.prefs.welcomed()
+
+    expect((await createEngine(device)).prefs.welcome()).toBeNull()
+  })
+})
+

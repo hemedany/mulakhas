@@ -1,14 +1,14 @@
-// Miniature screens for the tutorial: the app's own pieces (star badges, bubbles, chips, the Result
-// card) at a glance, not screenshots. Decoration only, so hidden from screen readers.
-import { ArrowUpIcon, CheckIcon, MicrophoneIcon, PlayIcon, ShareNetworkIcon, VideoCameraIcon } from '@phosphor-icons/react'
+// Miniature screens for the tutorial, made from the app's own pieces (star badges, the voice note
+// player, bubbles, chips, the Result card) so they look like what the person will see. Decoration
+// only, so hidden from screen readers.
+import { ArrowUpIcon, MicrophoneIcon, PlayIcon, ShareNetworkIcon, VideoCameraIcon } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import { KhatamMark } from '@/brand/Khatam'
 import { BrandBar, Pattern, StarBadge } from '@/brand/Ornament'
 import { usePrefs } from '@/app/engine-hooks'
 import { useT } from '@/i18n/i18n'
 import { formatNumber } from '@/i18n/numbers'
-
-export type TutorialStep = 'key' | 'add' | 'share' | 'ask' | 'result'
+import type { TutorialStep } from './steps'
 
 function Frame({ children }: { children: ReactNode }) {
   return (
@@ -19,12 +19,16 @@ function Frame({ children }: { children: ReactNode }) {
   )
 }
 
-/** A voice note's waveform, drawn as a few bars of fixed heights. */
-const Wave = () => (
-  <span className="flex h-5 flex-1 items-center gap-[3px]">
-    {['h-1.5', 'h-3', 'h-2', 'h-4', 'h-2', 'h-3', 'h-4.5', 'h-2.5', 'h-1.5', 'h-3.5', 'h-2', 'h-3', 'h-1'].map((h, i) => <span key={i} className={`w-[3px] rounded-full bg-fg-subtle ${h}`} />)}
-  </span>
-)
+/** The voice note player, as in a Message: play, a progress track, the length. */
+function Player({ seconds }: { seconds: string }) {
+  return (
+    <span className="flex flex-1 items-center gap-2 rounded-card rounded-ss-md border border-line bg-surface px-2.5 py-1.5 shadow-raised">
+      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent-soft text-accent"><PlayIcon size={12} weight="fill" /></span>
+      <span className="relative h-1 flex-1 overflow-hidden rounded-full bg-line"><span className="absolute inset-y-0 start-0 w-1/3 rounded-full bg-accent" /></span>
+      <span className="tabular text-xs text-fg-muted">{seconds}</span>
+    </span>
+  )
+}
 
 export function Scene({ step }: { step: TutorialStep }) {
   const t = useT()
@@ -38,58 +42,51 @@ export function Scene({ step }: { step: TutorialStep }) {
             <span className="flex h-10 flex-1 items-center rounded-control border border-line bg-surface px-3 font-mono text-sm text-fg-muted" dir="ltr">gsk_••••••••••••</span>
             <span className="flex h-10 items-center rounded-control bg-accent px-3 text-sm font-medium text-on-accent">{t.connect}</span>
           </div>
-          <span className="inline-flex items-center gap-1 text-xs text-fg-muted"><CheckIcon size={14} weight="bold" className="text-ornament" />{t.connected}</span>
         </Frame>
       )
     case 'add':
       return (
         <Frame>
-          <div className="flex items-center gap-2">
-            <StarBadge n={1} lang={uiLang} />
-            <span className="flex flex-1 items-center gap-2 rounded-card rounded-ss-md border border-line bg-surface px-2.5 py-1.5 shadow-raised">
-              <span className="grid size-6 place-items-center rounded-full bg-accent-soft text-accent"><PlayIcon size={12} weight="fill" /></span>
-              <Wave />
-            </span>
-          </div>
+          <div className="flex items-center gap-2"><StarBadge n={1} lang={uiLang} /><Player seconds="0:42" /></div>
           <div className="flex items-center gap-2">
             <StarBadge n={2} lang={uiLang} />
             <span dir="auto" className="flex-1 rounded-card rounded-ss-md border border-brand/15 bg-brand-soft px-3 py-1.5 text-sm">{t.tutorial.sampleText}</span>
           </div>
           <div className="flex items-center gap-2">
             <StarBadge n={3} lang={uiLang} />
-            <span className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-card rounded-ss-md border border-line bg-sunken text-fg-muted"><VideoCameraIcon size={16} /></span>
+            <span className="flex h-9 flex-1 items-center justify-center rounded-card rounded-ss-md border border-line bg-sunken text-fg-muted"><VideoCameraIcon size={16} /></span>
           </div>
         </Frame>
       )
     case 'share':
       return (
         <Frame>
-          <span className="flex w-3/4 items-center gap-2 self-start rounded-card rounded-ss-md bg-surface px-2.5 py-1.5 shadow-raised">
-            <MicrophoneIcon size={14} className="text-fg-muted" /><Wave />
-          </span>
+          <span className="flex w-3/4 self-start"><Player seconds="1:05" /></span>
           <div className="mt-1 flex items-end justify-center gap-4">
-            <span className="flex flex-col items-center gap-1 text-[0.7rem] text-fg-muted"><span className="grid size-10 place-items-center rounded-full bg-sunken"><ShareNetworkIcon size={18} /></span>…</span>
-            <span className="flex flex-col items-center gap-1 text-[0.7rem] font-semibold">
+            <span className="flex flex-col items-center gap-1 text-xs text-fg-muted"><span className="grid size-10 place-items-center rounded-full bg-sunken"><ShareNetworkIcon size={18} /></span>…</span>
+            <span className="flex flex-col items-center gap-1 text-xs font-semibold">
               <span className="grid size-12 place-items-center rounded-full bg-brand text-on-brand ring-2 ring-ornament ring-offset-2 ring-offset-bg"><KhatamMark size={24} /></span>
               {t.brand}
             </span>
-            <span className="flex flex-col items-center gap-1 text-[0.7rem] text-fg-muted"><span className="grid size-10 place-items-center rounded-full bg-sunken" />…</span>
+            <span className="flex flex-col items-center gap-1 text-xs text-fg-muted"><span className="grid size-10 place-items-center rounded-full bg-sunken" />…</span>
           </div>
         </Frame>
       )
-    case 'ask':
+    case 'request':
       return (
         <Frame>
-          <div className="flex gap-1.5">
-            <span className="h-8 rounded-full border border-accent bg-accent-soft px-3 text-sm leading-8 font-medium text-accent">{t.presets.recipe.label}</span>
-            <span className="h-8 rounded-full border border-line px-3 text-sm leading-8 text-fg-muted">{t.presets.steps.label}</span>
-            <span className="h-8 rounded-full border border-line px-3 text-sm leading-8 text-fg-muted">{t.presets.todo.label}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="flex shrink-0 rounded-full bg-sunken p-0.5 text-xs font-medium">
+              <span className="rounded-full bg-brand px-2.5 py-1 text-on-brand">{t.modeSummary}</span>
+              <span className="px-2.5 py-1 text-fg-muted">{t.modeExact}</span>
+            </span>
+            <span className="h-7 shrink-0 rounded-full border border-accent bg-accent-soft px-2.5 text-xs leading-7 font-medium text-accent">{t.presets.recipe.label}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span dir="auto" className="flex h-10 flex-1 items-center justify-between rounded-control border border-line bg-sunken ps-3 pe-2 text-sm">
-              {t.tutorial.sampleRequest}<MicrophoneIcon size={16} className="text-fg-muted" />
+            <span dir="auto" className="flex h-10 min-w-0 flex-1 items-center justify-between gap-2 rounded-control border border-line bg-sunken ps-3 pe-2 text-sm">
+              <span className="truncate">{t.tutorial.sampleRequest}</span><MicrophoneIcon size={16} className="shrink-0 text-fg-muted" />
             </span>
-            <span className="grid size-10 place-items-center rounded-full bg-accent text-on-accent"><ArrowUpIcon size={18} weight="bold" /></span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-on-accent"><ArrowUpIcon size={18} weight="bold" /></span>
           </div>
         </Frame>
       )
@@ -100,13 +97,15 @@ export function Scene({ step }: { step: TutorialStep }) {
             <BrandBar patternClassName="opacity-[0.22]">
               <span className="flex h-7 items-center gap-1.5 px-3 text-xs font-medium"><KhatamMark size={14} />{t.brand}</span>
             </BrandBar>
-            <div className="space-y-1.5 px-3 py-2.5 text-sm">
+            <div className="space-y-1.5 px-3 py-2.5 text-xs">
               <span className="block font-display text-base font-semibold">{t.presets.recipe.label}</span>
               <span className="block h-2 w-4/5 rounded-full bg-sunken" />
-              <span className="block h-2 w-3/5 rounded-full bg-sunken" />
-              <span className="flex items-center gap-2 text-xs text-fg-muted">
-                <span className="tabular font-semibold text-fg">{formatNumber(92, uiLang)}%</span>{t.reliability}
-              </span>
+              {[[1, 92], [2, 78]].map(([n, clarity]) => (
+                <span key={n} className="flex gap-2">
+                  <span className="tabular w-8 font-semibold">{formatNumber(clarity, uiLang)}%</span>
+                  <span className="text-fg-muted">{t.clarityOf(formatNumber(n, uiLang))}</span>
+                </span>
+              ))}
             </div>
           </div>
         </Frame>
