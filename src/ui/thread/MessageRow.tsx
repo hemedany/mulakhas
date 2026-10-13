@@ -1,5 +1,5 @@
-import { ArrowClockwiseIcon, CheckIcon, DotsThreeVerticalIcon, VideoCameraIcon } from '@phosphor-icons/react'
-import { useEffect, useRef, useState } from 'react'
+import { ArrowClockwiseIcon, CaretDownIcon, CaretUpIcon, CheckIcon, PlusIcon, VideoCameraIcon, XIcon } from '@phosphor-icons/react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { formatNumber } from '@/i18n/numbers'
 import { KhatamMark } from '@/brand/Khatam'
 import { Pattern, StarBadge } from '@/brand/Ornament'
@@ -66,9 +66,11 @@ function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnect
 function WhatItHeard({ transcript }: { transcript: Transcript }) {
   const t = useT()
   return (
-    <details className="mt-1.5">
-      <summary className="cursor-pointer list-none text-xs font-medium text-accent">{t.whatItHeard}</summary>
-      <div className="mt-1.5 space-y-2 rounded-control bg-sunken px-3 py-2 text-sm text-fg-muted">
+    <details className="group mt-1.5">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-accent">
+        {t.whatItHeard}<CaretDownIcon size={12} weight="bold" className="transition-transform duration-(--duration-ui) ease-snappy group-open:rotate-180" />
+      </summary>
+      <div className="disclosed mt-1.5 space-y-2 rounded-control bg-sunken px-3 py-2 text-sm text-fg-muted">
         {transcript.segments.length > 0 && (
           <p dir="auto">
             {transcript.segments.map((s, i) => (
@@ -162,8 +164,36 @@ function TextBubble({ message, autoFocus }: { message: TextMessage; autoFocus: b
   )
 }
 
-/** One Message in the Thread: its position in an eight-pointed star, the bubble, and its options. */
-export function MessageRow({ message, n, isNewText, arrives, leaving, onLeft, onOptions, onConnectKey }: {
+/** A dashed line between Messages: puts a Text message right there. */
+export function InsertHere({ label, onInsert }: { label: string; onInsert: () => void }) {
+  const t = useT()
+  return (
+    <div className="group flex items-center gap-2 py-1.5 ps-[2.625rem] pe-[2.875rem] opacity-70 transition-opacity duration-(--duration-ui) ease-snappy focus-within:opacity-100 hover:opacity-100">
+      <span className="h-px flex-1 border-t border-dashed border-line-strong" aria-hidden="true" />
+      <button type="button" aria-label={label} title={label} onClick={onInsert}
+        className="inline-flex h-7 items-center gap-1 rounded-full border border-line bg-surface px-2.5 text-xs font-medium text-fg-muted transition-[color,border-color,scale] duration-(--duration-press) ease-snappy hover:border-accent hover:text-accent motion-safe:active:scale-[0.95]">
+        <PlusIcon size={12} weight="bold" />{t.textHere}
+      </button>
+      <span className="h-px flex-1 border-t border-dashed border-line-strong" aria-hidden="true" />
+    </div>
+  )
+}
+
+/** One of the two arrows under a Message's number. */
+function MoveButton({ label, onMove, children }: { label: string; onMove?: () => void; children: ReactNode }) {
+  return (
+    <button type="button" aria-label={label} title={label} onClick={onMove} disabled={!onMove}
+      className="grid h-7 w-8 place-items-center rounded-full text-fg-subtle transition-[color,background-color,scale,opacity] duration-(--duration-press) ease-snappy hover:bg-sunken hover:text-fg disabled:opacity-25 motion-safe:active:scale-[0.9]">
+      {children}
+    </button>
+  )
+}
+
+/**
+ * One Message in the Thread: the dashed line to put a Text message before it, its position in an
+ * eight-pointed star with arrows to move it, the bubble, and a cross to remove it (Undo brings it back).
+ */
+export function MessageRow({ message, n, isNewText, arrives, leaving, onLeft, onMoveUp, onMoveDown, onRemove, onInsertBefore, onConnectKey }: {
   message: Message
   n: number
   isNewText: boolean
@@ -173,22 +203,34 @@ export function MessageRow({ message, n, isNewText, arrives, leaving, onLeft, on
   leaving: boolean
   /** Its fade out has ended. */
   onLeft: () => void
-  onOptions: () => void
+  /** Absent at the top (or bottom) of the Thread. */
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  onRemove: () => void
+  onInsertBefore: () => void
   onConnectKey: () => void
 }) {
   const t = useT()
   const { uiLang } = usePrefs()
+  const number = formatNumber(n, uiLang)
   return (
-    <li className={`flex items-start gap-2.5 ${arrives ? 'arrives' : ''} ${leaving ? 'leaving' : ''}`}
+    <li data-flip={message.id} className={`${arrives ? 'arrives' : ''} ${leaving ? 'leaving' : ''}`}
       onTransitionEnd={e => { if (leaving && e.target === e.currentTarget && e.propertyName === 'opacity') onLeft() }}>
-      <StarBadge n={n} lang={uiLang} className="mt-1.5" />
-      <div className="min-w-0 max-w-[24rem] flex-1 lg:max-w-none">
-        {message.kind === 'text' ? <TextBubble message={message} autoFocus={isNewText} /> : <MediaBubble message={message} n={n} onConnectKey={onConnectKey} />}
+      <InsertHere label={t.addTextBefore(number)} onInsert={onInsertBefore} />
+      <div className="flex items-start gap-2.5">
+        <div className="flex shrink-0 flex-col items-center">
+          <StarBadge n={n} lang={uiLang} className="mt-1.5 mb-0.5" />
+          <MoveButton label={t.moveUpN(number)} onMove={onMoveUp}><CaretUpIcon size={16} weight="bold" /></MoveButton>
+          <MoveButton label={t.moveDownN(number)} onMove={onMoveDown}><CaretDownIcon size={16} weight="bold" /></MoveButton>
+        </div>
+        <div className="min-w-0 max-w-[24rem] flex-1 lg:max-w-none">
+          {message.kind === 'text' ? <TextBubble message={message} autoFocus={isNewText} /> : <MediaBubble message={message} n={n} onConnectKey={onConnectKey} />}
+        </div>
+        <button type="button" aria-label={t.removeN(number)} title={t.removeN(number)} onClick={onRemove}
+          className="mt-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-subtle transition-[color,background-color,scale] duration-(--duration-press) ease-snappy hover:bg-danger/10 hover:text-danger motion-safe:active:scale-[0.9]">
+          <XIcon size={18} weight="bold" />
+        </button>
       </div>
-      <button type="button" aria-label={t.messageOptionsFor(formatNumber(n, uiLang))} onClick={onOptions}
-        className="mt-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-subtle transition-[color,background-color,scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.94] hover:bg-sunken hover:text-fg">
-        <DotsThreeVerticalIcon size={20} weight="bold" />
-      </button>
     </li>
   )
 }

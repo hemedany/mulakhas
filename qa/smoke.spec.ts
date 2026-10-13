@@ -30,6 +30,27 @@ test('asks for a Groq key with the first Message, then hears it', async ({ page 
   await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(1)
 })
 
+test('moves a Message with its arrows, puts a Text message between two, and undoes a removal', async ({ page }) => {
+  await stubGroq(page)
+  await openApp(page)
+  await page.locator('input[type=file]').setInputFiles([voiceNote('PTT-20261011-WA0001.wav'), voiceNote('PTT-20261011-WA0002.wav')])
+  const rows = page.getByRole('main').getByRole('listitem')
+  await expect(rows).toHaveCount(2)
+  const names = () => rows.evaluateAll(lis => lis.map(li => li.textContent?.match(/WA000\d|use lamb/)?.[0]))
+
+  await page.getByRole('button', { name: 'Move message 2 up' }).click()
+  await expect.poll(names).toEqual(['WA0002', 'WA0001'])
+
+  await page.getByRole('button', { name: 'Add a text message before message 2' }).click()
+  await page.getByRole('main').getByRole('textbox').fill('use lamb')
+  await expect.poll(names).toEqual(['WA0002', 'use lamb', 'WA0001'])
+
+  await page.getByRole('button', { name: 'Remove message 1' }).click()
+  await expect.poll(names).toEqual(['use lamb', 'WA0001'])
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await expect.poll(names).toEqual(['WA0002', 'use lamb', 'WA0001'])
+})
+
 test('hands over from one sheet to the next without closing both', async ({ page }) => {
   await stubGroq(page)
   await openApp(page)

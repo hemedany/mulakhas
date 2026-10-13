@@ -229,6 +229,29 @@
   .opening [data-opening='preset'][aria-pressed] {
     z-index: var(--stack, 1);
   }
+  /*
+   * Smaller arrivals. The Undo bar rises in above the composer and drops away; the composer rises
+   * from the bottom edge when a Thread starts; a tutorial step comes in from the side it was asked
+   * for; a disclosure's contents settle in; the drop overlay and the Copied tick fade (and pop).
+   * Each fades only, with less motion.
+   */
+  .undo-bar,
+  .rises,
+  .step-in,
+  .fades-in {
+    transition: opacity var(--duration-ui) var(--ease-snappy);
+    @starting-style {
+      opacity: 0;
+    }
+  }
+  .undo-bar[data-leaving] {
+    opacity: 0;
+    transition-duration: var(--duration-press);
+  }
+  details[open] > .disclosed,
+  .pops-in {
+    animation: fade-in var(--duration-ui) var(--ease-snappy);
+  }
   /* The header's khatam is drawn in on the first visit (a fade without motion). */
   .drawn-in {
     animation: fade-in var(--duration-ui) var(--ease-snappy);
@@ -283,6 +306,68 @@
       @starting-style {
         transform: translateY(32px);
         opacity: 0;
+      }
+    }
+    .undo-bar {
+      transition: opacity var(--duration-ui) var(--ease-snappy), transform var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    .undo-bar[data-leaving] {
+      transform: translateY(8px);
+      transition-duration: var(--duration-press);
+    }
+    .rises {
+      transition: transform var(--duration-sheet) var(--ease-drawer), opacity var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+    }
+    /* Forward comes from the end of the line (the right in English, the left in Arabic), Back from its start. */
+    .step-in {
+      --step-from: 1.25rem;
+      transition: transform var(--duration-sheet) var(--ease-snappy), opacity var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        opacity: 0;
+        transform: translateX(var(--step-from));
+      }
+    }
+    .step-in[data-from='back'] {
+      --step-from: -1.25rem;
+    }
+    .step-in:dir(rtl) {
+      --step-from: -1.25rem;
+    }
+    .step-in[data-from='back']:dir(rtl) {
+      --step-from: 1.25rem;
+    }
+    details[open] > .disclosed {
+      animation: disclosed var(--duration-ui) var(--ease-snappy);
+    }
+    .pops-in {
+      animation: pops-in var(--duration-ui) var(--ease-snappy);
+    }
+    @keyframes disclosed {
+      from { opacity: 0; transform: translateY(-4px); }
+    }
+    @keyframes pops-in {
+      from { opacity: 0; transform: scale(0.6); }
+    }
+    /* Where the browser can animate to a height of "auto", a disclosure opens and closes smoothly too. */
+    @supports (interpolate-size: allow-keywords) {
+      details:has(> .disclosed) {
+        interpolate-size: allow-keywords;
+      }
+      details:has(> .disclosed)::details-content {
+        height: 0;
+        overflow: clip;
+        transition: height var(--duration-ui) var(--ease-snappy), content-visibility var(--duration-ui) allow-discrete;
+      }
+      details[open]:has(> .disclosed)::details-content {
+        height: auto;
       }
     }
     .sheet[data-leaving] .sheet-panel {
