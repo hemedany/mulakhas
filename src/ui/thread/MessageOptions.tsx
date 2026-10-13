@@ -8,7 +8,7 @@ import { Sheet } from '../Sheet'
 function Action({ icon: I, label, onClick, disabled = false, danger = false }: { icon: Icon; label: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className={`flex h-13 w-full items-center gap-3 text-start transition-opacity duration-(--duration-press) active:opacity-60 disabled:opacity-35 ${danger ? 'text-danger' : ''}`}>
+      className={`flex h-13 w-full items-center gap-3 text-start transition-opacity duration-(--duration-press) ease-snappy active:opacity-60 disabled:opacity-35 ${danger ? 'text-danger' : ''}`}>
       <I size={20} className={`shrink-0 ${danger ? '' : 'text-accent'}`} />
       {label}
     </button>

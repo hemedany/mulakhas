@@ -13,7 +13,7 @@ export function ChoiceList<T extends string>({ label, value, options, onChange }
         const on = o.value === value
         return (
           <button key={o.value} type="button" role="radio" aria-checked={on} lang={o.lang} onClick={() => onChange(o.value)}
-            className="flex h-13 w-full items-center justify-between gap-3 text-start transition-opacity duration-(--duration-press) active:opacity-60">
+            className="flex h-13 w-full items-center justify-between gap-3 text-start transition-opacity duration-(--duration-press) ease-snappy active:opacity-60">
             <span className={on ? 'font-semibold' : ''}>{o.label}</span>
             {on && <CheckIcon size={18} weight="bold" className="text-accent" />}
           </button>

@@ -48,9 +48,9 @@ function StateLine({ message, onConnectKey }: { message: MediaMessage; onConnect
       )
     case 'failed':
       return FAILURES[message.failure ?? 'unknown'].fix === 'change-key'
-        ? <button type="button" onClick={onConnectKey} className="text-xs font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.changeKey}</button>
+        ? <button type="button" onClick={onConnectKey} className="text-xs font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.changeKey}</button>
         : (
-          <button type="button" onClick={() => thread.retry(message.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">
+          <button type="button" onClick={() => thread.retry(message.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
             <ArrowClockwiseIcon size={14} weight="bold" className="rtl:-scale-x-100" />{t.tryAgain}
           </button>
         )
@@ -96,7 +96,7 @@ function HeardNote({ message, onConnectKey }: { message: MediaMessage; onConnect
   if (watchFailure === 'rejected') {
     return (
       <p className="mt-1 text-xs text-fg-muted">
-        {t.watchRejected} <button type="button" onClick={onConnectKey} className="font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.changeKey}</button>
+        {t.watchRejected} <button type="button" onClick={onConnectKey} className="font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.changeKey}</button>
       </p>
     )
   }
@@ -163,7 +163,7 @@ function TextBubble({ message, autoFocus }: { message: TextMessage; autoFocus: b
 }
 
 /** One Message in the Thread: its position in an eight-pointed star, the bubble, and its options. */
-export function MessageRow({ message, n, isNewText, arrives, leaving, onOptions, onConnectKey }: {
+export function MessageRow({ message, n, isNewText, arrives, leaving, onLeft, onOptions, onConnectKey }: {
   message: Message
   n: number
   isNewText: boolean
@@ -171,19 +171,22 @@ export function MessageRow({ message, n, isNewText, arrives, leaving, onOptions,
   arrives: boolean
   /** Being removed: it fades out first. */
   leaving: boolean
+  /** Its fade out has ended. */
+  onLeft: () => void
   onOptions: () => void
   onConnectKey: () => void
 }) {
   const t = useT()
   const { uiLang } = usePrefs()
   return (
-    <li className={`flex items-start gap-2.5 ${arrives ? 'arrives' : ''} ${leaving ? 'leaving' : ''}`}>
+    <li className={`flex items-start gap-2.5 ${arrives ? 'arrives' : ''} ${leaving ? 'leaving' : ''}`}
+      onTransitionEnd={e => { if (leaving && e.target === e.currentTarget && e.propertyName === 'opacity') onLeft() }}>
       <StarBadge n={n} lang={uiLang} className="mt-1.5" />
       <div className="min-w-0 max-w-[24rem] flex-1 lg:max-w-none">
         {message.kind === 'text' ? <TextBubble message={message} autoFocus={isNewText} /> : <MediaBubble message={message} n={n} onConnectKey={onConnectKey} />}
       </div>
       <button type="button" aria-label={t.messageOptionsFor(formatNumber(n, uiLang))} onClick={onOptions}
-        className="mt-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-subtle transition-[color,background-color,transform] duration-(--duration-press) ease-snappy active:scale-[0.94] hover:bg-sunken hover:text-fg">
+        className="mt-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-subtle transition-[color,background-color,scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.94] hover:bg-sunken hover:text-fg">
         <DotsThreeVerticalIcon size={20} weight="bold" />
       </button>
     </li>

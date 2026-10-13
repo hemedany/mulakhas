@@ -6,13 +6,15 @@ import { BrandBar } from '@/brand/Ornament'
 // A modal sheet on the native <dialog> element (ADR-0005): the browser handles focus trapping,
 // Escape and the top layer, and nothing injects <style> elements, which the CSP forbids. It rises
 // from the bottom on phones and sits centred on wide screens. A footer stays put below what scrolls.
-export function Sheet({ open, onClose, title, closeLabel, children, footer }: {
+export function Sheet({ open, onClose, title, closeLabel, children, footer, markClassName }: {
   open: boolean
   onClose: () => void
   title: string
   closeLabel: string
   children: ReactNode
   footer?: ReactNode
+  /** For the khatam beside the title (the Result sheet turns it once). */
+  markClassName?: string
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -37,9 +39,9 @@ export function Sheet({ open, onClose, title, closeLabel, children, footer }: {
         <BrandBar patternClassName="opacity-[0.22]">
           <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-on-brand/40 lg:hidden" aria-hidden="true" />
           <div className="flex h-12 items-center justify-between px-4 lg:h-13">
-            <h2 id={titleId} className="flex items-center gap-2 text-sm font-medium"><KhatamMark size={18} />{title}</h2>
+            <h2 id={titleId} className="flex items-center gap-2 text-sm font-medium"><KhatamMark size={18} className={markClassName} />{title}</h2>
             <button type="button" aria-label={closeLabel} onClick={onClose}
-              className="grid size-10 place-items-center rounded-full transition-[background-color,transform] duration-(--duration-press) ease-snappy hover:bg-on-brand/10 active:scale-[0.94]">
+              className="grid size-10 place-items-center rounded-full transition-[background-color,scale] duration-(--duration-press) ease-snappy hover:bg-on-brand/10 motion-safe:active:scale-[0.94]">
               <XIcon size={20} />
             </button>
           </div>

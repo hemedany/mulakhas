@@ -61,7 +61,7 @@ describe('Share-ins from WhatsApp', () => {
     await engine.thread.idle()
 
     expect(engine.thread.get().messages[0]).toMatchObject({ state: 'heard' })
-    expect(engine.sharedIn).toEqual({ count: 1, failed: false })
+    expect(engine.sharedIn).toMatchObject({ count: 1, failed: false })
   })
 
   it('names a Share-in that came without a name for what it is', async () => {
@@ -107,9 +107,9 @@ describe('Share-ins from WhatsApp', () => {
 
     const engine = await createEngine(device)
 
-    expect(engine.sharedIn).toEqual({ count: 1, failed: true })
+    expect(engine.sharedIn).toMatchObject({ count: 1, failed: true })
     vi.restoreAllMocks()
-    expect((await createEngine(device)).sharedIn).toEqual({ count: 0, failed: false })
+    expect((await createEngine(device)).sharedIn).toMatchObject({ count: 0, failed: false })
   })
 
   it('starts a fresh Thread when a Share-in arrives after a Result, keeping that Result in History', async () => {

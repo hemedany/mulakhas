@@ -34,7 +34,7 @@ function KeyPageLink({ provider }: { provider: Provider }) {
   const t = useT()
   return (
     <a href={PROVIDER_INFO[provider].keyPage} target="_blank" rel="noopener noreferrer"
-      className="mt-2 inline-flex h-10 items-center gap-1.5 rounded-full border border-line px-4 text-sm font-medium transition-colors duration-(--duration-press) hover:border-line-strong">
+      className="mt-2 inline-flex h-10 items-center gap-1.5 rounded-full border border-line px-4 text-sm font-medium transition-[border-color,scale] duration-(--duration-press) ease-snappy hover:border-line-strong motion-safe:active:scale-[0.97]">
       {t.openKeyPage[provider]}
       <ArrowSquareOutIcon size={16} className="rtl:-scale-x-100" />
     </a>
@@ -90,7 +90,7 @@ function KeyField({ provider }: { provider: Provider }) {
               className="h-12 min-w-0 flex-1 rounded-control border border-line bg-sunken px-3.5 placeholder:text-fg-subtle focus:border-accent focus:outline-none aria-invalid:border-danger"
             />
             <button type="submit" disabled={busy}
-              className="h-12 shrink-0 rounded-control bg-accent px-5 font-medium text-on-accent transition-[transform,opacity] duration-(--duration-press) ease-snappy active:scale-[0.97] disabled:opacity-60">
+              className="h-12 shrink-0 rounded-control bg-accent px-5 font-medium text-on-accent transition-[scale,opacity] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97] disabled:opacity-60">
               {busy ? t.checking : t.connect}
             </button>
           </div>
@@ -105,8 +105,8 @@ function KeyField({ provider }: { provider: Provider }) {
             </span>
           </span>
           <span className="flex shrink-0 gap-1">
-            <button type="button" onClick={() => { setEditing(true); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.change}</button>
-            <button type="button" onClick={() => { keys.remove(provider); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-fg-muted transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.remove}</button>
+            <button type="button" onClick={() => { setEditing(true); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.change}</button>
+            <button type="button" onClick={() => { keys.remove(provider); setOutcome(null) }} className="h-9 rounded-full px-3 text-sm font-medium text-fg-muted transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.remove}</button>
           </span>
         </div>
       )}

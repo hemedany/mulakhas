@@ -16,7 +16,7 @@ self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
     // One by one, and never failing the install: without this worker, a share would go nowhere.
-    const shell = [SCOPE, SCOPE + "manifest.webmanifest", SCOPE + "icons/icon-192.png", SCOPE + "icons/icon-512.png"];
+    const shell = [SCOPE, SCOPE + "theme.js", SCOPE + "manifest.webmanifest", SCOPE + "icons/icon-192.png", SCOPE + "icons/icon-512.png"];
     await Promise.allSettled([...shell, ...BUILD.files.map(f => SCOPE + f)].map(url => cache.add(url)));
     await self.skipWaiting();
   })());

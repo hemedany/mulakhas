@@ -46,8 +46,8 @@ export interface Engine {
   keys: KeysStore
   history: History
   thread: ThreadStore
-  /** Share-ins moved into the Thread as the app started, and whether the device couldn't keep them. */
-  sharedIn: { count: number; failed: boolean }
+  /** Share-ins moved into the Thread as the app started (their Message ids), and whether the device couldn't keep them. */
+  sharedIn: { count: number; failed: boolean; ids: string[] }
   dictation: DictationService
 }
 
@@ -62,7 +62,7 @@ export async function createEngine(deps: EngineDeps): Promise<Engine> {
 
   // Anything shared in from another app while the page was reloading joins the Thread now.
   const inbox = await readInbox(deps.indexedDB)
-  const sharedIn = { count: inbox.shareIns.length, failed: false }
+  const sharedIn = { count: inbox.shareIns.length, failed: false, ids: inbox.shareIns.map(s => s.id) }
   if (sharedIn.count) {
     try {
       await thread.addFiles(inbox.shareIns.map(s => s.file), inbox.shareIns.map(s => s.id))

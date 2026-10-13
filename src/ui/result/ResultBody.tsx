@@ -51,10 +51,10 @@ export function ResultBody({ text, cutOff, report, titleClass }: { text: string;
       {showReliability && report && report.length > 0 && <Reliability report={report} />}
       <div className="mt-6 flex gap-2">
         <CopyButton text={plain}
-          className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-5 font-medium text-on-accent transition-transform duration-(--duration-press) active:scale-[0.98] lg:flex-none" />
+          className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-5 font-medium text-on-accent transition-transform duration-(--duration-press) motion-safe:active:scale-[0.98] lg:flex-none" />
         {'share' in navigator && (
           <button type="button" onClick={() => navigator.share({ text: plain }).catch(() => {})}
-            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-line px-5 font-medium transition-transform duration-(--duration-press) active:scale-[0.98] lg:flex-none">
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-line px-5 font-medium transition-transform duration-(--duration-press) motion-safe:active:scale-[0.98] lg:flex-none">
             <ShareNetworkIcon size={18} />{t.share}
           </button>
         )}

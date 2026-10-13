@@ -44,14 +44,14 @@ function RequestBar({ onAdd, onSummarize, busy }: Omit<ComposerProps, 'askingFol
         <div role="radiogroup" aria-label={t.mode} className="flex shrink-0 rounded-full bg-sunken p-0.5">
           {(['summary', 'exact'] as const).map(m => (
             <button key={m} type="button" role="radio" aria-checked={draft.mode === m} onClick={() => setDraft({ mode: m })}
-              className={`h-8 rounded-full px-3 text-sm font-medium transition-[color,background-color,transform] duration-(--duration-press) ease-snappy active:scale-[0.97] ${draft.mode === m ? 'bg-brand text-on-brand' : 'text-fg-muted'}`}>
+              className={`h-8 rounded-full px-3 text-sm font-medium transition-[color,background-color,scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97] ${draft.mode === m ? 'bg-brand text-on-brand' : 'text-fg-muted'}`}>
               {m === 'summary' ? t.modeSummary : t.modeExact}
             </button>
           ))}
         </div>
         {draft.mode === 'summary' && PRESETS.filter(p => p !== 'exact').map(p => (
           <button key={p} type="button" aria-pressed={draft.preset === p} onClick={() => setDraft({ preset: draft.preset === p ? null : p })}
-            className={`h-9 shrink-0 rounded-full border px-3.5 text-sm transition-[color,background-color,border-color,transform] duration-(--duration-press) ease-snappy active:scale-[0.97] ${draft.preset === p ? 'border-accent bg-accent-soft font-medium text-accent' : 'border-line text-fg-muted'}`}>
+            className={`h-9 shrink-0 rounded-full border px-3.5 text-sm transition-[color,background-color,border-color,scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97] ${draft.preset === p ? 'border-accent bg-accent-soft font-medium text-accent' : 'border-line text-fg-muted'}`}>
             {t.presets[p].label}
           </button>
         ))}

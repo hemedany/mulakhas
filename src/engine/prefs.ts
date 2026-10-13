@@ -17,7 +17,7 @@ export interface Prefs {
   /** Show the Reliability report under Results. */
   showReliability: boolean
   /** The khatam in the header has been drawn in once (first visit); from then on it is still. */
-  markDrawn: boolean
+  markSeen: boolean
   /** The first-visit tutorial has been shown (it can still be reopened from Help). */
   tutorialSeen: boolean
   /** A returning v1 user has seen the one-time makeover card. */
@@ -36,7 +36,7 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
     theme: isTheme(storedTheme) ? storedTheme : 'system',
     wasV1User: ls.getItem(KEYS.wasV1User) === '1',
     showReliability: ls.getItem(KEYS.showReliability) !== '0',
-    markDrawn: ls.getItem(KEYS.markDrawn) === '1',
+    markSeen: ls.getItem(KEYS.markSeen) === '1',
     tutorialSeen: ls.getItem(KEYS.tutorialSeen) === '1',
     makeoverSeen: ls.getItem(KEYS.makeoverSeen) === '1',
   })
@@ -49,7 +49,7 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
       if (patch.theme) ls.setItem(KEYS.theme, patch.theme)
       if (patch.showReliability !== undefined) ls.setItem(KEYS.showReliability, patch.showReliability ? '1' : '0')
       // Once seen, always seen.
-      if (patch.markDrawn) ls.setItem(KEYS.markDrawn, '1')
+      if (patch.markSeen) ls.setItem(KEYS.markSeen, '1')
       if (patch.tutorialSeen) ls.setItem(KEYS.tutorialSeen, '1')
       if (patch.makeoverSeen) ls.setItem(KEYS.makeoverSeen, '1')
       state.publish({ ...state.get(), ...patch })

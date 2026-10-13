@@ -19,7 +19,7 @@ export const KEYS = {
   groqKey: 'm2.groqKey',
   geminiKey: 'm2.geminiKey',
   showReliability: 'm2.showReliability',
-  markDrawn: 'm2.markDrawn',
+  markSeen: 'm2.markSeen',
   tutorialSeen: 'm2.tutorialSeen',
   makeoverSeen: 'm2.makeoverSeen',
 } as const

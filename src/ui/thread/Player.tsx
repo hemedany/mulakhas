@@ -23,7 +23,7 @@ export function Player({ id, n, knownSeconds }: { id: string; n: number; knownSe
     <div className="flex items-center gap-2.5">
       <button type="button" aria-label={playing ? t.pauseMessage(number) : t.playMessage(number)} disabled={!url}
         onClick={() => { const a = audio.current; if (!a) return; if (a.paused) void a.play(); else a.pause() }}
-        className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.92] disabled:opacity-50">
+        className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.92] disabled:opacity-50">
         {playing ? <PauseIcon size={16} weight="fill" /> : <PlayIcon size={16} weight="fill" />}
       </button>
       <div className="relative h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-line" aria-hidden="true">

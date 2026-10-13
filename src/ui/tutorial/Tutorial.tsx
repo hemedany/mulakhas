@@ -56,17 +56,17 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
       <div className="flex items-center gap-2">
         {!last && (
           <button type="button" onClick={close}
-            className="h-11 rounded-full px-3 text-sm font-medium text-fg-muted transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.tutorial.skip}</button>
+            className="h-11 rounded-full px-3 text-sm font-medium text-fg-muted transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.tutorial.skip}</button>
         )}
         <div className="flex flex-1 justify-center gap-1.5" aria-hidden="true">
           {steps.map((s, i) => <span key={s} className={`size-1.5 rounded-full transition-colors duration-(--duration-ui) ${i === at ? 'bg-accent' : 'bg-line-strong'}`} />)}
         </div>
         {at > 0 && (
           <button type="button" onClick={() => go(-1)}
-            className="h-11 rounded-full border border-line px-4 text-sm font-medium transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.tutorial.back}</button>
+            className="h-11 rounded-full border border-line px-4 text-sm font-medium transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.tutorial.back}</button>
         )}
         <button type="button" onClick={last ? close : () => go(1)}
-          className="h-11 rounded-full bg-accent px-5 text-sm font-medium text-on-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">
+          className="h-11 rounded-full bg-accent px-5 text-sm font-medium text-on-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
           {last ? t.tutorial.start : t.tutorial.next}
         </button>
       </div>
@@ -100,7 +100,7 @@ export function MakeoverCard({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <Sheet open={open} onClose={onClose} title={t.makeover.title} closeLabel={t.close} footer={
       <button type="button" onClick={onClose}
-        className="h-12 w-full rounded-full bg-accent px-5 font-medium text-on-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.98]">{t.makeover.ok}</button>
+        className="h-12 w-full rounded-full bg-accent px-5 font-medium text-on-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.98]">{t.makeover.ok}</button>
     }>
       <ul className="space-y-3">
         {t.makeover.points.map(point => (

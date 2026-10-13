@@ -5,6 +5,7 @@ import { useEngine } from '@/app/engine-hooks'
 import type { FollowUp } from '@/engine'
 import { useT } from '@/i18n/i18n'
 import { AddButton, SendButton } from '../BarButtons'
+import { useArrivals } from '../arrivals'
 import { CopyButton } from '../CopyButton'
 import { DictatedTextarea, DictationStatus } from '../dictation/DictationField'
 import { useDictation } from '../dictation/useDictation'
@@ -20,7 +21,7 @@ function Answer({ text, cutOff }: { text: string; cutOff?: boolean }) {
       <Markdown source={text} titleClass="font-semibold" />
       {cutOff && <p className="mt-2 flex gap-2 text-sm text-caution"><ScissorsIcon size={16} className="mt-0.5 shrink-0" />{t.answerCutOff}</p>}
       <CopyButton text={text} label={t.copyAnswer} iconSize={16}
-        className="mt-1 inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-accent transition-transform duration-(--duration-press) active:scale-[0.97]" />
+        className="mt-1 inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-accent transition-transform duration-(--duration-press) motion-safe:active:scale-[0.97]" />
     </div>
   )
 }
@@ -35,7 +36,7 @@ export function FollowUps({ followUps, onConnectKey }: { followUps: FollowUp[]; 
   const last = useRef<HTMLElement>(null)
   const count = followUps.length
   const lastCount = useRef(count)
-  const [openedWith] = useState(() => new Set(followUps.map(f => f.id)))
+  const arrives = useArrivals(followUps.map(f => f.id))
   useEffect(() => {
     if (count > lastCount.current) last.current?.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() })
     lastCount.current = count
@@ -45,7 +46,7 @@ export function FollowUps({ followUps, onConnectKey }: { followUps: FollowUp[]; 
   return (
     <section aria-label={t.followUpsTitle} aria-live="polite" className="mt-7 space-y-6 border-t border-ornament/40 pt-6">
       {followUps.map((f, i) => (
-        <article key={f.id} ref={i === count - 1 ? last : undefined} className={`space-y-2.5 ${openedWith.has(f.id) ? '' : 'arrives'}`}>
+        <article key={f.id} ref={i === count - 1 ? last : undefined} className={`space-y-2.5 ${arrives(f.id) ? 'arrives' : ''}`}>
           <p dir="auto" className="ms-auto w-fit max-w-[85%] rounded-card rounded-se-md bg-brand-soft px-3.5 py-2 text-sm">{f.question}</p>
           {f.state === 'answered' && f.answer && <Answer text={f.answer} cutOff={f.cutOff} />}
           {f.state === 'asking' && (
@@ -58,9 +59,9 @@ export function FollowUps({ followUps, onConnectKey }: { followUps: FollowUp[]; 
             <div role="alert" className="text-sm">
               <p className="text-danger">{writeFailureText(t)[f.failure]}</p>
               {needsKey(f.failure)
-                ? <button type="button" onClick={onConnectKey} className="mt-1 h-9 rounded-full px-2 font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">{t.changeKey}</button>
+                ? <button type="button" onClick={onConnectKey} className="mt-1 h-9 rounded-full px-2 font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">{t.changeKey}</button>
                 : (
-                  <button type="button" onClick={() => void thread.retryFollowUp(f.id)} className="mt-1 inline-flex h-9 items-center gap-1.5 rounded-full px-2 font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy active:scale-[0.97]">
+                  <button type="button" onClick={() => void thread.retryFollowUp(f.id)} className="mt-1 inline-flex h-9 items-center gap-1.5 rounded-full px-2 font-semibold text-accent transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
                     <ArrowClockwiseIcon size={16} weight="bold" className="rtl:-scale-x-100" />{t.tryAgain}
                   </button>
                 )}
