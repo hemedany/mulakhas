@@ -1,6 +1,6 @@
 // Ornament: the small Arabic geometric pieces the interface is dressed in. All static. The
 // pattern tile itself is a mask (--pattern in tokens.css), coloured by the element's background.
-import { useId, type CSSProperties, type ReactNode } from 'react'
+import { useId, type CSSProperties, type ReactNode, type Ref } from 'react'
 import { formatNumber } from '@/i18n/numbers'
 import { starPoints } from './geometry'
 
@@ -19,9 +19,9 @@ export function StarBadge({ n, lang, className = '' }: { n: number; lang: string
 }
 
 /** A hairline with a small khatam at its centre. */
-export function OrnamentRule({ className = '' }: { className?: string }) {
+export function OrnamentRule({ className = '', ...rest }: { className?: string; 'data-opening'?: string }) {
   return (
-    <div className={`flex items-center gap-3 text-ornament ${className}`} aria-hidden="true">
+    <div className={`flex items-center gap-3 text-ornament ${className}`} aria-hidden="true" {...rest}>
       <span className="h-px flex-1 bg-gradient-to-r from-transparent to-current opacity-60 rtl:bg-gradient-to-l" />
       <svg viewBox="0 0 32 32" className="size-4">
         <polygon points={BADGE_STAR} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
@@ -59,10 +59,10 @@ export function BrandBar({ children, className = '', patternClassName = 'opacity
 const ARCH = 'M0,100 L0,46 A60,60 0 0 1 50,0 A60,60 0 0 1 100,46 L100,100 Z'
 
 /** Content framed by a pointed arch, filled with the star pattern. */
-export function ArchFrame({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function ArchFrame({ children, className = '', ref, ...rest }: { children: ReactNode; className?: string; ref?: Ref<HTMLDivElement>; 'data-opening'?: string }) {
   const clipId = `arch-${useId().replace(/:/g, '')}`
   return (
-    <div className={`relative isolate ${className}`}>
+    <div ref={ref} className={`relative isolate ${className}`} {...rest}>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 -z-10 size-full" aria-hidden="true">
         <defs>
           <clipPath id={clipId} clipPathUnits="objectBoundingBox">
