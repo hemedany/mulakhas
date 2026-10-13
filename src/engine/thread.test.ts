@@ -326,6 +326,29 @@ describe('saving on the device', () => {
   })
 })
 
+describe('keeping files on the device', () => {
+  it('keeps Voice notes where the browser won’t store files, as in Safari’s private browsing, and hears them after a reload', async () => {
+    const put = IDBObjectStore.prototype.put
+    const noFiles = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(function (this: IDBObjectStore, value: unknown, key?: IDBValidKey) {
+      if (value instanceof Blob) throw new DOMException('Error preparing Blob/File data to be stored in object store', 'UnknownError')
+      return put.call(this, value, key)
+    })
+    const before = fakeNetwork()
+    before.on(() => new Promise<undefined>(() => {})) // the page closes while it is being heard
+    const device = deviceWithKey(before)
+    const first = await createEngine(device)
+    await first.thread.addFiles([voiceNote('a.ogg', 1)])
+
+    const after = fakeNetwork()
+    after.on(whisperBy({ 'a.ogg': NOTE_1 }))
+    const reopened = await createEngine({ ...device, fetch: after.fetch })
+    await reopened.thread.idle()
+    noFiles.mockRestore()
+
+    expect(reopened.thread.get().messages).toMatchObject([{ name: 'a.ogg', state: 'heard' }])
+  })
+})
+
 describe('after a Result', () => {
   async function withResult() {
     const net = fakeNetwork()

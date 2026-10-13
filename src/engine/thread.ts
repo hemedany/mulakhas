@@ -2,7 +2,7 @@
 // change (files included), so nothing is lost when the page reloads, and heard in the
 // background as soon as a Groq key is connected.
 import { oneAtATime, type DecodeAudio } from './audio'
-import type { Db } from './db'
+import { keepFile, keptFile, type Db } from './db'
 import { answerFollowUp, type FollowUp } from './follow-up'
 import { GEMINI_MAX_BYTES, WatchError, chooseWatcher, watchVideo, type GeminiUpload, type WatchFailure } from './gemini'
 import { hearFile, type PartsHeard } from './hearing'
@@ -229,7 +229,7 @@ export async function createThread(deps: {
   async function hear(message: MediaMessage, key: string) {
     try {
       await update(message.id, { state: 'hearing', failure: undefined })
-      const audio = await db.get<Blob>('blobs', message.id)
+      const audio = await keptFile(db, message.id)
       if (!audio) return await update(message.id, { state: 'failed', failure: 'unknown' })
       // A wait asked for before the page closed still holds.
       const left = (message.retryAt ?? 0) - now()
@@ -429,7 +429,7 @@ export async function createThread(deps: {
       if (!sorted.length) return
       await freshAfterResult()
       const added: MediaMessage[] = sorted.map(f => ({ id: idOf.get(f)!, kind: kindOf(f), name: f.name, type: f.type, size: f.size, lastModified: f.lastModified, state: 'waiting' }))
-      for (const [i, f] of sorted.entries()) await db.put('blobs', f, added[i].id)
+      for (const [i, f] of sorted.entries()) await keepFile(db, added[i].id, f)
       await commit([...state.get().messages, ...added])
       startHearing()
     },
@@ -471,7 +471,7 @@ export async function createThread(deps: {
       await update(id, { state: 'waiting', failure: undefined, decodeTries: undefined })
       startHearing()
     },
-    media: id => db.get<Blob>('blobs', id),
+    media: id => keptFile(db, id),
     async startOver() {
       partsWritten.clear()
       const ids = state.get().messages.map(m => m.id)

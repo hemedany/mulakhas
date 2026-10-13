@@ -59,3 +59,24 @@ export async function openDb(factory: IDBFactory): Promise<Db> {
     delete: (store, key) => write(store, s => { s.delete(key) }),
   }
 }
+
+/**
+ * A Voice note or Video as kept in `blobs`. Safari's private browsing won't store a Blob in
+ * IndexedDB, so there the file's bytes are kept instead.
+ */
+type KeptFile = Blob | { bytes: ArrayBuffer; name: string; type: string; lastModified: number }
+
+export async function keepFile(db: Db, id: string, file: File) {
+  try {
+    await db.put('blobs', file, id)
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') throw e // the device is full: that is said as it is
+    const kept: KeptFile = { bytes: await file.arrayBuffer(), name: file.name, type: file.type, lastModified: file.lastModified }
+    await db.put('blobs', kept, id)
+  }
+}
+
+export async function keptFile(db: Db, id: string): Promise<Blob | undefined> {
+  const kept = await db.get<KeptFile>('blobs', id)
+  return !kept || kept instanceof Blob ? kept : new File([kept.bytes], kept.name, { type: kept.type, lastModified: kept.lastModified })
+}
