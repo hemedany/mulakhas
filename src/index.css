@@ -1,0 +1,216 @@
+@import "tailwindcss";
+@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource-variable/reem-kufi";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-400.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-500.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-600.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-700.css";
+@import "./styles/tokens.css";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-ornament: var(--ornament);
+  --color-ornament-on-brand: var(--ornament-on-brand);
+  --color-scrim: var(--scrim);
+  --color-caution: var(--caution);
+
+  --shadow-raised: 0 1px 2px var(--shadow-tint), 0 4px 16px -6px var(--shadow-tint);
+  --shadow-floating: 0 2px 6px var(--shadow-tint), 0 18px 40px -12px var(--shadow-tint-strong);
+}
+
+@theme {
+  /* Plex Sans carries Latin; Arabic glyphs fall through to Plex Sans Arabic, same skeleton. */
+  --font-sans: "IBM Plex Sans Variable", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  /* Geometric Kufi for the wordmark and display headings: it is built on the same square grid as the khatam. */
+  --font-display: "Reem Kufi Variable", "IBM Plex Sans Arabic", system-ui, sans-serif;
+
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.15rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.3rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.55rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.65rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.8rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.15rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.6rem;
+  /* The wordmark in the header bar. */
+  --text-wordmark: 1.375rem;
+  --text-wordmark--line-height: 1;
+
+  --radius-control: 0.75rem;
+  --radius-card: 1.125rem;
+  --radius-sheet: 1.5rem;
+
+  /* 4px spacing scale (Tailwind's default, stated here so it is part of the system). */
+  --spacing: 0.25rem;
+
+  --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-press: 150ms;
+  --duration-ui: 200ms;
+  --duration-sheet: 280ms;
+
+  /* The one looping motion: dictation listening. Slow, so it reads as calm rather than urgent; off with reduced motion (motion-safe:). */
+  --duration-listening: 1600ms;
+  --animate-listening: listening var(--duration-listening) var(--ease-snappy) infinite;
+  --animate-listening-dot: listening-dot var(--duration-listening) ease-in-out infinite;
+  @keyframes listening {
+    from { transform: scale(1); opacity: 0.6; }
+    to { transform: scale(1.6); opacity: 0; }
+  }
+  @keyframes listening-dot {
+    50% { opacity: 0.3; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+    font-feature-settings: "kern";
+    /* The browser's own surfaces wear the palette too: scrollbars, checkboxes, the caret. */
+    scrollbar-color: color-mix(in oklch, var(--fg-subtle) 55%, transparent) transparent;
+    accent-color: var(--accent);
+    caret-color: var(--accent);
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--accent) 26%, transparent);
+    color: var(--fg);
+  }
+  .on-brand ::selection {
+    background: color-mix(in oklch, var(--ornament-on-brand) 40%, transparent);
+    color: var(--on-brand);
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Arabic script needs more room between lines than Latin. */
+  :lang(ar) {
+    --text-base--line-height: 1.75rem;
+    --text-sm--line-height: 1.5rem;
+    --text-lg--line-height: 1.9rem;
+  }
+  /* Arabic lists count in Arabic-Indic digits, like the text around them. */
+  :lang(ar) ol {
+    list-style-type: arabic-indic;
+  }
+  input, textarea, select {
+    font-size: max(16px, 1em); /* below 16px iOS zooms the page on focus */
+  }
+  button, a, [role="button"], label {
+    touch-action: manipulation;
+  }
+  button, [role="button"], [role="tab"] {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  /* Nothing behind an open sheet scrolls. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .sheet::backdrop {
+    background: var(--scrim);
+  }
+  /* The star tile is a mask, so the element's background colour is the pattern's colour. */
+  .pattern-tile {
+    -webkit-mask-image: var(--pattern);
+    mask-image: var(--pattern);
+    -webkit-mask-size: 56px 56px;
+    mask-size: 56px 56px;
+  }
+  /*
+   * What arrives in the Thread after it is open (a Message, the Result, a Follow-up) fades in; a
+   * removed Message fades out first. Occasional, so a standard entrance under 300 ms. Movement is
+   * added below for those who haven't asked for less motion, as the sheet does.
+   */
+  .arrives {
+    transition: opacity var(--duration-ui) var(--ease-snappy);
+    @starting-style {
+      opacity: 0;
+    }
+  }
+  .leaving {
+    opacity: 0;
+    transition: opacity var(--duration-press) var(--ease-snappy);
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  /* The header's khatam is drawn in on the first visit (a fade without motion). */
+  .drawn-in {
+    animation: fade-in var(--duration-ui) var(--ease-snappy);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .arrives {
+      transition: opacity var(--duration-ui) var(--ease-snappy), transform var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+    }
+    .leaving {
+      transform: translateY(-4px);
+      transition: opacity var(--duration-press) var(--ease-snappy), transform var(--duration-press) var(--ease-snappy);
+    }
+    /* A Result's khatam turns one point as the Result arrives; the header's turns in on the first visit. */
+    .turns-once {
+      animation: turn-once var(--duration-sheet) var(--ease-snappy);
+    }
+    .drawn-in {
+      animation: drawn-in var(--duration-sheet) var(--ease-snappy);
+    }
+    @keyframes turn-once {
+      from { transform: rotate(-45deg); }
+    }
+    @keyframes drawn-in {
+      from { transform: rotate(-45deg) scale(0.9); opacity: 0; }
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet[open] .sheet-panel {
+      transition: transform var(--duration-sheet) var(--ease-drawer), opacity var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        transform: translateY(32px);
+        opacity: 0;
+      }
+    }
+  }
+}

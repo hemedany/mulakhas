@@ -1,0 +1,86 @@
+import { MagnifyingGlassIcon, TrashIcon } from '@phosphor-icons/react'
+import { useEffect, useState } from 'react'
+import { useEngine, usePrefs } from '@/app/engine-hooks'
+import type { SavedResult } from '@/engine'
+import { useT } from '@/i18n/i18n'
+import { FollowUps } from './result/FollowUps'
+import { ResultBody } from './result/ResultBody'
+import { Sheet } from './Sheet'
+
+/** Saved Results: search, open, delete. */
+/** How long a delete waits for its second tap. */
+const CONFIRM_MS = 4000
+
+export function HistorySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { history } = useEngine()
+  const { uiLang } = usePrefs()
+  const t = useT()
+  const [saved, setSaved] = useState<SavedResult[]>([])
+  const [query, setQuery] = useState('')
+  const [opened, setOpened] = useState<SavedResult | null>(null)
+  // The Result whose delete button is waiting for its second tap, for a few seconds.
+  const [armed, setArmed] = useState<string | null>(null)
+  useEffect(() => {
+    if (!armed) return
+    const timer = setTimeout(() => setArmed(null), CONFIRM_MS)
+    return () => clearTimeout(timer)
+  }, [armed])
+  const arm = (id: string) => setArmed(id)
+
+  useEffect(() => { if (open) void history.list().then(setSaved) }, [history, open])
+
+  const q = query.trim().toLowerCase()
+  const shown = q ? saved.filter(r => `${r.title}\n${r.text}`.toLowerCase().includes(q)) : saved
+  const date = new Intl.DateTimeFormat(uiLang, { dateStyle: 'medium', timeStyle: 'short' })
+
+  return (
+    <>
+      <Sheet open={open && !opened} onClose={onClose} title={t.historyTitle} closeLabel={t.close}>
+        {saved.length > 0 && (
+          <label className="relative mb-2 block">
+            <span className="sr-only">{t.historySearch}</span>
+            <MagnifyingGlassIcon size={18} className="pointer-events-none absolute start-3 top-3.5 text-fg-subtle" />
+            <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder={t.historySearch}
+              className="h-12 w-full rounded-control border border-line bg-sunken ps-10 pe-3 placeholder:text-fg-subtle focus:border-accent focus:outline-none" />
+          </label>
+        )}
+        {shown.length === 0 ? (
+          <p className="py-6 text-center text-sm text-fg-muted">{t.historyEmpty}</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {shown.map(r => (
+              <li key={r.id} className="flex items-center gap-2">
+                <button type="button" onClick={() => setOpened(r)} className="min-w-0 flex-1 py-3 text-start transition-opacity duration-(--duration-press) ease-snappy active:opacity-60">
+                  <span className="block truncate font-medium" dir="auto">{r.title}</span>
+                  <span className="mt-0.5 block text-xs text-fg-muted">
+                    {[date.format(r.createdAt), r.mode === 'exact' ? t.historyExact : t.historySummary, ...(r.files.length ? [t.filesCount(r.files.length)] : [])].join(t.listSeparator)}
+                  </span>
+                </button>
+                {/* Deleting takes a second tap, so a slip of the finger loses nothing. */}
+                {armed === r.id ? (
+                  <button type="button" onClick={async () => { setArmed(null); await history.remove(r.id); setSaved(s => s.filter(x => x.id !== r.id)) }}
+                    className="h-10 shrink-0 rounded-full bg-danger px-3 text-sm font-medium text-on-danger transition-[scale] duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.97]">
+                    {t.confirmDelete}
+                  </button>
+                ) : (
+                  <button type="button" aria-label={`${t.deleteSaved}: ${r.title}`} title={t.deleteSaved} onClick={() => arm(r.id)}
+                    className="grid size-10 shrink-0 place-items-center rounded-full text-fg-subtle transition-[color,background-color,scale] duration-(--duration-press) ease-snappy hover:bg-sunken hover:text-danger motion-safe:active:scale-[0.94]">
+                    <TrashIcon size={18} />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Sheet>
+      <Sheet open={open && !!opened} onClose={() => setOpened(null)} title={t.resultHeading} closeLabel={t.close}>
+        {opened && (
+          <>
+            <ResultBody text={opened.text} cutOff={opened.cutOff} report={opened.report} />
+            <FollowUps followUps={(opened.followUps ?? []).map((f, i) => ({ id: `${opened.id}-${i}`, question: f.question, state: 'answered', answer: f.answer }))} />
+          </>
+        )}
+      </Sheet>
+    </>
+  )
+}
