@@ -43,6 +43,22 @@ describe('writing the Result', () => {
     expect(user).toContain('Make it for 6 people')
   })
 
+  it('asks for a short Summary by default, and for brevity in every Result unless more is asked for', async () => {
+    const { net, device } = setup()
+    net.on(groqChatModels)
+    net.on(whisperBy({ 'a.ogg': NOTE_1 }))
+    net.on(writerBy('# Bulgur\n\nSoak it half an hour.'))
+    const engine = await createEngine(device)
+    await engine.thread.addFiles([voiceNote('a.ogg', 1)])
+
+    await engine.thread.summarize({ mode: 'summary', preset: null, request: '' })
+
+    const [body] = chatBodies(net)
+    const [system, user] = [body.messages[0].content as string, body.messages.at(-1).content as string]
+    expect(system).toMatch(/BE BRIEF/)
+    expect(user).toMatch(/under 120 words/)
+  })
+
   it('marks Unclear passages for the writer, so it can flag them instead of guessing', async () => {
     const { net, device } = setup()
     net.on(groqChatModels)

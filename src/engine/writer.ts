@@ -32,14 +32,14 @@ export const LANGUAGE_NAME: Record<Lang, string> = { en: 'English', ar: 'Arabic'
 
 /** Instructions behind each preset. The Result language is set separately, so none of them names one. */
 export const PRESET_PROMPT: Record<Exclude<PresetId, 'exact'>, string> = {
-  recipe: 'Combine everything into ONE complete recipe: a title, the full ingredients list with quantities, then clear numbered steps in the right order. Include any tips or warnings that were mentioned.',
-  steps: 'Write a detailed step-by-step guide based on everything, numbered and in the correct order.',
-  todo: 'List only the action items: the things the listener needs to do.',
-  points: 'Summarize everything as short, clear bullet points, in the order things were said.',
-  translate: 'Translate everything in full detail, then add a short summary at the end. If everything is already in the Result language, translate it into English instead.',
+  recipe: 'Combine everything into ONE complete recipe: a title, the full ingredients list with quantities, then short numbered steps in the right order. Add the tips or warnings that were mentioned, in a line each.',
+  steps: 'Write a step-by-step guide from everything: short numbered steps in the correct order, one action each.',
+  todo: 'List only the action items, the things the listener needs to do, one short line each.',
+  points: 'Sum everything up in at most 7 short bullet points, one line each, in the order things were said.',
+  translate: 'Translate everything in full, then add a summary of two or three sentences at the end. If everything is already in the Result language, translate it into English instead.',
 }
 
-const DEFAULT_REQUEST = 'Summarize all of this clearly, keeping every important detail, in a logical order.'
+const DEFAULT_REQUEST = 'Summarize this in a few short lines: the main point first, then only the details that matter (decisions, quantities, names, times, places). Usually under 120 words.'
 
 const EXACT_WORDS = `Produce a cleaned-up, easy-to-read TRANSCRIPT of every message: do NOT summarize, shorten or omit anything.
 - Keep each message in the language and dialect it was spoken in, written clearly.
@@ -51,6 +51,8 @@ export const SYSTEM_PROMPT = `You are Mulakhas. You receive a conversation made 
 Read everything and understand it across all messages, respecting their order: later messages may add to, clarify or CORRECT earlier ones, and corrections win. Merge duplicated information.
 
 HONESTY: never silently guess. Passages marked ⟦unclear: …⟧ were heard with low confidence. If a word, quantity or name is uncertain, write your best reading followed by [unclear], for example "add 2 [unclear: maybe 3?] cups". Missing a word honestly is better than inventing one confidently.
+
+BE BRIEF: the reader wants the point, fast. Say each thing once, in as few words as keep it right. No introduction, no closing remarks, no restating the request. Keep what matters (quantities, names, times, places, decisions) and drop the rest. Go long only when the Request asks for full detail, everything, or a translation.
 
 If several speakers can clearly be told apart, label who is speaking (their names if mentioned, otherwise "Speaker 1", "Speaker 2").
 
