@@ -70,9 +70,13 @@ async function receiveShare(request) {
   return Response.redirect(SCOPE, 303);
 }
 
+// What is cached is looked up ignoring Vary: some hosts vary on Origin, which the page's module
+// script request carries and the install's didn't, so the shell would never be found offline.
+const MATCH = { ignoreVary: true };
+
 async function cacheFirst(request) {
   const cache = await caches.open(SHELL_CACHE);
-  const cached = await cache.match(request);
+  const cached = await cache.match(request, MATCH);
   if (cached) return cached;
   const res = await fetch(request);
   if (res.ok) cache.put(request, res.clone());
@@ -82,7 +86,7 @@ async function cacheFirst(request) {
 // Answers from the cache at once and refreshes it in the background; the network only when nothing is cached.
 async function staleWhileRevalidate(event, request, cacheKey) {
   const cache = await caches.open(SHELL_CACHE);
-  const cached = await cache.match(cacheKey);
+  const cached = await cache.match(cacheKey, MATCH);
   const fresh = fetch(request).then(res => {
     if (res.ok) cache.put(cacheKey, res.clone());
     return res;
