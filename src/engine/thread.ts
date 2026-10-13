@@ -86,6 +86,13 @@ export interface ThreadState {
 
 const EMPTY_DRAFT: WriteOptions = { request: '', mode: 'summary', preset: null }
 
+/** A Message just removed, kept so it can be put back. */
+export interface Removed {
+  message: Message
+  at: number
+  file?: Blob
+}
+
 export interface ThreadStore extends Observable<ThreadState> {
   /**
    * Appends Voice notes and Videos in the order they were sent, and starts hearing them. After a
@@ -101,7 +108,10 @@ export interface ThreadStore extends Observable<ThreadState> {
   moveBy(id: string, delta: number): Promise<void>
   /** Inserts a Text message right above or below another Message; returns its id. */
   addTextNear(id: string, where: 'above' | 'below', text?: string): Promise<string>
-  remove(id: string): Promise<void>
+  /** Removes a Message and its file; what it returns lets restore put it back. */
+  remove(id: string): Promise<Removed | undefined>
+  /** Puts a removed Message back where it was, with its file and what was heard (Undo). */
+  restore(removed: Removed): Promise<void>
   /** Hears a failed Message again. */
   retry(id: string): Promise<void>
   /** The original file of a Voice note or Video. */
@@ -461,8 +471,26 @@ export async function createThread(deps: {
       return store.addText(where === 'above' ? at : at + 1, text) // after a Result, this starts a fresh Thread
     },
     async remove(id) {
-      await commit(state.get().messages.filter(m => m.id !== id))
+      const messages = state.get().messages
+      const at = messages.findIndex(m => m.id === id)
+      if (at < 0) return undefined
+      const message = messages[at]
+      const file = message.kind === 'text' ? undefined : await keptFile(db, id)
+      await commit(messages.filter(m => m.id !== id))
       await db.delete('blobs', id)
+      return { message, at, file }
+    },
+    async restore({ message, at, file }) {
+      if (state.get().messages.some(m => m.id === message.id)) return
+      if (message.kind !== 'text' && file) {
+        await keepFile(db, message.id, file instanceof File ? file : new File([file], message.name, { type: message.type, lastModified: message.lastModified }))
+      }
+      // One removed while being heard is heard again; one already heard or failed comes back as it was.
+      const back: Message = message.kind !== 'text' && message.state === 'hearing' ? { ...message, state: 'waiting' } : message
+      const messages = [...state.get().messages]
+      messages.splice(clampIndex(at, messages.length), 0, back)
+      await commit(messages)
+      startHearing()
     },
     async retry(id) {
       const m = state.get().messages.find(x => x.id === id)

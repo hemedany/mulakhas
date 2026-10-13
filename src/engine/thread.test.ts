@@ -202,6 +202,39 @@ describe('Text messages and order', () => {
   })
 })
 
+describe('undoing a removal', () => {
+  it('puts a removed Voice note back where it was, with its file and what was heard, without hearing it again', async () => {
+    const net = fakeNetwork()
+    net.on(whisperBy({ 'a.ogg': NOTE_1, 'b.ogg': NOTE_2 }))
+    const device = deviceWithKey(net)
+    const engine = await createEngine(device)
+    await engine.thread.addFiles([voiceNote('a.ogg', 1), voiceNote('b.ogg', 2)])
+    await engine.thread.idle()
+    const heard = net.requests.length
+    const a = engine.thread.get().messages[0]
+
+    const removed = await engine.thread.remove(a.id)
+    await engine.thread.restore(removed!)
+    await engine.thread.idle()
+
+    const reopened = await createEngine(device)
+    expect(reopened.thread.get().messages).toMatchObject([{ name: 'a.ogg', state: 'heard', transcript: { text: NOTE_1.text.trim() } }, { name: 'b.ogg' }])
+    expect((await reopened.thread.media(a.id))?.size).toBe((await engine.thread.media(a.id))?.size)
+    expect(net.requests).toHaveLength(heard)
+  })
+
+  it('puts a removed Text message back where it was', async () => {
+    const engine = await createEngine(freshDevice())
+    await engine.thread.addText(0, 'first')
+    const second = await engine.thread.addText(1, 'second')
+    await engine.thread.addText(2, 'third')
+
+    await engine.thread.restore((await engine.thread.remove(second))!)
+
+    expect(engine.thread.get().messages.map(m => (m.kind === 'text' ? m.text : ''))).toEqual(['first', 'second', 'third'])
+  })
+})
+
 describe('review fixes: retries and keys', () => {
   it('waits as long as Groq asks, even beyond a minute, and says when it will try again', async () => {
     let calls = 0
