@@ -1,7 +1,7 @@
-import { ArrowCounterClockwiseIcon, ChatTextIcon, MicrophoneIcon, UploadSimpleIcon } from '@phosphor-icons/react'
+import { ArrowCounterClockwiseIcon, CaretDownIcon, ChatTextIcon, ChatsIcon, MicrophoneIcon, UploadSimpleIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { Pattern } from '@/brand/Ornament'
-import { useEngine, useIsDesktop, useOwnKeys, usePrefs, useThread } from '@/app/engine-hooks'
+import { useEngine, useOwnKeys, usePrefs, useThread } from '@/app/engine-hooks'
 import { LANGS, LANG_NAMES, PROVIDERS, THEMES, type Removed, type Theme } from '@/engine'
 import { useT } from '@/i18n/i18n'
 import { AppHeader } from './AppHeader'
@@ -12,7 +12,7 @@ import { HistorySheet } from './HistorySheet'
 import { MEDIA_ACCEPT } from './media'
 import { scrollBehavior } from './motion'
 import { OwnKeySheet } from './OwnKeySheet'
-import { ResultChip, ResultInThread, ResultSheet } from './result/ResultViews'
+import { ResultInThread } from './result/ResultViews'
 import { Sheet } from './Sheet'
 import { useFlip } from './flip'
 import { UndoBar } from './thread/UndoBar'
@@ -26,14 +26,29 @@ import { useArrivals } from './arrivals'
 /** A removed Message goes once its fade ends; this long at most, should no transition run. */
 const MOST_LEAVE_MS = 600
 
-type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'result' | 'start-over' | 'tutorial' | 'makeover' | null
+type OpenSheet = 'history' | 'language' | 'settings' | 'keys' | 'add' | 'start-over' | 'tutorial' | 'makeover' | null
+
+/** Above a Result: how many Messages it was made from, and a button to show or hide them. */
+function MessagesBar({ count, shown, onToggle }: { count: number; shown: boolean; onToggle: () => void }) {
+  const t = useT()
+  return (
+    <button type="button" aria-expanded={shown} onClick={onToggle}
+      className="flex w-full items-center gap-2.5 rounded-card border border-line bg-surface px-3.5 py-2.5 text-start text-sm shadow-raised transition-[background-color,scale] duration-(--duration-press) ease-snappy hover:bg-sunken/60 motion-safe:active:scale-[0.99]">
+      <ChatsIcon size={18} className="shrink-0 text-ornament" />
+      <span className="flex-1 font-medium">{t.messagesCount(count)}</span>
+      <span className="inline-flex items-center gap-1 font-semibold text-accent">
+        {shown ? t.hideMessages : t.showMessages}
+        <CaretDownIcon size={14} weight="bold" className={`transition-transform duration-(--duration-ui) ease-snappy ${shown ? 'rotate-180' : ''}`} />
+      </span>
+    </button>
+  )
+}
 
 export function MainScreen() {
   const { prefs, thread, sharedIn } = useEngine()
   const { uiLang, theme, showReliability } = usePrefs()
   const { messages, result, writing, draft, unsaved } = useThread()
   const ownKeys = useOwnKeys()
-  const desktop = useIsDesktop()
   const t = useT()
   // A first Share-in with no Groq key yet asks for the key straight away, as adding files here does;
   // someone who used Mulakhas before is told what changed first, and asked for the key after.
@@ -72,8 +87,6 @@ export function MainScreen() {
   const problem = storageFailed || sharedIn.failed ? t.storageFull : shareFailed ? t.shareFailed : unsaved ? t.notSaved : null
 
   const summarize = () => { void thread.summarize(draft).catch(() => {}) }
-  // On phones a fresh Result rises as a sheet; on desktop it appears in the Thread.
-  const lastResult = useRef(result?.id)
   // What was already there when the app opened appears as it is; what arrives later (Share-ins included) rises into place.
   const messageArrives = useArrivals(messages.map(m => m.id), sharedIn.ids)
   const resultArrives = useArrivals(result ? [result.id] : [])
@@ -100,17 +113,17 @@ export function MainScreen() {
   const moveMessage = (id: string, by: number) => { flip.measure(); void thread.moveBy(id, by) }
   const insertBefore = async (id: string) => { flip.measure(); setNewTextId(await thread.addTextNear(id, 'above')) }
   const restore = (removed: Removed) => { flip.measure(); void thread.restore(removed) }
-  // On phones the Result sheet's own khatam turns once, the first time a new Result's sheet opens.
-  const [turnedFor, setTurnedFor] = useState(result?.id)
-  useEffect(() => {
-    if (result && result.id !== lastResult.current && !desktop) setSheet('result')
-    lastResult.current = result?.id
-  }, [result, desktop])
+  // Once there is a Result it is the point: the Messages fold away above it until asked for, and
+  // come back while a new Result is being asked for from them.
+  const hasResult = !!result && writing.state === 'idle'
+  const rewriting = hasResult && rewritingFrom === result.id
+  const [shownFor, setShownFor] = useState<string | null>(null)
+  const messagesShown = !hasResult || rewriting || shownFor === result.id
 
   return (
     <div className="relative flex h-dvh flex-col bg-bg" {...dropZone}>
       <a href="#main" className="sr-only rounded-full bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-20">{t.skipToMain}</a>
-      <AppHeader onOpen={setSheet} />
+      <AppHeader onOpen={setSheet} onNew={messages.length > 0 ? () => setSheet('start-over') : undefined} />
       <input ref={picker} type="file" multiple accept={MEDIA_ACCEPT} hidden
         onChange={e => { onPicked(e.target.files); e.target.value = '' }} />
 
@@ -123,14 +136,16 @@ export function MainScreen() {
             <p role="alert" className="arrives mx-auto mt-3 max-w-2xl rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger">{problem}</p>
           )}
           {messages.length === 0 ? (
-            <EmptyState arrives={!startedEmpty} picked={draft.mode === 'exact' ? 'exact' : draft.preset}
-              // Exact words is a Mode, not a preset; every other preset is a kind of Summary.
-              onPick={p => void thread.setDraft(p === 'exact' ? { ...draft, mode: 'exact', preset: null } : { ...draft, mode: 'summary', preset: p })}
-              onChooseFiles={choose} onAddText={() => void addText()} />
+            <EmptyState arrives={!startedEmpty} onChooseFiles={choose} onAddText={() => void addText()} />
           ) : (
             <div className="flex min-h-full flex-col">
               <div className="mx-auto w-full flex-1 px-3 py-5 lg:max-w-3xl lg:border-x lg:border-ornament/30 lg:bg-bg lg:px-12 lg:py-10">
                 <div className="mx-auto max-w-2xl">
+                  {hasResult && !rewriting && (
+                    <MessagesBar count={messages.length} shown={messagesShown} onToggle={() => setShownFor(messagesShown ? null : result.id)} />
+                  )}
+                  {messagesShown && (
+                  <div className={hasResult ? 'arrives' : undefined}>
                   <ol ref={list} className="list-none">
                     {messages.map((m, i) => (
                       <MessageRow key={m.id} message={m} n={i + 1} isNewText={m.id === newTextId}
@@ -142,11 +157,13 @@ export function MainScreen() {
                     ))}
                   </ol>
                   <InsertHere label={t.addTextMessage} onInsert={() => { flip.measure(); void addText() }} />
+                  </div>
+                  )}
                   <WritingStatus onRetry={summarize} onConnectKey={() => setSheet('keys')} />
-                  {result && writing.state === 'idle' && (desktop
-                    ? <ResultInThread result={result} arrives={resultArrives(result.id)} onConnectKey={() => setSheet('keys')}
-                        onWriteAgain={rewritingFrom === result.id ? undefined : () => setRewritingFrom(result.id)} />
-                    : <ResultChip result={result} arrives={resultArrives(result.id)} onOpen={() => setSheet('result')} />)}
+                  {hasResult && (
+                    <ResultInThread result={result} arrives={resultArrives(result.id)} onConnectKey={() => setSheet('keys')}
+                      onWriteAgain={rewriting ? undefined : () => setRewritingFrom(result.id)} />
+                  )}
                 </div>
               </div>
             </div>
@@ -156,8 +173,8 @@ export function MainScreen() {
         </div>
         {messages.length > 0 && (
           <Composer rises={composerArrives(messages[0].id)} onAdd={() => setSheet('add')} onSummarize={summarize} busy={writing.state === 'listening' || writing.state === 'writing'}
-            // On desktop the Result is in the Thread, so once there is one the composer asks Follow-ups about it.
-            askingFollowUps={desktop && !!result && writing.state === 'idle' && rewritingFrom !== result.id} />
+            // Once there is a Result, the composer asks Follow-ups about it, until a new one is asked for.
+            askingFollowUps={hasResult && !rewriting} />
         )}
       </div>
 
@@ -167,8 +184,6 @@ export function MainScreen() {
         </div>
       )}
 
-      <ResultSheet result={result} open={sheet === 'result'} turnMark={!!result && result.id !== turnedFor}
-        onClose={() => { setTurnedFor(result?.id); close() }} onConnectKey={() => setSheet('keys')} />
       <Sheet open={sheet === 'add'} onClose={close} title={t.addSheetTitle} closeLabel={t.close}>
         <div className="divide-y divide-line">
           <button type="button" onClick={() => { close(); choose() }} className="-mx-2 flex h-13 w-[calc(100%+1rem)] items-center gap-3 px-2 text-start font-medium rounded-control transition-[background-color] duration-(--duration-press) ease-snappy hover:bg-sunken/60 active:bg-sunken">
