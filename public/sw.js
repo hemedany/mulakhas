@@ -3,8 +3,8 @@
 // 1. Share-in: Android's share sheet POSTs voice notes and videos to ./share-target. They go into
 //    the "mulakhas-share" inbox (read by src/engine/share-inbox.ts) and the page reloads; the app
 //    moves them into the Thread on start.
-// 2. App shell: the page, its script and styles are kept, so the reload after each share is
-//    near-instant. Only this origin is cached; Groq and Google calls never are.
+// 2. App shell: the page, its script, styles and fonts are kept, so the reload after each share is
+//    near-instant and the app opens offline. Only this origin is cached; Groq and Google calls never are.
 
 // Filled in by the build (vite.config.ts): a name unique to the build, and its script and styles.
 const BUILD = { version: "dev", files: [] };

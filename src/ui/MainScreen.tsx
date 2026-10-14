@@ -95,7 +95,9 @@ export function MainScreen() {
   const [startedEmpty] = useState(messages.length === 0)
   // A removed Message fades out first, then goes; the last one removed can be brought back.
   const [leaving, setLeaving] = useState<ReadonlySet<string>>(new Set())
-  const [undo, setUndo] = useState<Removed | null>(null)
+  // Keyed afresh for each removal, so removing the same Message again restarts the bar.
+  const [undo, setUndo] = useState<{ removed: Removed; key: number } | null>(null)
+  const removals = useRef(0)
   const removing = useRef(new Set<string>())
   // Called when the fade ends, and again by a timer in case it never does: only the first goes on.
   const gone = async (id: string) => {
@@ -103,7 +105,7 @@ export function MainScreen() {
     flip.measure()
     const removed = await thread.remove(id)
     setLeaving(l => { const rest = new Set(l); rest.delete(id); return rest })
-    if (removed) setUndo(removed)
+    if (removed) setUndo({ removed, key: ++removals.current })
   }
   const removeMessage = (id: string) => {
     removing.current.add(id)
@@ -169,7 +171,7 @@ export function MainScreen() {
             </div>
           )}
         </main>
-        {undo && <UndoBar key={undo.message.id} removed={undo} onUndo={restore} onGone={() => setUndo(null)} />}
+        {undo && <UndoBar key={undo.key} removed={undo.removed} onUndo={restore} onGone={() => setUndo(null)} />}
         </div>
         {messages.length > 0 && (
           <Composer rises={composerArrives(messages[0].id)} onAdd={() => setSheet('add')} onSummarize={summarize} busy={writing.state === 'listening' || writing.state === 'writing'}
@@ -200,7 +202,7 @@ export function MainScreen() {
       <Sheet open={sheet === 'start-over'} onClose={close} title={t.startOver} closeLabel={t.close}>
         <p className="text-fg-muted">{t.startOverConfirm}</p>
         <div className="mt-5 flex gap-2">
-          <button type="button" onClick={() => { close(); void thread.startOver() }}
+          <button type="button" onClick={() => { close(); setUndo(null); void thread.startOver() }}
             className="h-12 flex-1 rounded-full bg-danger px-4 font-medium text-on-danger transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.98]">{t.confirmStartOver}</button>
           <button type="button" onClick={close}
             className="h-12 flex-1 rounded-full border border-line px-4 font-medium transition-transform duration-(--duration-press) ease-snappy motion-safe:active:scale-[0.98]">{t.cancel}</button>

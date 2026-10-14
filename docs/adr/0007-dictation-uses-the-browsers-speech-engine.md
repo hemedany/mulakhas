@@ -8,3 +8,7 @@ Where there is no engine (Firefox), one known not to work (Brave), or one that r
 
 - **Whisper for all dictation**: one service, no browser makers involved, but words would only ever appear after a pause, and every pause costs a request on the free tier.
 - **A speech model in the page**: ruled out with on-device models generally (ADR-0003).
+
+## Later: the language is chosen
+
+(October 2026.) Dictation listened in the interface language, so with the app in English an Arabic Request came out wrong. A chip beside the mic now chooses what dictation listens for: one of the six languages, which the browser's engine takes where it can as above, or *Any language*, which goes to Whisper phrase by phrase, because only Whisper can tell which language is spoken.

@@ -11,7 +11,7 @@ Turn a pile of WhatsApp voice notes, videos and text messages (in Arabic dialect
    - Voice notes go to Groq's Whisper (`whisper-large-v3`), which returns a transcript with a confidence for every passage. Passages it heard poorly are marked as unclear rather than guessed.
    - Videos, when you've connected a Gemini key, are watched by the newest Gemini Flash model your key can use. It reports what is said and what the video shows. Without a Gemini key, Whisper hears the soundtrack.
    - Files over Groq's size limit, or in formats Whisper rejects (`.mov`, `.3gp`, `.aac`…), are converted in your browser to mono 16 kHz audio and heard in parts of about ten minutes, cut at a pause.
-3. **Say what you want**: pick a preset or type, or speak, your own Request. *Exact words* writes everything out as it was said instead of summarising.
+3. **Say what you want**: pick a preset or type, or speak, your own Request, in any language (the chip beside the mic says which). *Exact words* writes everything out as it was said instead of summarising.
 4. **A Groq text model writes the Result** (`gpt-oss-120b` when your key has it) from the transcripts, in order, so later messages can correct earlier ones. A Thread too big for your key's per-minute limit is written in parts.
 5. **The Reliability report** under the Result shows how clearly each voice note was heard, measured from Whisper's confidence and not graded by a model. Then ask Follow-up questions about the Result.
 
@@ -29,17 +29,18 @@ Mulakhas has no server and no shared key: everyone uses their own.
   - Voice notes go to Groq.
   - Videos go to Google when a Gemini key is connected, otherwise to Groq. Mulakhas deletes the upload as soon as it has been watched; Google would otherwise keep it for two days.
   - Transcripts, your Request and Follow-ups go to Groq to be written up.
-- **Dictation:** where your browser has a speech engine (Chrome, Edge, Safari, Samsung Internet), live dictation uses it, and your voice goes to that browser maker's speech service under your browser's terms. Elsewhere, each phrase goes to Groq. Dictation only fills the Request and Follow-up boxes.
+- **Dictation:** where your browser has a speech engine (Chrome, Edge, Safari, Samsung Internet), live dictation uses it, and your voice goes to that browser maker's speech service under your browser's terms. Elsewhere, and when you choose *Any language*, each phrase goes to Groq, which tells the language. Dictation only fills the Request and Follow-up boxes.
 - **On your device:** keys and settings live in the browser's local storage; the Thread, its files and your saved Results live in its IndexedDB. *Start over*, deleting a saved Result, and removing a key clear them.
 - Groq's and Google's own terms apply to what you send them.
 
 ## Features
 
 - Six interface languages (العربية, English, Français, Deutsch, Türkçe, Español), right to left in Arabic, with the Result in your language unless you ask for another.
-- Messages ordered by when they were sent (WhatsApp file names first), and movable, with text messages placed anywhere.
+- Messages ordered by when they were sent (WhatsApp file names first), moved with the arrows beside them, removed with Undo, and with text messages placed anywhere.
 - Presets: recipe, step by step, to-do list, key points, translation, and Exact words.
 - Busy services are waited out automatically, as long as they ask.
-- Searchable History of Results and their Follow-ups, on your device.
+- The Result first: the messages fold away above it until you want them.
+- Searchable History of Results and their Follow-ups, on your device, and *New* in the header to start again.
 - Installable on your phone; on Android, share voice notes from WhatsApp in as many goes as you like and they all stay together.
 - Light and dark themes that follow your device, with a manual choice.
 - A short tour on the first visit, and again from the ? button.
