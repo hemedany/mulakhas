@@ -35,7 +35,8 @@ function contentSecurityPolicy(): Plugin {
 
 // The service worker (public/sw.js) keeps the app shell for the reload after each Share-in. Tell it
 // this build's script and styles, under a cache name unique to the build, so it can keep them from
-// the start and drop the previous build's. Fonts are kept as they are first used.
+// the start and drop the previous build's. The fonts for the six languages' scripts (Latin and Arabic)
+// are kept too, so the app looks right offline after one visit; other scripts' are kept as they are used.
 function serviceWorkerShell(): Plugin {
   let outDir = 'dist'
   let files: string[] = []
@@ -43,7 +44,7 @@ function serviceWorkerShell(): Plugin {
     name: 'mulakhas-sw-shell',
     apply: 'build',
     configResolved(config) { outDir = resolve(config.root, config.build.outDir) },
-    generateBundle(_, bundle) { files = Object.keys(bundle).filter(f => /\.(js|css)$/.test(f)).sort() },
+    generateBundle(_, bundle) { files = Object.keys(bundle).filter(f => /\.(js|css)$/.test(f) || /-(latin|arabic)-.*\.woff2$/.test(f)).sort() },
     closeBundle() {
       const sw = resolve(outDir, 'sw.js')
       const placeholder = 'const BUILD = { version: "dev", files: [] };'

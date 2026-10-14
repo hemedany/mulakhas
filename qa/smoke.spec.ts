@@ -171,7 +171,7 @@ test.describe('with the service worker', () => {
     await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(3)
   })
 
-  test('opens again without a connection once it has been visited', async ({ page, context, browserName, pageErrors }) => {
+  test('opens again without a connection once it has been visited, fonts and all', async ({ page, context, browserName }) => {
     test.skip(browserName !== 'chromium', 'One engine is enough for the offline shell')
     await openApp(page)
     await page.evaluate(() => navigator.serviceWorker.ready)
@@ -180,9 +180,5 @@ test.describe('with the service worker', () => {
     await page.reload()
 
     await expect(page.getByRole('heading', { name: 'Share voice notes here' })).toBeVisible()
-    // Fonts are kept as they are first used under the worker, so after this first visit they still
-    // came from the network: offline they fall back to the system's until the next visit.
-    const fontMiss = (e: string) => /^Failed to load resource: .*\.woff2?$/.test(e)
-    pageErrors.splice(0, pageErrors.length, ...pageErrors.filter(e => !fontMiss(e)))
   })
 })
