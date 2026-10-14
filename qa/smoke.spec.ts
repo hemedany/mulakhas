@@ -1,20 +1,47 @@
 import { ANSWER, FAKE_GROQ_KEY, HEARD, QUESTION, RESULT_TITLE, expect, openApp, stubGroq, test, voiceNote } from './fixtures.ts'
 
-test('turns voice notes into one Result, then answers a Follow-up about it', async ({ page, isMobile }) => {
+test('turns voice notes into one Result, shown first with the Messages folded away, then answers a Follow-up', async ({ page }) => {
   await stubGroq(page)
   await openApp(page)
+  // The first screen is only for adding: what to make comes after.
+  await expect(page.getByRole('button', { name: 'Recipe' })).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Recipe' }).click()
   await page.locator('input[type=file]').setInputFiles([voiceNote('PTT-20261011-WA0001.wav'), voiceNote('PTT-20261011-WA0002.wav')])
   await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(2)
+  await page.getByRole('button', { name: 'Recipe' }).click()
   await page.getByRole('button', { name: 'Summarize it' }).click()
   await expect(page.getByRole('heading', { name: RESULT_TITLE })).toBeVisible()
 
-  // On a phone the Result rises as a sheet, and Follow-ups are asked there.
-  const ask = isMobile ? page.locator('dialog[open] textarea') : page.locator('footer textarea')
+  const folded = page.getByRole('button', { name: /2 messages/ })
+  await expect(folded).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(0)
+  await folded.click()
+  await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(2)
+
+  const ask = page.locator('footer textarea')
   await ask.fill(QUESTION)
   await ask.press('Enter')
   await expect(page.getByText(ANSWER).filter({ visible: true })).toBeVisible()
+})
+
+test('opens a saved Result from History, and starts over from the header', async ({ page }) => {
+  await stubGroq(page)
+  await openApp(page)
+  await page.locator('input[type=file]').setInputFiles(voiceNote('PTT-20261011-WA0001.wav'))
+  await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(1)
+  await page.getByRole('button', { name: 'Summarize it' }).click()
+  await expect(page.getByRole('heading', { name: RESULT_TITLE })).toBeVisible()
+
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Start over' }).getByRole('button', { name: 'Clear and start over' }).click()
+  await expect(page.getByRole('heading', { name: 'Share voice notes here' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'History' }).click()
+  await page.getByRole('dialog', { name: 'Your saved results' }).getByText(RESULT_TITLE).click()
+  const saved = page.getByRole('dialog', { name: 'Result' })
+  await expect(saved.getByRole('heading', { name: RESULT_TITLE })).toBeVisible()
+  await page.waitForTimeout(400) // past the time the list takes to leave
+  await expect(saved).toBeVisible()
 })
 
 test('asks for a Groq key with the first Message, then hears it', async ({ page }) => {
@@ -30,6 +57,53 @@ test('asks for a Groq key with the first Message, then hears it', async ({ page 
   await expect(page.getByRole('main').getByText('Heard', { exact: true })).toHaveCount(1)
 })
 
+test('moves a Message with its arrows, puts a Text message between two, and undoes a removal', async ({ page }) => {
+  await stubGroq(page)
+  await openApp(page)
+  await page.locator('input[type=file]').setInputFiles([voiceNote('PTT-20261011-WA0001.wav'), voiceNote('PTT-20261011-WA0002.wav')])
+  const rows = page.getByRole('main').getByRole('listitem')
+  await expect(rows).toHaveCount(2)
+  const names = () => rows.evaluateAll(lis => lis.map(li => li.textContent?.match(/WA000\d|use lamb/)?.[0]))
+
+  await page.getByRole('button', { name: 'Move message 2 up' }).click()
+  await expect.poll(names).toEqual(['WA0002', 'WA0001'])
+
+  await page.getByRole('button', { name: 'Add a text message before message 2' }).click()
+  await page.getByRole('main').getByRole('textbox').fill('use lamb')
+  await expect.poll(names).toEqual(['WA0002', 'use lamb', 'WA0001'])
+
+  await page.getByRole('button', { name: 'Remove message 1' }).click()
+  await expect.poll(names).toEqual(['use lamb', 'WA0001'])
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await expect.poll(names).toEqual(['WA0002', 'use lamb', 'WA0001'])
+})
+
+test('chooses the language dictation listens for', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Add a text message' }).click()
+
+  await page.locator('footer').getByRole('button', { name: 'Dictation language: English' }).click()
+  await page.getByRole('dialog', { name: 'Dictation language' }).getByRole('radio', { name: 'Any language' }).click()
+
+  await expect(page.locator('footer').getByRole('button', { name: 'Dictation language: Any language' })).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('hands over from one sheet to the next without closing both', async ({ page }) => {
+  await stubGroq(page)
+  await openApp(page)
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'Change' }).first().click()
+  await expect(page.getByRole('dialog', { name: 'Your key' })).toBeVisible()
+  await page.waitForTimeout(400) // past the time the first sheet takes to leave
+  await expect(page.getByRole('dialog', { name: 'Your key' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeHidden()
+
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
 test('switches to Arabic, right to left', async ({ page }) => {
   await openApp(page)
 
@@ -37,7 +111,7 @@ test('switches to Arabic, right to left', async ({ page }) => {
   await page.getByRole('radio', { name: 'العربية' }).click()
 
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
-  await expect(page.getByRole('heading', { name: 'ماذا تريد من هذه الرسائل؟' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'شارك الرسائل الصوتية هنا' })).toBeVisible()
 })
 
 test('takes dictation phrase by phrase where the browser has no speech engine', async ({ page, browserName }) => {
@@ -105,7 +179,7 @@ test.describe('with the service worker', () => {
     await context.setOffline(true)
     await page.reload()
 
-    await expect(page.getByRole('heading', { name: 'What do you want from these?' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Share voice notes here' })).toBeVisible()
     // Fonts are kept as they are first used under the worker, so after this first visit they still
     // came from the network: offline they fall back to the system's until the next visit.
     const fontMiss = (e: string) => /^Failed to load resource: .*\.woff2?$/.test(e)

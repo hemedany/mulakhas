@@ -17,7 +17,7 @@ export function CopyButton({ text, label, className, iconSize = 18 }: { text: st
   }
   return (
     <button type="button" onClick={copy} aria-label={label} className={className}>
-      {copied ? <CheckIcon size={iconSize} weight="bold" /> : <CopyIcon size={iconSize} />}
+      {copied ? <CheckIcon size={iconSize} weight="bold" className="pops-in" /> : <CopyIcon size={iconSize} />}
       <span aria-live="polite">{copied ? t.copied : t.copy}</span>
     </button>
   )

@@ -73,8 +73,6 @@
 
   --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  /* Movement across the screen, start to end (the wide first screen's opening). */
-  --ease-glide: cubic-bezier(0.77, 0, 0.175, 1);
   --duration-press: 150ms;
   --duration-ui: 200ms;
   --duration-sheet: 280ms;
@@ -90,6 +88,11 @@
   @keyframes listening-dot {
     50% { opacity: 0.3; }
   }
+}
+
+/* Movement across the screen, start to end: Messages gliding to new places (read by flip.ts). */
+@theme static {
+  --ease-glide: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @layer base {
@@ -151,8 +154,31 @@
 }
 
 @layer components {
+  /*
+   * A sheet rises in and leaves the way it came, a little faster than it came (Sheet.tsx closes it
+   * once it has gone). Occasional, so a standard drawer motion; with less motion it only fades.
+   */
   .sheet::backdrop {
     background: var(--scrim);
+    transition: opacity var(--duration-ui) var(--ease-snappy);
+  }
+  @starting-style {
+    .sheet[open]::backdrop {
+      opacity: 0;
+    }
+  }
+  .sheet[open] .sheet-panel {
+    transition: opacity var(--duration-ui) var(--ease-snappy);
+    @starting-style {
+      opacity: 0;
+    }
+  }
+  .sheet[data-leaving] {
+    pointer-events: none;
+  }
+  .sheet[data-leaving]::backdrop,
+  .sheet[data-leaving] .sheet-panel {
+    opacity: 0;
   }
   /* The star tile is a mask, so the element's background colour is the pattern's colour. */
   .pattern-tile {
@@ -180,31 +206,27 @@
     from { opacity: 0; }
   }
   /*
-   * The wide first screen opens in two beats: the arch alone in the middle, then the presets fan
-   * out from behind it and the arch moves aside, until the two settle centred together. Seen when
-   * the app opens empty and after Start over, so it takes a little longer than a UI transition
-   * (under a second); nothing waits for it. The empty state measures where each piece starts and
-   * sets --from (and --delay, --stack) on the piece itself (opening.ts). With less motion, the arch
-   * fades in and the presets just after.
+   * Smaller arrivals. The Undo bar rises in above the composer and drops away; the composer rises
+   * from the bottom edge when a Thread starts; a tutorial step comes in from the side it was asked
+   * for; a disclosure's contents settle in; the drop overlay and the Copied tick fade (and pop).
+   * Each fades only, with less motion.
    */
-  .opening {
-    --alone: 300ms;
-    --parting: 560ms;
-    /* The arch moves aside just after the presets start to come out of it. */
-    --arch-lag: 100ms;
+  .undo-bar,
+  .rises,
+  .step-in,
+  .fades-in {
+    transition: opacity var(--duration-ui) var(--ease-snappy);
+    @starting-style {
+      opacity: 0;
+    }
   }
-  .opening [data-opening] {
-    animation: fade-in var(--duration-ui) var(--ease-snappy) backwards;
+  .undo-bar[data-leaving] {
+    opacity: 0;
+    transition-duration: var(--duration-press);
   }
-  .opening [data-opening='preset'] {
-    animation-delay: 120ms;
-  }
-  /* Above the presets, which start behind it, the nearest column on top. */
-  .opening [data-opening='arch'] {
-    z-index: 4;
-  }
-  .opening [data-opening='preset'][aria-pressed] {
-    z-index: var(--stack, 1);
+  details[open] > .disclosed,
+  .pops-in {
+    animation: fade-in var(--duration-ui) var(--ease-snappy);
   }
   /* The header's khatam is drawn in on the first visit (a fade without motion). */
   .drawn-in {
@@ -229,24 +251,6 @@
     .drawn-in {
       animation: drawn-in var(--duration-sheet) var(--ease-snappy);
     }
-    .opening [data-opening='arch'] {
-      animation:
-        arch-alone var(--duration-ui) var(--ease-snappy) backwards,
-        parting var(--parting) var(--ease-glide) calc(var(--alone) + var(--arch-lag)) backwards;
-    }
-    .opening [data-opening='preset'] {
-      animation: out-of-arch var(--parting) var(--ease-glide) calc(var(--alone) + var(--delay, 0ms)) backwards;
-    }
-    @keyframes arch-alone {
-      from { opacity: 0; scale: 0.97; }
-    }
-    @keyframes parting {
-      from { translate: var(--from) 0; }
-    }
-    @keyframes out-of-arch {
-      from { opacity: 0; translate: var(--from) 0; }
-      70% { opacity: 1; }
-    }
     @keyframes turn-once {
       from { transform: rotate(-45deg); }
     }
@@ -261,6 +265,72 @@
         transform: translateY(32px);
         opacity: 0;
       }
+    }
+    .undo-bar {
+      transition: opacity var(--duration-ui) var(--ease-snappy), transform var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    .undo-bar[data-leaving] {
+      transform: translateY(8px);
+      transition-duration: var(--duration-press);
+    }
+    .rises {
+      transition: transform var(--duration-sheet) var(--ease-drawer), opacity var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+    }
+    /* Forward comes from the end of the line (the right in English, the left in Arabic), Back from its start. */
+    .step-in {
+      --step-from: 1.25rem;
+      transition: transform var(--duration-sheet) var(--ease-snappy), opacity var(--duration-ui) var(--ease-snappy);
+      @starting-style {
+        opacity: 0;
+        transform: translateX(var(--step-from));
+      }
+    }
+    .step-in[data-from='back'] {
+      --step-from: -1.25rem;
+    }
+    .step-in:dir(rtl) {
+      --step-from: -1.25rem;
+    }
+    .step-in[data-from='back']:dir(rtl) {
+      --step-from: 1.25rem;
+    }
+    details[open] > .disclosed {
+      animation: disclosed var(--duration-ui) var(--ease-snappy);
+    }
+    .pops-in {
+      animation: pops-in var(--duration-ui) var(--ease-snappy);
+    }
+    @keyframes disclosed {
+      from { opacity: 0; transform: translateY(-4px); }
+    }
+    @keyframes pops-in {
+      from { opacity: 0; transform: scale(0.6); }
+    }
+    /* Where the browser can animate to a height of "auto", a disclosure opens and closes smoothly too. */
+    @supports (interpolate-size: allow-keywords) {
+      details:has(> .disclosed) {
+        interpolate-size: allow-keywords;
+      }
+      details:has(> .disclosed)::details-content {
+        height: 0;
+        overflow: clip;
+        transition: height var(--duration-ui) var(--ease-snappy), content-visibility var(--duration-ui) allow-discrete;
+      }
+      details[open]:has(> .disclosed)::details-content {
+        height: auto;
+      }
+    }
+    .sheet[data-leaving] .sheet-panel {
+      transform: translateY(24px);
+      transition: transform var(--duration-ui) var(--ease-snappy), opacity var(--duration-ui) var(--ease-snappy);
     }
   }
 }

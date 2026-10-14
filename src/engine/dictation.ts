@@ -99,10 +99,13 @@ export class PauseDetector {
   }
 }
 
-/** The engine's part in dictation: writing down one phrase with Whisper, in the interface language. */
+/** The engine's part in dictation: writing down one phrase with Whisper, in the language chosen for it. */
 export interface DictationService {
-  /** What was said in `audio`. `before` is what was dictated just before it, for continuity. */
-  transcribe(audio: Blob, lang: Lang, before?: string): Promise<string>
+  /**
+   * What was said in `audio`, in `lang`, or in whatever language Whisper hears when it is null.
+   * `before` is what was dictated just before it, for continuity.
+   */
+  transcribe(audio: Blob, lang: Lang | null, before?: string): Promise<string>
 }
 
 export function createDictation(fetch: Fetch, keys: KeysStore): DictationService {
@@ -113,7 +116,7 @@ export function createDictation(fetch: Fetch, keys: KeysStore): DictationService
       const upload = asUpload(audio, 'dictation')
       if (!upload) throw new DictationError('unsupported')
       try {
-        return (await transcribe(fetch, key, upload, { language: lang, prompt: before })).text
+        return (await transcribe(fetch, key, upload, { language: lang ?? undefined, prompt: before })).text
       } catch (e) {
         throw e instanceof HearError ? new DictationError(e.failure, e.retryAfterMs) : e
       }

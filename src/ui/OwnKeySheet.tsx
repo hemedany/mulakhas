@@ -1,4 +1,4 @@
-import { ArrowSquareOutIcon, CheckCircleIcon } from '@phosphor-icons/react'
+import { ArrowSquareOutIcon, CaretDownIcon, CheckCircleIcon } from '@phosphor-icons/react'
 import { useId, useState, type ReactNode } from 'react'
 import { OrnamentRule, StarBadge } from '@/brand/Ornament'
 import { useEngine, useOwnKeys, usePrefs } from '@/app/engine-hooks'
@@ -141,13 +141,16 @@ export function OwnKeySheet({ open, onClose }: { open: boolean; onClose: () => v
       <OrnamentRule className="my-5" />
 
       <details className="group" open={videoOpen} onToggle={e => setVideoOpen(e.currentTarget.open)}>
-        <summary className="cursor-pointer list-none font-semibold">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 font-semibold">
           <span className="underline decoration-line-strong underline-offset-4 group-open:no-underline">{t.videoKeyTitle}</span>
+          <CaretDownIcon size={14} weight="bold" className="shrink-0 text-fg-muted transition-transform duration-(--duration-ui) ease-snappy group-open:rotate-180" />
         </summary>
-        <p className="mt-2 text-sm text-fg-muted text-pretty">{t.videoKeyBody}</p>
-        <p className="mt-3 text-sm">{t.videoKeyStep}</p>
-        <KeyPageLink provider="gemini" />
-        <div className="mt-4"><KeyField provider="gemini" /></div>
+        <div className="disclosed">
+          <p className="mt-2 text-sm text-fg-muted text-pretty">{t.videoKeyBody}</p>
+          <p className="mt-3 text-sm">{t.videoKeyStep}</p>
+          <KeyPageLink provider="gemini" />
+          <div className="mt-4"><KeyField provider="gemini" /></div>
+        </div>
       </details>
 
       <p className="mt-6 text-xs text-fg-muted">{t.keysPrivacy}</p>

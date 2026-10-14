@@ -57,6 +57,23 @@ describe('dictating with Whisper', () => {
     expect(names(engine)).toEqual(before)
   })
 
+  it('lets Whisper tell the language when dictating in any language, and remembers that choice', async () => {
+    const net = fakeNetwork()
+    net.on(whisperBy({ 'dictation.webm': verboseJson([{ text: ' make it a recipe', start: 0, end: 2 }]) }))
+    const device = deviceWithKey(net)
+    device.localStorage.setItem('m2.uiLang', 'ar')
+    const engine = await createEngine(device)
+    expect(engine.prefs.get().dictationLang).toBe('ar') // until another is chosen, the interface language
+
+    engine.prefs.set({ dictationLang: 'any' })
+    const said = await engine.dictation.transcribe(new Blob([new Uint8Array(64)], { type: 'audio/webm;codecs=opus' }), null)
+
+    expect(said).toBe('make it a recipe')
+    const sent = net.requests.filter(r => uploadedFile(r.init)?.name === 'dictation.webm')[0].init!.body as FormData
+    expect(sent.has('language')).toBe(false)
+    expect((await createEngine(device)).prefs.get().dictationLang).toBe('any')
+  })
+
   it('says a Groq key is needed when there is none', async () => {
     const engine = await createEngine(freshDevice())
 

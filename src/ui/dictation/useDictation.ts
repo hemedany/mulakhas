@@ -27,7 +27,9 @@ export interface DictationControl {
  */
 export function useDictation(value: string, onChange: (text: string) => void): DictationControl {
   const { dictation: service } = useEngine()
-  const { uiLang } = usePrefs()
+  const { dictationLang } = usePrefs()
+  // Any language: only Whisper can tell which, so phrases; the browser's engine needs to be told.
+  const anyLang = dictationLang === 'any'
   const { groq } = useOwnKeys()
   const [state, setState] = useState<DictationState>('idle')
   const [way, setWay] = useState<DictationWay>(() => (speechEngine() ? 'live' : 'phrases'))
@@ -52,26 +54,26 @@ export function useDictation(value: string, onChange: (text: string) => void): D
         if (ended) setProblem(ended)
       },
     }
-    const Engine = way === 'live' ? speechEngine() : null
+    const Engine = way === 'live' && !anyLang ? speechEngine() : null
     // For phrases straight away, the microphone is set up now, inside the tap, so iOS lets it be heard.
     const tapDeps = Engine ? null : browserPhraseDeps()
     // Phrases need Whisper, so a Groq key.
     const byPhrases = () => {
       setWay('phrases')
       if (!groq) return events.onDone('no-key')
-      session.current = phraseSession(uiLang, service.transcribe, events, tapDeps ?? browserPhraseDeps())
+      session.current = phraseSession(anyLang ? null : dictationLang, service.transcribe, events, tapDeps ?? browserPhraseDeps())
     }
     setState('listening')
     if (Engine) {
       // An engine that won't take dictation here gives way to phrases.
-      session.current = liveSession(Engine, SPEECH_LANGS[uiLang], events, () => { session.current = null; byPhrases() })
+      session.current = liveSession(Engine, SPEECH_LANGS[dictationLang as Exclude<typeof dictationLang, 'any'>], events, () => { session.current = null; byPhrases() })
     } else byPhrases()
   }
 
   return {
     state,
     busy: state !== 'idle',
-    way,
+    way: anyLang ? 'phrases' : way,
     problem,
     start,
     stop: () => session.current?.stop(),

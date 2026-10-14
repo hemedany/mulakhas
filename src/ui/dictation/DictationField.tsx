@@ -1,7 +1,12 @@
-import { MicrophoneIcon, StopIcon } from '@phosphor-icons/react'
+import { CaretDownIcon, GlobeSimpleIcon, MicrophoneIcon, StopIcon } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { useEngine, usePrefs } from '@/app/engine-hooks'
 import { KhatamMark } from '@/brand/Khatam'
+import { LANGS, LANG_NAMES, type DictationLang } from '@/engine'
 import { useT } from '@/i18n/i18n'
 import type { Strings } from '@/i18n/strings'
+import { ChoiceList } from '../ChoiceList'
+import { Sheet } from '../Sheet'
 import type { DictationProblem } from './sessions'
 import type { DictationControl } from './useDictation'
 
@@ -11,6 +16,32 @@ const problemText = (t: Strings): Record<DictationProblem, string> => ({
   'no-key': t.dictationNeedsKey,
   failed: t.dictationFailed,
 })
+
+/**
+ * The language dictation listens for, beside the mic: any interface language, or any language at
+ * all (Whisper tells which). Chosen in a small sheet, like the interface language. (Not a native
+ * select: WebKit's own one trips the page's Content Security Policy.)
+ */
+function DictationLanguage({ disabled }: { disabled: boolean }) {
+  const t = useT()
+  const { prefs } = useEngine()
+  const { dictationLang } = usePrefs()
+  const [open, setOpen] = useState(false)
+  const name = dictationLang === 'any' ? t.anyLanguage : LANG_NAMES[dictationLang]
+  return (
+    <>
+      <button type="button" aria-label={`${t.dictationLanguage}: ${name}`} title={t.dictationLanguage} disabled={disabled} onClick={() => setOpen(true)}
+        className="absolute end-10 bottom-1.5 flex h-8 items-center gap-0.5 rounded-full px-1.5 text-xs font-semibold uppercase text-fg-muted transition-[color,background-color,scale] duration-(--duration-press) ease-snappy hover:bg-line/50 hover:text-fg disabled:text-fg-subtle motion-safe:active:scale-[0.94]">
+        {dictationLang === 'any' ? <GlobeSimpleIcon size={15} /> : dictationLang}<CaretDownIcon size={10} weight="bold" />
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title={t.dictationLanguage} closeLabel={t.close}>
+        <ChoiceList<DictationLang> label={t.dictationLanguage} value={dictationLang}
+          onChange={lang => { prefs.set({ dictationLang: lang }); setOpen(false) }}
+          options={[...LANGS.map(l => ({ value: l, label: LANG_NAMES[l], lang: l })), { value: 'any' as const, label: t.anyLanguage }]} />
+      </Sheet>
+    </>
+  )
+}
 
 /**
  * A text box with a mic in it, for the Request and Follow-ups. While listening the box can't be
@@ -47,8 +78,9 @@ export function DictatedTextarea({ dictation, value, onChange, label, placeholde
             cancelOnEscape(e)
             if (onEnter && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onEnter() }
           }}
-          className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken py-2.5 ps-4 pe-12 leading-6 placeholder:text-fg-subtle read-only:border-accent focus:border-accent focus:outline-none [field-sizing:content]" />
+          className="block max-h-36 min-h-11 w-full resize-none rounded-control border border-line bg-sunken py-2.5 ps-4 pe-[5.5rem] leading-6 placeholder:text-fg-subtle read-only:border-accent focus:border-accent focus:outline-none [field-sizing:content]" />
       </label>
+      <DictationLanguage disabled={dictation.busy} />
       {/* One button through every state, so keyboard focus stays on it. */}
       <button type="button" aria-label={buttonLabel} title={buttonLabel} aria-disabled={dictation.state === 'writing'}
         onClick={() => { if (dictation.state === 'idle') dictation.start(); else if (dictation.state === 'listening') dictation.stop() }}

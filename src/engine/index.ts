@@ -10,7 +10,7 @@ import { createThread, type ThreadStore } from './thread'
 import type { Fetch } from './providers'
 
 export type { SavedResult, Mode } from './history'
-export type { Message, MediaMessage, TextMessage, ThreadState, ThreadResult, Writing, HearState } from './thread'
+export type { Message, MediaMessage, TextMessage, ThreadState, ThreadResult, Writing, HearState, Removed } from './thread'
 export type { ReliabilityRow } from './reliability'
 export type { WriteFailure, WriteOptions } from './writer'
 export type { Transcript, Segment } from './transcript'
@@ -19,7 +19,7 @@ export type { ConnectOutcome, OwnKeys } from './keys'
 export type { FollowUp } from './follow-up'
 export { DictationError, PauseDetector, withSpoken, type DictationFailure } from './dictation'
 export { PROVIDERS, PROVIDER_INFO, type Fetch, type Provider } from './providers'
-export { THEMES, type Prefs, type Theme } from './prefs'
+export { THEMES, type DictationLang, type Prefs, type Theme } from './prefs'
 export { LANGS, LANG_NAMES, RTL_LANGS, pickLang, type Lang } from './langs'
 
 /** Everything the engine touches on the device, injectable so tests can simulate devices and reloads. */

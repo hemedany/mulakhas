@@ -9,8 +9,13 @@ export function isTheme(value: unknown): value is Theme {
   return typeof value === 'string' && (THEMES as readonly string[]).includes(value)
 }
 
+/** The language dictation listens for: one of the interface languages, or any (Whisper tells which). */
+export type DictationLang = Lang | 'any'
+
 export interface Prefs {
   uiLang: Lang
+  /** The interface language until another is chosen. */
+  dictationLang: DictationLang
   theme: Theme
   /** Had Mulakhas v1 data on this device; used to show the makeover card instead of the tutorial. */
   wasV1User: boolean
@@ -38,8 +43,14 @@ export interface PrefsStore extends Observable<Prefs> {
 export function createPrefs(ls: Storage, browserLanguages: readonly string[]): PrefsStore {
   const storedLang = ls.getItem(KEYS.uiLang)
   const storedTheme = ls.getItem(KEYS.theme)
+  const storedDictation = ls.getItem(KEYS.dictationLang)
+  const chosenDictation = storedDictation === 'any' || isLang(storedDictation) ? storedDictation : null
+  const uiLang = isLang(storedLang) ? storedLang : pickLang(browserLanguages)
+  // Dictation follows the interface language until a language is chosen for it.
+  let dictationChosen = chosenDictation !== null
   const state = observable<Prefs>({
-    uiLang: isLang(storedLang) ? storedLang : pickLang(browserLanguages),
+    uiLang,
+    dictationLang: chosenDictation ?? uiLang,
     theme: isTheme(storedTheme) ? storedTheme : 'system',
     wasV1User: ls.getItem(KEYS.wasV1User) === '1',
     showReliability: ls.getItem(KEYS.showReliability) !== '0',
@@ -53,6 +64,8 @@ export function createPrefs(ls: Storage, browserLanguages: readonly string[]): P
     subscribe: state.subscribe,
     set(patch) {
       if (patch.uiLang) ls.setItem(KEYS.uiLang, patch.uiLang)
+      if (patch.dictationLang) { ls.setItem(KEYS.dictationLang, patch.dictationLang); dictationChosen = true }
+      else if (patch.uiLang && !dictationChosen) patch = { ...patch, dictationLang: patch.uiLang }
       if (patch.theme) ls.setItem(KEYS.theme, patch.theme)
       if (patch.showReliability !== undefined) ls.setItem(KEYS.showReliability, patch.showReliability ? '1' : '0')
       // Once seen, always seen.
