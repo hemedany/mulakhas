@@ -1,9 +1,12 @@
 import { CaretDownIcon, GlobeSimpleIcon, MicrophoneIcon, StopIcon } from '@phosphor-icons/react'
+import { useState } from 'react'
 import { useEngine, usePrefs } from '@/app/engine-hooks'
 import { KhatamMark } from '@/brand/Khatam'
 import { LANGS, LANG_NAMES, type DictationLang } from '@/engine'
 import { useT } from '@/i18n/i18n'
 import type { Strings } from '@/i18n/strings'
+import { ChoiceList } from '../ChoiceList'
+import { Sheet } from '../Sheet'
 import type { DictationProblem } from './sessions'
 import type { DictationControl } from './useDictation'
 
@@ -16,25 +19,27 @@ const problemText = (t: Strings): Record<DictationProblem, string> => ({
 
 /**
  * The language dictation listens for, beside the mic: any interface language, or any language at
- * all (Whisper tells which). The device's own picker, so it suits fingers and screen readers alike.
+ * all (Whisper tells which). Chosen in a small sheet, like the interface language. (Not a native
+ * select: WebKit's own one trips the page's Content Security Policy.)
  */
 function DictationLanguage({ disabled }: { disabled: boolean }) {
   const t = useT()
   const { prefs } = useEngine()
   const { dictationLang } = usePrefs()
+  const [open, setOpen] = useState(false)
+  const name = dictationLang === 'any' ? t.anyLanguage : LANG_NAMES[dictationLang]
   return (
-    <label className="absolute end-10 bottom-1.5 rounded-full has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-focus-ring">
-      <span className="sr-only">{t.dictationLanguage}</span>
-      <span aria-hidden="true" className={`flex h-8 items-center gap-0.5 rounded-full px-1.5 text-xs font-semibold uppercase transition-colors duration-(--duration-press) ease-snappy ${disabled ? 'text-fg-subtle' : 'text-fg-muted'}`}>
+    <>
+      <button type="button" aria-label={`${t.dictationLanguage}: ${name}`} title={t.dictationLanguage} disabled={disabled} onClick={() => setOpen(true)}
+        className="absolute end-10 bottom-1.5 flex h-8 items-center gap-0.5 rounded-full px-1.5 text-xs font-semibold uppercase text-fg-muted transition-[color,background-color,scale] duration-(--duration-press) ease-snappy hover:bg-line/50 hover:text-fg disabled:text-fg-subtle motion-safe:active:scale-[0.94]">
         {dictationLang === 'any' ? <GlobeSimpleIcon size={15} /> : dictationLang}<CaretDownIcon size={10} weight="bold" />
-      </span>
-      <select value={dictationLang} disabled={disabled} title={t.dictationLanguage}
-        onChange={e => prefs.set({ dictationLang: e.target.value as DictationLang })}
-        className="absolute inset-0 cursor-pointer appearance-none opacity-0 disabled:cursor-default">
-        {LANGS.map(l => <option key={l} value={l} lang={l}>{LANG_NAMES[l]}</option>)}
-        <option value="any">{t.anyLanguage}</option>
-      </select>
-    </label>
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title={t.dictationLanguage} closeLabel={t.close}>
+        <ChoiceList<DictationLang> label={t.dictationLanguage} value={dictationLang}
+          onChange={lang => { prefs.set({ dictationLang: lang }); setOpen(false) }}
+          options={[...LANGS.map(l => ({ value: l, label: LANG_NAMES[l], lang: l })), { value: 'any' as const, label: t.anyLanguage }]} />
+      </Sheet>
+    </>
   )
 }
 

@@ -78,6 +78,17 @@ test('moves a Message with its arrows, puts a Text message between two, and undo
   await expect.poll(names).toEqual(['WA0002', 'use lamb', 'WA0001'])
 })
 
+test('chooses the language dictation listens for', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Add a text message' }).click()
+
+  await page.locator('footer').getByRole('button', { name: 'Dictation language: English' }).click()
+  await page.getByRole('dialog', { name: 'Dictation language' }).getByRole('radio', { name: 'Any language' }).click()
+
+  await expect(page.locator('footer').getByRole('button', { name: 'Dictation language: Any language' })).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
 test('hands over from one sheet to the next without closing both', async ({ page }) => {
   await stubGroq(page)
   await openApp(page)
